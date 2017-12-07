@@ -1,3 +1,11 @@
 # gpu_detect
 
 GPU-accelerated matched filter detection.
+
+source config.bash to load tensor-flow libs
+
+tensorflow_fftconv.py - compares performances of tensorflow FFT/matrix multiply/iFFT vs FFTPack
+
+tensorflow_mf.py - matched filtering via tensorflow
+
+commfigs.bash - generates images for paper 

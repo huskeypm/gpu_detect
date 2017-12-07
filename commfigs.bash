@@ -1,3 +1,4 @@
+echo "Too big for kafka, so run on hesse" 
 source config.bash
 python tensorflow_mf.py -test2
 # creates. out.tif file

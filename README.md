@@ -1,5 +1,7 @@
 # gpu_detect
 
+Requires tensorflow cuda (python), which is currently installed on kafka and hesse.
+
 GPU-accelerated matched filter detection.
 
 source config.bash to load tensor-flow libs

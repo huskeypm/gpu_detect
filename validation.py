@@ -11,6 +11,7 @@ import sys
 # ROUTINE  
 #
 import ROCstacker as Rs
+import numpy as np
 class empty:pass
 def doit(
       ttFilterName="",
@@ -22,11 +23,14 @@ def doit(
 
 
   #results = empty()
-  results = Rs.giveStackedHits(ttFilterName, ttThresh, ltThresh, gamma, WTFilterName=ttFilterName,
+  results = Rs.giveStackedHits(testImage, ttThresh, ltThresh, gamma, WTFilterName=ttFilterName,
                                LongitudinalFilterName=ltFilterName)
-  print type(results)
-  results.ttContent = 0.
-  results.ltContent = 0.
+  stackedHits = results.stackedHits
+  # following is pseudocode, essentially
+  dimensions = np.shape(stackedHits.WT)
+  area = float(dimensions[0] * dimensions[1])
+  results.ttContent = stackedHits.WT / area
+  results.ltContent = stackedHits.Long / area
   results.lossContent = 0.
   return results 
 
@@ -75,18 +79,14 @@ if __name__ == "__main__":
 
       doit(      
         ttFilterName=sys.argv[i+1],
-        ltFilterName=sys.argv[i+2],           
+        ltFilterName=sys.argv[i+2],
         testImage=sys.argv[i+3],           
         ttThresh=sys.argv[i+4],           
         ltThresh=sys.argv[i+5],
         gamma=sys.argv[i+6])           
-  
-
-
-
-
-
-  raise RuntimeError("Arguments not understood")
+      quit()
+    elif(i>2):
+      raise RuntimeError("Arguments not understood")
 
 
 

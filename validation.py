@@ -10,17 +10,21 @@ import sys
 #
 # ROUTINE  
 #
+import ROCstacker as Rs
 class empty:pass
 def doit(
       ttFilterName="",
       ltFilterName="",
       testImage="",
       ttThresh=1.,
-      ltThresh=1.):
+      ltThresh=1.,
+      gamma=3.):
 
 
-  results = empty()
-  results.detectedImage = ()
+  #results = empty()
+  results = Rs.giveStackedHits(ttFilterName, ttThresh, ltThresh, gamma, WTFilterName=ttFilterName,
+                               LongitudinalFilterName=ltFilterName)
+  print type(results)
   results.ttContent = 0.
   results.ltContent = 0.
   results.lossContent = 0.
@@ -68,18 +72,14 @@ if __name__ == "__main__":
   for i,arg in enumerate(sys.argv):
     # will return a single marked image 
     if(arg=="-validation"):
-      ttFilterName=sys.argv[i+1],
-      ltFilterName=sys.argv[i+2],           
-      testImage=sys.argv[i+3],           
-      ttThresh=sys.argv[i+4],           
-      ltThresh=sys.argv[i+5],           
 
       doit(      
         ttFilterName=sys.argv[i+1],
         ltFilterName=sys.argv[i+2],           
         testImage=sys.argv[i+3],           
         ttThresh=sys.argv[i+4],           
-        ltThresh=sys.argv[i+5])           
+        ltThresh=sys.argv[i+5],
+        gamma=sys.argv[i+6])           
   
 
 

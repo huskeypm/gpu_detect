@@ -9,3 +9,7 @@ tensorflow_fftconv.py - compares performances of tensorflow FFT/matrix multiply/
 tensorflow_mf.py - matched filtering via tensorflow
 
 commfigs.bash - generates images for paper 
+
+# normal test
+python validation.py images/ttFilterName.png images/ttFilterName.png images/testImage.png 1. 2.
+

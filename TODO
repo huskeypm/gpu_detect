@@ -1,0 +1,27 @@
+Dylan 
+- where are filters created? (shoudl have command line for passing in 'filter images' to provide MF. Reason being is that we have Penalty terms ) 
+
+- what is the input line that needs to be run? 
+
+- walk through optimizer code with me so I can find all missing files needed
+
+- need annotated images for WT and CHF as well 
+
+- what are the tests that can be run from command line to generate figures for paper
+figures.py WT.png
+figures.py MI.png
+figures.py CHF.png
+
+- add in unit test (e.g. if assert(content-truth>abs,"somthing changed)" 
+
+
+Ryan 
+-Integrate MF stuff into gpu code
+-test by running unit tests 
+
+PKH 
+-port over/refactor MF code for both silica and myo 
+-- optimizer.py
+-verify that ROC is working 
+
+

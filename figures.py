@@ -10,23 +10,8 @@ import sys
 #
 # ROUTINE  
 #
-class empty:pass
-def doit(
-      ttFilterName="",
-      ltFilterName="",
-      testImage="",
-      ttThresh=1.,
-      ltThresh=1.):
-
-
-  results = empty()
-  results.detectedImage = ()
-  results.ttContent = 0.
-  results.ltContent = 0.
-  results.lossContent = 0.
-  return results 
-
-  
+def doit(fileIn):
+  1
 
 
 #
@@ -66,20 +51,26 @@ if __name__ == "__main__":
 
   # Loops over each argument in the command line 
   for i,arg in enumerate(sys.argv):
-    # will return a single marked image 
-    if(arg=="-validation"):
-      ttFilterName=sys.argv[i+1],
-      ltFilterName=sys.argv[i+2],           
-      testImage=sys.argv[i+3],           
-      ttThresh=sys.argv[i+4],           
-      ltThresh=sys.argv[i+5],           
 
-      doit(      
-        ttFilterName=sys.argv[i+1],
-        ltFilterName=sys.argv[i+2],           
-        testImage=sys.argv[i+3],           
-        ttThresh=sys.argv[i+4],           
-        ltThresh=sys.argv[i+5])           
+    # this function will generate input data for the current fig #3 in the paper 
+    if(arg=="-fig3"):               
+      # DC: what is my WT test image (top panel)  
+      # DC: call to generate middle panel 
+      # DC: call to generate bottom panel 
+      # PKH: I'll provide bar graphs 
+
+    if(arg=="-fig4"):               
+      # DC: same as fig 3, but w HF data 
+
+    if(arg=="-fig5"):               
+      # DC: same as fig 3, but will want to pass in the three MI tissue images 
+
+    if(arg=="-fig6"):               
+      # RB: generate detected version of Fig 6
+      # PKH: add in scaling plot 
+
+      # apply TT, LT and loss filters to 
+      #doit(arg1)
   
 
 

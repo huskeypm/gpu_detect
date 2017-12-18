@@ -314,19 +314,21 @@ def SaveFixedWTFilter(WTFilterRoot="./images/filterImgs/WT/",filterTwoSarcSize=2
                       rowMin=20, rowMax=None, colMin=1, colMax=None):
   # opting now to save WT filter and load into the workhorse script instead of generating filter every call
   WTFilter = GenerateWTFilter(WTFilterRoot=WTFilterRoot,filterTwoSarcSize=filterTwoSarcSize)
-  fixedFilter = fixFilter(Filter,pixelCeiling=pixelCeiling,pixelFloor=pixelFloor,
+  fixedFilter = fixFilter(WTFilter,pixelCeiling=pixelCeiling,pixelFloor=pixelFloor,
                           rowMin=rowMin,rowMax=rowMax,colMin=colMin,colMax=colMax)
   # convert to png format
-  savedFilt = fixedWTFilter * 255
+  savedFilt = fixedFilter * 255
   savedFilt = savedFilt.astype('uint8')
   # save filter
   cv2.imwrite("./images/WTFilter.png",savedFilt)
 
-def SaveFixedLongFilter(LongFilterRoot,filterTwoSarcSizeDict,filterTwoSarcSize=25,
-                      pixelCeiling=0.7,pixelFloor=0.4,
-                      rowMin=6, rowMax=13, colMin=0, colMax=-1):
+def SaveFixedLongFilter(LongFilterRoot="./images/filterImgs/Longitudinal/",
+                        filterTwoSarcSizeDict={"SongWKY_long1":16, "Xie_RV_Control_long2":14, "Xie_RV_Control_long1":16, "Guo2013Fig1C_long1":22},
+                        filterTwoSarcLength=25,
+                        pixelCeiling=0.7,pixelFloor=0.4,
+                        rowMin=6, rowMax=13, colMin=0, colMax=-1):
   # opting now to save Long filter and load into the workhorse script instead of generating filter every call
-  Filter = GenerateLongFilter(LongFilterRoot,filterTwoSarcSizeDict,filterTwoSarcSize=filterTwoSarcSize)
+  Filter = GenerateLongFilter(LongFilterRoot,filterTwoSarcSizeDict,filterTwoSarcLength=filterTwoSarcLength)
   fixedFilter = fixFilter(Filter,pixelCeiling=pixelCeiling,pixelFloor=pixelFloor,
                           rowMin=rowMin,rowMax=rowMax,colMin=colMin,colMax=colMax)
   # convert to png format
@@ -335,15 +337,16 @@ def SaveFixedLongFilter(LongFilterRoot,filterTwoSarcSizeDict,filterTwoSarcSize=2
   # save filter
   cv2.imwrite("./images/LongFilter.png",savedFilt)
 
-def SaveFixedLossFilter(LossFilterName,LossScale):
-  LossFilter = GenerateLossFilter(LossFilterName, LossScale)
+def SaveFixedLossFilter(LossFilterName="./images/filterImgs/Loss/TT_Idealized_Loss_TruthFilter.png",
+                        LossScale=float(25)/float(28)):
+  LossFilter = GenerateLossFilter(LossFilterName, LossScale) * 255
   cv2.imwrite("./images/LossFilter.png",LossFilter)
 
-def SaveFixedPunishmentFilter(LongitudinalFilterName,
+def SaveFixedPunishmentFilter(LongitudinalFilterName="./images/LongFilter.png",
                               rowMin=2,rowMax=-1,colMin=6,colMax=13):
   punishFilter = GenerateWTPunishmentFilter(LongitudinalFilterName,
                                             rowMin=2,rowMax=-1,colMin=6,colMax=13)
-  cv2.imwrite("./images/WTPunishmentFilter.png")
+  cv2.imwrite("./images/WTPunishmentFilter.png",punishFilter)
 
 def PadWithZeros(img, padding = 15):
   '''
@@ -378,3 +381,50 @@ def PasteFilter(img, filt):
   filtDim = np.shape(filt)
   myImg[:filtDim[0],:filtDim[1]] = filt
   return myImg
+
+#
+# Message printed when program run without arguments 
+#
+def helpmsg():
+  scriptName= sys.argv[0]
+  msg="""
+Purpose: 
+ 
+Usage:
+"""
+  msg+="  %s -validation" % (scriptName)
+  msg+="""
+  
+ 
+Notes:
+
+"""
+  return msg
+
+#
+# MAIN routine executed when launching this script from command line 
+#
+if __name__ == "__main__":
+  import sys
+  msg = helpmsg()
+  remap = "none"
+
+  if len(sys.argv) < 2:
+      raise RuntimeError(msg)
+
+  # Loops over each argument in the command line 
+  for i,arg in enumerate(sys.argv):
+    if(arg=="-genWT"):
+      SaveFixedWTFilter()
+    elif(arg=="-genLong"):
+      SaveFixedLongFilter()
+    elif(arg=="-genLoss"):
+      SaveFixedLossFilter()
+    elif(arg=="-genPunishment"):
+      SaveFixedPunishmentFilter()
+    elif(i>0):
+      raise RuntimeError("Arguments not understood")
+
+
+
+

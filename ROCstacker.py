@@ -52,7 +52,7 @@ plotRawFilterResponse = False # MAKE SURE THIS IS OFF FOR LARGE DATA SIZES
 # main function
 def giveStackedHits(imgName, WTthreshold, Longitudinalthreshold, gamma,
                      WTFilterName="./images/WTFilter.png",
-                     LongitudinalFilterName,="./images/LongFilter.png"
+                     LongitudinalFilterName="./images/LongFilter.png",
                      LossFilterName="./images/LossFilter.png",
                      WTPunishFilterName="./images/WTPunishmentFilter.png",
                      returnMasks=False):
@@ -78,9 +78,9 @@ def giveStackedHits(imgName, WTthreshold, Longitudinalthreshold, gamma,
 
   # Read in Filters
   maxResponseDict = {}
-  WTfilter = util.ReadImg(WTFilterName)/255
-  Longitudinalfilter = util.ReadImg(LongitudinalFiltername)/255
-  Lossfilter = util.ReadImg(LossFilterName)/255
+  WTfilter = util.ReadImg(WTFilterName).astype('float')/float(255)
+  Longitudinalfilter = util.ReadImg(LongitudinalFilterName).astype('float')/float(255)
+  Lossfilter = util.ReadImg(LossFilterName).astype('float')/float(255)
   WTPunishFilter = util.ReadImg(WTPunishFilterName)/255
 
   filterDict = {'WT':WTfilter, 'Longitudinal':Longitudinalfilter, 'Loss':Lossfilter, 'WTPunishFilter':WTPunishFilter}

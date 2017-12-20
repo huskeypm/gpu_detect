@@ -20,6 +20,9 @@ commfigs.bash - generates images for paper
 python util.py -genWT -genLong -genLoss -genPunishment
 python validation.py -validation
 
+# generate paper figs
+python validation.py -allFigs 
+
 # normal test
 ## - generate images 
 python util.py -genWT -genLong -genLoss -genPunishment

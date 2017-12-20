@@ -1,3 +1,7 @@
+## Todo
+- results are 'nan' for validation.py 
+-- stackedHITs messed up? 
+
 # gpu_detect
 
 Requires tensorflow cuda (python), which is currently installed on kafka and hesse.
@@ -12,6 +16,12 @@ tensorflow_mf.py - matched filtering via tensorflow
 
 commfigs.bash - generates images for paper 
 
-# normal test
-python validation.py images/ttFilterName.png images/ttFilterName.png images/testImage.png 1. 2.
+# validation test
+python util.py -genWT -genLong -genLoss -genPunishment
+python validation.py -validation
 
+# normal test
+## - generate images 
+python util.py -genWT -genLong -genLoss -genPunishment
+## - execute images 
+python validation.py -tag "MI" -test ./images/WTFilter.png ./images/LongFilter.png ./images/MI_D_73_annotation.png 0.06 0.38 3.

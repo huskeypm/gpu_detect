@@ -55,6 +55,8 @@ def DetectFilter(dataSet,mf,threshold,iters,display=False,sigma_n=1.,
                                                                 threshold,iters,display=display,
                                                                 doKMeans=False,
                                                                 filterType="TT",returnAngles=returnAngles)
+    #print result.stackedHits.WT
+    #quit() 
   
   return result
 

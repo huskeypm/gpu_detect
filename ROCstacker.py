@@ -63,7 +63,8 @@ def giveStackedHits(imgName, WTthreshold, Longitudinalthreshold, gamma,
   for imgName,imgTwoSarcSize in imgTwoSarcSizesDict.iteritems():
       if imgName not in filterDataImages:
           scale = 1. # we're resizing prior to this call
-          # additionally tis image is already renormed using util so this is just reading in the image
+          # additionally tis image is already renormed using util so 
+	  # this is just reading in the image
           img = ReadResizeNormImg(imgName, scale)
           combined = img
           # routine to pad the image with a border of zeros.
@@ -103,11 +104,15 @@ def giveStackedHits(imgName, WTthreshold, Longitudinalthreshold, gamma,
   display = False
   thresholdDict = {'WT':WTthreshold, 'Longitudinal':Longitudinalthreshold, 'Loss':0.08}
   Result = bD.TestFilters(img,None,None,filterType="TT",
-                              display=display,iters=rotDegrees,filterDict=filterDict,thresholdDict=thresholdDict,doCLAHE=False,
+                              display=display,iters=rotDegrees,filterDict=filterDict,
+			      thresholdDict=thresholdDict,doCLAHE=False,
                               colorHitsOutName=imgName,
                               label=imgName,
                               saveColoredFig=False,
                               gamma=gamma)
+  #print Result.coloredImg
+  #cv2.imwrite("test.png", Result.coloredImg)
+  #quit()
   if not returnMasks:
     return Result
   else:

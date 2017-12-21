@@ -188,9 +188,28 @@ import sys
 #
 ##################################
 
-#
-# ROUTINE  
-#
+##
+## Defines dataset for silica 
+##
+import optimizer
+def Silica():
+  root = "pnpimages/"
+  dataSet = optimizer.DataSet(
+    root = root,
+    filter1TestName = root + 'clahe_Best.jpg',
+    filter1TestRegion = [340,440,400,500],
+    filter1PositiveTest = root+"fusedMarked.png",
+    filter2PositiveTest = root+"bulkMarked.png",
+    filter2TestName = root + 'clahe_Best.jpg',
+    filter2TestRegion = [250,350,50,150],
+    filter1Name = root+'fusedCellTEM.png',
+    filter1Thresh=1000.,
+    filter2Name = root+'bulkCellTEM.png',
+    filter2Thresh=1050.
+    )  
+
+  return dataSet
+
 
 #
 # MAIN routine executed when launching this script from command line 
@@ -214,7 +233,7 @@ if __name__ == "__main__":
       GenFig3()
       quit()
     if(arg=="-rocfigs"):     
-      dataSet = optimizer.Silica()
+      dataSet = Silica()
       #optimizer.GenFigROC(loadOnly=True)
       optimizer.GenFigROC(dataSet,loadOnly=False) 
       quit()

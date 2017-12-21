@@ -20,98 +20,6 @@ root = "pnpimages/"
 sigma_n = 22. # based on Ryan's data 
 fusedThresh = 1000.
 bulkThresh = 1050. 
-def TestParamsNEW(fusedThresh=1000.,bulkThresh=1050.,scale=1.2,sigma_n=1.,display=False,useFilterInv=False):
-    ### Fused pore
-    testCase = empty()
-    testCase.name = root + 'clahe_Best.jpg'
-    testCase.subsection=[340,440,400,500]
-    #daImg = cv2.imread(testCase.name)
-    #cut = daImg[testCase.subsection[0]:testCase.subsection[1],testCase.subsection[2]:testCase.subsection[3]]
-    #imshow(cut)
-
-    testCase.filter1 = root+'fusedCellTEM.png' 
-    testCase.threshFilter1 = fusedThresh
-    testCase.filter2 = root+'bulkCellTEM.png' 
-    testCase.threshFilter2 = bulkThresh
-    testCase.sigma_n= sigma_n, # focus on best angle for fused pore data 
-    testCase.iters = [30], # focus on best angle for fused pore data 
-    testCase.label = None
-
-    fusedPore_fusedTEM, bulkPore_fusedTEM = bD.TestFilters(
-      testCase.name, # testData
-      testCase.filter1,         # fusedfilter Name
-      testCase.filter2,       # bulkFilter name
-      subsection=testCase.subsection, #[200,400,200,500],   # subsection of testData
-      threshFilter1 = testCase.filter1,  
-      threshFilter2 = testCase.filter2,
-      label = testCase.label,
-      sigma_n = testCase.sigma_n,
-      iters = testCase.iters,
-      useFilterInv=useFilterInv,
-      display=display
-    )        
-
-    ### Bulk pore
-    testCase = empty()
-    testCase.name = root+'clahe_Best.jpg'
-    testCase.subsection=[250,350,50,150]
-    #daImg = cv2.imread(testCase.name)
-    #cut = daImg[testCase.subsection[0]:testCase.subsection[1],testCase.subsection[2]:testCase.subsection[3]]
-    #imshow(cut)
-    testCase.filter1 = root+'fusedCellTEM.png' 
-    testCase.threshFilter1 = fusedThresh
-    testCase.filter2 = root+'bulkCellTEM.png' 
-    testCase.threshFilter2 = bulkThresh
-    testCase.sigma_n= sigma_n, 
-    testCase.iters = [5], # focus on best angle for bulk pore data 
-    testCase.label = "filters_on_pristine.png"
-
-    fusedPore_bulkTEM, bulkPore_bulkTEM = bD.TestFilters(
-      testCase.name,
-      testCase.filter1,                # fusedfilter Name
-      testCase.filter2,              # bulkFilter name
-      subsection=testCase.subsection, #[200,400,200,500],   # subsection of testData
-      threshFilter1 = testCase.filter1,  
-      threshFilter2 = testCase.filter2,
-      label = testCase.label,
-      sigma_n = testCase.sigma_n,
-      iters = testCase.iters,
-      useFilterInv=useFilterInv,
-      display=display
-     )        
-    
-    ## This approach assess the number of hits of filter A overlapping with regions marked as 'A' in the test data
-    ## negatives refer to hits of filter B on marked 'A' regions
-    #if 0:   
-    #  fusedPS, bulkNS= Score(fusedPore_fusedTEM.stackedHits,bulkPore_fusedTEM.stackedHits,
-    #                       "testimages/fusedMarked.png", 
-    #                       mode="nohits",
-    #                       display=display)
-#
-    #  bulkPS, fusedNS = Score(bulkPore_bulkTEM.stackedHits,fusedPore_bulkTEM.stackedHits,
-    #                        "testimages/bulkMarked.png",
-    #                        mode="nohits",
-    #                        display=display)   
-
-    ## This approach assess filter A hits in marked regions of A, penalizes filter A hits in marked regions 
-    ## of test set B 
-    if 1: 
-      fusedPS, fusedNS= Score(fusedPore_fusedTEM.stackedHits,fusedPore_bulkTEM.stackedHits,
-                           positiveTest=root+"fusedMarked.png", 
-                           #negativeTest="testimages/bulkMarked.png", 
-                           mode="nohits",
-                           display=display)
-
-      bulkPS, bulkNS = Score(bulkPore_bulkTEM.stackedHits,bulkPore_fusedTEM.stackedHits,
-                            positiveTest=root+"bulkMarked.png",
-                            #negativeTest="testimages/fusedMarked.png",
-                            mode="nohits",
-                            display=display)   
-    
-    ## 
-    print fusedThresh,bulkThresh,fusedPS,bulkNS,bulkPS,fusedNS
-    return fusedPS,bulkNS,bulkPS,fusedNS
-
 
 #
 
@@ -166,88 +74,107 @@ def Score(positiveHits,negativeHits,
 
     return positiveScore, negativeScore
 
-def TestParams(fusedThresh=1000.,bulkThresh=1050.,scale=1.2,
-    sigma_n=1.,display=False,useFilterInv=False):
+def TestParams(
+    testDataName = root + 'clahe_Best.jpg',
+    filter1TestRegion = [340,440,400,500],
+    filter2TestRegion = [250,350,50,150],
+    filter1Name = root+'fusedCellTEM.png',
+    filter1Thresh=1000.,
+    filter2Name = root+'bulkCellTEM.png',
+    filter2Thresh=1050.,
+    scale=1.2,
+    sigma_n=1.,
+    display=False,useFilterInv=False):
+
     ### Fused pore
     testCase = empty()
-    testCase.name = root + 'clahe_Best.jpg'
-    testCase.subsection=[340,440,400,500]
+    testCase.name = testDataName 
+    testCase.subsection=filter1TestRegion   
     #daImg = cv2.imread(testCase.name)
     #cut = daImg[testCase.subsection[0]:testCase.subsection[1],testCase.subsection[2]:testCase.subsection[3]]
     #imshow(cut)
 
+    testCase.filter1 = filter1Name
+    testCase.threshFilter1 = filter1Thresh
+    testCase.filter2 = filter2Name
+    testCase.threshFilter2 = filter2Thresh
+    testCase.sigma_n= sigma_n, # focus on best angle for fused pore data
+    testCase.iters = [30], # focus on best angle for fused pore data
+    testCase.label = None
+
+
+    ## Test both filters on filter1 test data 
     optimalAngleFused = 30
-    fusedPore_fusedTEM, bulkPore_fusedTEM = bD.TestFilters(
+    filter1_filter1Test, filter2_filter1Test = bD.TestFilters(
       testCase.name, # testData
-      root+'fusedCellTEM.png',         # fusedfilter Name
-      root+'bulkCellTEM.png',        # bulkFilter name
+      testCase.filter1,                # fusedfilter Name
+      testCase.filter2,              # bulkFilter name
       subsection=testCase.subsection, #[200,400,200,500],   # subsection of testData
-      fusedThresh = fusedThresh,#.25,
-      bulkThresh = bulkThresh, #.5,
-      #label = "opt.png",
+      fusedThresh = testCase.threshFilter1,
+      bulkThresh = testCase.threshFilter2,
       sigma_n = sigma_n,
       #iters = [optimalAngleFused],
       useFilterInv=useFilterInv,
       scale=scale,
-      colorHitsOutName="fusedMarked_%f_%f.png"%(bulkThresh,fusedThresh),
+      colorHitsOutName="filter1Marked_%f_%f.png"%(filter2Thresh,filter1Thresh),
       display=display
     )        
 
     ### Bulk pore
-    testCase = empty()
-    testCase.name = root+'clahe_Best.jpg'
-    testCase.subsection=[250,350,50,150]
+    #testCase = empty()
+    #testCase.name = root+'clahe_Best.jpg'
+    testCase.subsection=filter2TestRegion
     #daImg = cv2.imread(testCase.name)
     #cut = daImg[testCase.subsection[0]:testCase.subsection[1],testCase.subsection[2]:testCase.subsection[3]]
     #imshow(cut)
 
+    ## Test both filters on filter2 test data 
     optimalAngleBulk = 5.
-    fusedPore_bulkTEM, bulkPore_bulkTEM = bD.TestFilters(
-      testCase.name,
-      root+'fusedCellTEM.png',         # fusedfilter Name
-      root+'bulkCellTEM.png',        # bulkFilter name
+    filter1_filter2Test, filter2_filter2Test = bD.TestFilters(
+      testCase.name, # testData
+      testCase.filter1,                # fusedfilter Name
+      testCase.filter2,              # bulkFilter name
       subsection=testCase.subsection, #[200,400,200,500],   # subsection of testData
-      fusedThresh = fusedThresh,#80.,
-      bulkThresh = bulkThresh,#130.,
-      label = "filters_on_pristine.png",
-      sigma_n=sigma_n,
-      #iters = [optimalAngleBulk],
+      fusedThresh = testCase.threshFilter1,
+      bulkThresh = testCase.threshFilter2,
+      sigma_n = sigma_n,
+      #iters = [optimalAngleFused],
       useFilterInv=useFilterInv,
       scale=scale,
-      colorHitsOutName="bulkMarked_%f_%f.png"%(bulkThresh,fusedThresh),
+      colorHitsOutName="filter2Marked_%f_%f.png"%(filter2Thresh,filter1Thresh),
       display=display
      )        
     
     # This approach assess the number of hits of filter A overlapping with regions marked as 'A' in the test data
     # negatives refer to hits of filter B on marked 'A' regions
-    if 0:   
-      fusedPS, bulkNS= Score(fusedPore_fusedTEM.stackedHits,bulkPore_fusedTEM.stackedHits,
-                           root+"fusedMarked.png", 
-                           mode="nohits",
-                           display=display)
-
-      bulkPS, fusedNS = Score(bulkPore_bulkTEM.stackedHits,fusedPore_bulkTEM.stackedHits,
-                            root+"bulkMarked.png",
-                            mode="nohits",
-                            display=display)   
+    #if 0:   
+    #  fusedPS, bulkNS= Score(filter1_filter1Test.stackedHits,filter2_filter1Test.stackedHits,
+    #                       root+"fusedMarked.png", 
+    #                       mode="nohits",
+    #                       display=display)
+#
+#      bulkPS, fusedNS = Score(filter2_filter2Test.stackedHits,filter1_filter2Test.stackedHits,
+#                            root+"bulkMarked.png",
+#                            mode="nohits",
+#                            display=display)   
     # This approach assess filter A hits in marked regions of A, penalizes filter A hits in marked regions 
     # of test set B 
     if 1: 
-      fusedPS, fusedNS= Score(fusedPore_fusedTEM.stackedHits,fusedPore_bulkTEM.stackedHits,
-                           positiveTest=root+"fusedMarked.png", 
+      filter1PS, filter1NS= Score(filter1_filter1Test.stackedHits,filter1_filter2Test.stackedHits,
+                           positiveTest=root+"filter1Marked.png", 
                            #negativeTest="testimages/bulkMarked.png", 
                            mode="nohits",
                            display=display)
 
-      bulkPS, bulkNS = Score(bulkPore_bulkTEM.stackedHits,bulkPore_fusedTEM.stackedHits,
-                            positiveTest=root+"bulkMarked.png",
+      filter2PS, filter2NS = Score(filter2_filter2Test.stackedHits,filter2_filter1Test.stackedHits,
+                            positiveTest=root+"filter2Marked.png",
                             #negativeTest="testimages/fusedMarked.png",
                             mode="nohits",
                             display=display)   
     
     ## 
-    print fusedThresh,bulkThresh,fusedPS,bulkNS,bulkPS,fusedNS
-    return fusedPS,bulkNS,bulkPS,fusedNS
+    print filter1Thresh,filter2Thresh,filter1PS,filter2NS,filter2PS,filter1NS
+    return filter1PS,filter2NS,filter2PS,filter1NS
 
 def AnalyzePerformanceData(dfOrig,tag='bulk',normalize=False,roc=True,scale=None,outName=None):
     df = dfOrig
@@ -335,7 +262,7 @@ def Assess(
     for j,bulkThresh in enumerate(bulkThreshes):
       for k,scale      in enumerate(scales):       
         fusedPS,bulkNS,bulkPS,fusedNS = TestParams(
-          fusedThresh=fusedThresh,bulkThresh=bulkThresh,
+          filter1Thresh=fusedThresh,filter2Thresh=bulkThresh,
           sigma_n=sigma_n,
           scale=scale,
           useFilterInv=useFilterInv,
@@ -429,8 +356,9 @@ if __name__ == "__main__":
     # coarse/fine
       #ft = np.concatenate([np.linspace(0.5,0.7,7),np.linspace(0.7,0.95,15)   ])
       #bt = np.concatenate([np.linspace(0.4,0.55,7),np.linspace(0.55,0.65,15)   ])
-      bt = np.linspace(0.05,0.50,1)    
-      ft = np.linspace(0.05,0.30,1)    
+      print "THESE data need to be appended to h5 fiels" 
+      bt = np.linspace(0.05,0.50,3)    
+      ft = np.linspace(0.05,0.30,3)    
       scales = [1.2]  # tried optimizing, but performance seemed to decline quickly far from 1.2 nspace(1.0,1.5,6)  
       Assess(
         fusedThreshes = ft,

@@ -10,8 +10,8 @@ Ryan
 
 PKH 
 -port over/refactor MF code for both silica and myo 
--- optimizer.py (where is this?) 
 -verify that ROC is working 
+-generalize ROC curve generation that is currently defined in fig.py (probably port to optimizer) 
 
 implement pentalty filter stuff 
 modify filter to notch out clutter in tissue 

@@ -17,9 +17,9 @@ class empty():pass
 ##
 root = "pnpimages/"
 #root = "testimages/"
-sigma_n = 22. # based on Ryan's data 
-fusedThresh = 1000.
-bulkThresh = 1050. 
+#sigma_n = 22. # based on Ryan's data 
+#fusedThresh = 1000.
+#bulkThresh = 1050. 
 
 #
 
@@ -118,8 +118,8 @@ def TestParams(
       testCase.filter1,                # fusedfilter Name
       testCase.filter2,              # bulkFilter name
       subsection=testCase.subsection, #[200,400,200,500],   # subsection of testData
-      fusedThresh = testCase.threshFilter1,
-      bulkThresh = testCase.threshFilter2,
+      filter1Thresh = testCase.threshFilter1,
+      filter2Thresh = testCase.threshFilter2,
       sigma_n = sigma_n,
       #iters = [optimalAngleFused],
       useFilterInv=useFilterInv,
@@ -143,8 +143,8 @@ def TestParams(
       testCase.filter1,                # fusedfilter Name
       testCase.filter2,              # bulkFilter name
       subsection=testCase.subsection, #[200,400,200,500],   # subsection of testData
-      fusedThresh = testCase.threshFilter1,
-      bulkThresh = testCase.threshFilter2,
+      filter1Thresh = testCase.threshFilter1,
+      filter2Thresh = testCase.threshFilter2,
       sigma_n = sigma_n,
       #iters = [optimalAngleFused],
       useFilterInv=useFilterInv,
@@ -187,7 +187,7 @@ def TestParams(
 ##
 ## Plots data (as read from pandas dataframe) 
 ##
-def AnalyzePerformanceData(dfOrig,tag='bulk',normalize=False,roc=True,scale=None,outName=None):
+def AnalyzePerformanceData(dfOrig,tag='filter1',label=None,normalize=False,roc=True,scale=None,outName=None):
     df = dfOrig
     if scale!=None:
       df=dfOrig[dfOrig.scale==scale]
@@ -201,7 +201,11 @@ def AnalyzePerformanceData(dfOrig,tag='bulk',normalize=False,roc=True,scale=None
       f,(ax1,ax2) = plt.subplots(1,2)     
     else: 
       f,(ax1) = plt.subplots(1,1)     
-    title = threshID+" threshold"
+    if label==None:
+      title = threshID+" threshold"
+    else: 
+      title = label+" threshold"
+
     if scale!=None:
       title+=" scale %3.1f"%scale 
     ax1.set_title(title)  
@@ -215,8 +219,8 @@ def AnalyzePerformanceData(dfOrig,tag='bulk',normalize=False,roc=True,scale=None
       dfNS=df[tag+'NS']
       dfPS=df[tag+'PS']
 
-    ax1.scatter(df[threshID], dfPS,label=tag+"/positive",c='b')
-    ax1.scatter(df[threshID], dfNS,label=tag+"/negative",c='r')
+    ax1.scatter(df[threshID], dfPS,label=label+"/positive",c='b')
+    ax1.scatter(df[threshID], dfNS,label=label+"/negative",c='r')
     ax1.set_ylabel("Normalized rate") 
     ax1.set_xlabel("threshold") 
     ax1.set_ylim([0,1]) 
@@ -257,8 +261,8 @@ def AnalyzePerformanceData(dfOrig,tag='bulk',normalize=False,roc=True,scale=None
 ## 
 import pandas as pd
 def Assess(
-  fusedThreshes = np.linspace(800,1100,10), 
-  bulkThreshes = np.linspace(800,1100,10), 
+  filter1Threshes = np.linspace(800,1100,10), 
+  filter2Threshes = np.linspace(800,1100,10), 
   scales=[1.2],  
   hdf5Name = "optimizer.h5",
   sigma_n = 1.,
@@ -267,28 +271,28 @@ def Assess(
   ):
   
   # create blank dataframe
-  df = pd.DataFrame(columns = ['fusedThresh','bulkThresh','fusedPS','bulkNS','bulkPS','fusedNS'])
+  df = pd.DataFrame(columns = ['filter1Thresh','filter2Thresh','filter1PS','filter2NS','filter2PS','filter1NS'])
   
   # iterate of thresholds
-  for i,fusedThresh in enumerate(fusedThreshes):
-    for j,bulkThresh in enumerate(bulkThreshes):
+  for i,filter1Thresh in enumerate(filter1Threshes):
+    for j,filter2Thresh in enumerate(filter2Threshes):
       for k,scale      in enumerate(scales):       
-        fusedPS,bulkNS,bulkPS,fusedNS = TestParams(
-          filter1Thresh=fusedThresh,
-          filter2Thresh=bulkThresh,
+        filter1PS,filter2NS,filter2PS,filter1NS = TestParams(
+          filter1Thresh=filter1Thresh,
+          filter2Thresh=filter2Thresh,
           sigma_n=sigma_n,
           scale=scale,
           useFilterInv=useFilterInv,
           display=display)
 
         raw_data =  {\
-         'fusedThresh': fusedThresh,
-         'bulkThresh': bulkThresh,
+         'filter1Thresh': filter1Thresh,
+         'filter2Thresh': filter2Thresh,
          'scale': scale,                
-         'fusedPS': fusedPS,
-         'bulkNS': bulkNS,
-         'bulkPS': bulkPS,
-         'fusedNS': fusedNS}
+         'filter1PS': filter1PS,
+         'filter2NS': filter2NS,
+         'filter2PS': filter2PS,
+         'filter1NS': filter1NS}
         #print raw_data
         dfi = pd.DataFrame(raw_data,index=[0])#columns = ['fusedThresh','bulkThresh','fusedPS','bulkNS','bulkPS','fusedNS'])
         df=df.append(dfi)
@@ -306,6 +310,8 @@ def Assess(
 def GenFigROC(
   loadOnly=False,
   useFilterInv=True,
+  filter1Label = "fused",
+  filter2Label = "bulk",
   bt = np.linspace(0.05,0.50,10),
   ft = np.linspace(0.05,0.30,10),
   scales = [1.2],# tried optimizing, but performance seemed to decline quickly far from 1.2 nspace(1.0,1.5,6)  
@@ -319,8 +325,8 @@ def GenFigROC(
     print "Reading ", hdf5Name 
   else:
     Assess(
-        fusedThreshes = ft,
-        bulkThreshes = bt,
+        filter1Threshes = ft,
+        filter2Threshes = bt,
         scales = scales,
         sigma_n = 1.,
         useFilterInv=True,
@@ -334,11 +340,12 @@ def GenFigROC(
   ## 
   import pandas as pd
   df = pd.read_hdf(hdf5Name,'table') 
-
-  AnalyzePerformanceData(df,tag='bulk',
-    normalize=True, roc=True,outName="bulkROC.png")
-  AnalyzePerformanceData(df,tag='fused',
-    normalize=True,roc=True,outName="fusedROC.png")
+  tag = 'filter1'
+  AnalyzePerformanceData(df,tag=tag,label=filter1Label,    
+    normalize=True, roc=True,outName=tag+ "ROC.png")
+  tag = 'filter2'
+  AnalyzePerformanceData(df,tag=tag,   label=filter2Label, 
+    normalize=True,roc=True,outName=tag+"ROC.png")
 
 
 
@@ -400,8 +407,8 @@ if __name__ == "__main__":
       ft = np.linspace(0.05,0.30,10) 
       scales = [1.2]  # tried optimizing, but performance seemed to decline quickly far from 1.2 nspace(1.0,1.5,6)  
       Assess(
-        fusedThreshes = ft,
-        bulkThreshes = bt,
+        filter1Threshes = ft,
+        filter2Threshes = bt,
         scales = scales,
         sigma_n = 1.,
         useFilterInv=True,   

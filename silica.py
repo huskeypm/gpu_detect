@@ -15,7 +15,7 @@ sigma_n = 22. # based on Ryan's data
 fusedThresh = 1000.
 bulkThresh = 1050. 
 
-import optimizer as opt
+#import optimizer as opt
 
 def TestParams(fusedThresh=1000.,bulkThresh=1050.,sigma_n=1.,display=False,useFilterInv=False):
     ### Fused pore
@@ -30,6 +30,9 @@ def TestParams(fusedThresh=1000.,bulkThresh=1050.,sigma_n=1.,display=False,useFi
     testCase.threshFilter1 = fusedThresh
     testCase.filter2 = root+'bulkCellTEM.png' 
     testCase.threshFilter2 = bulkThresh
+    testCase.sigma_n= sigma_n, # focus on best angle for fused pore data 
+    testCase.iters = [30], # focus on best angle for fused pore data 
+    testCase.label = None
 
     fusedPore_fusedTEM, bulkPore_fusedTEM = bD.TestFilters(
       testCase.name, # testData
@@ -38,9 +41,9 @@ def TestParams(fusedThresh=1000.,bulkThresh=1050.,sigma_n=1.,display=False,useFi
       subsection=testCase.subsection, #[200,400,200,500],   # subsection of testData
       threshFilter1 = testCase.filter1,  
       threshFilter2 = testCase.filter2,
-      #label = "opt.png",
-      sigma_n = sigma_n,
-      iters = [30], # focus on best angle for fused pore data 
+      label = testCase.label,
+      sigma_n = testCase.sigma_n,
+      iters = testCase.iters,
       useFilterInv=useFilterInv,
       display=display
     )        
@@ -52,6 +55,13 @@ def TestParams(fusedThresh=1000.,bulkThresh=1050.,sigma_n=1.,display=False,useFi
     #daImg = cv2.imread(testCase.name)
     #cut = daImg[testCase.subsection[0]:testCase.subsection[1],testCase.subsection[2]:testCase.subsection[3]]
     #imshow(cut)
+    testCase.filter1 = root+'fusedCellTEM.png' 
+    testCase.threshFilter1 = fusedThresh
+    testCase.filter2 = root+'bulkCellTEM.png' 
+    testCase.threshFilter2 = bulkThresh
+    testCase.sigma_n= sigma_n, 
+    testCase.iters = [5], # focus on best angle for bulk pore data 
+    testCase.label = "filters_on_pristine.png"
 
     fusedPore_bulkTEM, bulkPore_bulkTEM = bD.TestFilters(
       testCase.name,
@@ -60,9 +70,9 @@ def TestParams(fusedThresh=1000.,bulkThresh=1050.,sigma_n=1.,display=False,useFi
       subsection=testCase.subsection, #[200,400,200,500],   # subsection of testData
       threshFilter1 = testCase.filter1,  
       threshFilter2 = testCase.filter2,
-      label = "filters_on_pristine.png",
-      sigma_n=sigma_n,
-      iters = [5], # focus on best angle for bulk data 
+      label = testCase.label,
+      sigma_n = testCase.sigma_n,
+      iters = testCase.iters,
       useFilterInv=useFilterInv,
       display=display
      )        

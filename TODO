@@ -1,6 +1,5 @@
 Dylan 
-- need annotated images for WT and CHF as well 
-
+- DONE need annotated images for WT and CHF as well 
 - add in unit test (e.g. if assert(content-truth>abs,"somthing changed)" 
 
 
@@ -9,9 +8,12 @@ Ryan
 -test by running unit tests 
 
 PKH 
--port over/refactor MF code for both silica and myo 
--verify that ROC is working 
+- IN PROGRESS port over/refactor MF code for both silica and myo 
+- DONE verify that ROC is working 
 -generalize ROC curve generation that is currently defined in fig.py (probably port to optimizer) 
+-- Extract silica-specific terms in TestParams()
+-- Merge roc generation from figs into optimizer
+-- generalize how annotated data is passed in (subregion vs channel)
 
-implement pentalty filter stuff 
-modify filter to notch out clutter in tissue 
+- implement pentalty filter stuff 
+- modify filter to notch out clutter in tissue 

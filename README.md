@@ -28,3 +28,6 @@ python validation.py -allFigs
 python util.py -genWT -genLong -genLoss -genPunishment
 ## - execute images 
 python validation.py -tag "MI" -test ./images/WTFilter.png ./images/LongFilter.png ./images/MI_D_73_annotation.png 0.06 0.38 3.
+
+## Silica paper 
+python silicaFigs.py -rocfigs 

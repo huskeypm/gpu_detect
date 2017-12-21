@@ -77,6 +77,8 @@ def Score(positiveHits,negativeHits,
 def TestParams(
     testDataName = root + 'clahe_Best.jpg',
     filter1TestRegion = [340,440,400,500],
+    filter1PositiveTest = root+"fusedMarked.png",
+    filter2PositiveTest = root+"bulkMarked.png",
     filter2TestRegion = [250,350,50,150],
     filter1Name = root+'fusedCellTEM.png',
     filter1Thresh=1000.,
@@ -158,16 +160,16 @@ def TestParams(
 #                            mode="nohits",
 #                            display=display)   
     # This approach assess filter A hits in marked regions of A, penalizes filter A hits in marked regions 
-    # of test set B 
+    # of test set B  
     if 1: 
       filter1PS, filter1NS= Score(filter1_filter1Test.stackedHits,filter1_filter2Test.stackedHits,
-                           positiveTest=root+"filter1Marked.png", 
+                           positiveTest=filter1PositiveTest,
                            #negativeTest="testimages/bulkMarked.png", 
                            mode="nohits",
                            display=display)
 
       filter2PS, filter2NS = Score(filter2_filter2Test.stackedHits,filter2_filter1Test.stackedHits,
-                            positiveTest=root+"filter2Marked.png",
+                            positiveTest=filter2PositiveTest,
                             #negativeTest="testimages/fusedMarked.png",
                             mode="nohits",
                             display=display)   

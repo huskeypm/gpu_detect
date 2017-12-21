@@ -121,12 +121,13 @@ def colorHits(rawOrig,red=None,green=None,outName=None,label="",plotMe=True):
     plt.subplot(1,2,2)
     plt.title("Marked") 
     plt.imshow(Img)  
-    plt.close()
+
   if outName!=None:
     plt.tight_layout()
     plt.gcf().savefig(outName,dpi=300)
     plt.close()
   else:
+    plt.close()
     return Img  
 
 def colorHitsTT(rawOrig,LongStacked,WTStacked,iters,outName=None,label='',plotMe=True):
@@ -184,8 +185,8 @@ def colorHitsTT(rawOrig,LongStacked,WTStacked,iters,outName=None,label='',plotMe
 
 # main engine 
 
-def TestFilters(testDataName,fusedFilterName,bulkFilterName,
-                fusedThresh=60,bulkThresh=50,
+def TestFilters(testDataName,filter1FilterName,filter2FilterName,
+                filter1Thresh=60,filter2Thresh=50,
                 subsection=None,
                 display=False,
                 colorHitsOutName=None,
@@ -209,20 +210,20 @@ def TestFilters(testDataName,fusedFilterName,bulkFilterName,
         testData = testData[subsection[0]:subsection[1],subsection[2]:subsection[3]]
 
       # load fused filter
-      fusedFilter = cv2.imread(fusedFilterName)
-      fusedFilter = cv2.cvtColor(fusedFilter, cv2.COLOR_BGR2GRAY)
+      filter1Filter = cv2.imread(filter1FilterName)
+      filter1Filter = cv2.cvtColor(filter1Filter, cv2.COLOR_BGR2GRAY)
 
       # load bulk filter 
-      bulkFilter = cv2.imread(bulkFilterName)
-      bulkFilter = cv2.cvtColor(bulkFilter, cv2.COLOR_BGR2GRAY)
+      filter2Filter = cv2.imread(filter2FilterName)
+      filter2Filter = cv2.cvtColor(filter2Filter, cv2.COLOR_BGR2GRAY)
 
 
-      fusedPoreResult = DetectFilter(testData,fusedFilter,fusedThresh,
+      filter1PoreResult = DetectFilter(testData,filter1Filter,filter1Thresh,
                                      iters,display=display,sigma_n=sigma_n,
                                      filterMode="fused",label=label,
                                      scale=scale,
                                      useFilterInv=useFilterInv)
-      bulkPoreResult = DetectFilter( testData,bulkFilter,bulkThresh,
+      filter2PoreResult = DetectFilter( testData,filter2Filter,filter2Thresh,
                                      iters,display=display,sigma_n=sigma_n,
                                      filterMode="bulk",label=label,
                                      scale=scale,
@@ -230,12 +231,12 @@ def TestFilters(testDataName,fusedFilterName,bulkFilterName,
 
       if colorHitsOutName!=None: 
         colorHits(testData,
-                red=bulkPoreResult.stackedHits,
-                green=fusedPoreResult.stackedHits,
+                red=filter2PoreResult.stackedHits,
+                green=filter1PoreResult.stackedHits,
                 label=label,
                 outName=colorHitsOutName)                       
 
-      return fusedPoreResult, bulkPoreResult 
+      return filter1PoreResult, filter2PoreResult 
 
     elif filterType == "TT":
       # utilizing runner functions to produce stacked images

@@ -354,26 +354,6 @@ def GenFigROC(
 
 
   
-##
-## Defines dataset for silica 
-##
-def Silica():
-  root = "pnpimages/"
-  dataSet = DataSet(
-    root = "pnpimages/",
-    filter1TestName = root + 'clahe_Best.jpg',
-    filter1TestRegion = [340,440,400,500],
-    filter1PositiveTest = root+"fusedMarked.png",
-    filter2PositiveTest = root+"bulkMarked.png",
-    filter2TestName = root + 'clahe_Best.jpg',
-    filter2TestRegion = [250,350,50,150],
-    filter1Name = root+'fusedCellTEM.png',
-    filter1Thresh=1000.,
-    filter2Name = root+'bulkCellTEM.png',
-    filter2Thresh=1050.
-    )  
-
-  return dataSet
   
 
 
@@ -424,7 +404,7 @@ if __name__ == "__main__":
   # Loops over each argument in the command line 
   for i,arg in enumerate(sys.argv):
     if(arg=="-optimize3"):
-      dataSet = Silica()
+      dataSet = DataSet()
     # coarse/fine
       #ft = np.concatenate([np.linspace(0.5,0.7,7),np.linspace(0.7,0.95,15)   ])
       #bt = np.concatenate([np.linspace(0.4,0.55,7),np.linspace(0.55,0.65,15)   ])
@@ -440,7 +420,7 @@ if __name__ == "__main__":
       )
       quit()
     if(arg=="-optimizeLight"):
-      dataSet = Silica()
+      dataSet = DataSet()
       GenFigROC(
         dataSet,
         bt = np.linspace(0.05,0.50,3),   

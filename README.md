@@ -1,6 +1,5 @@
 ## Todo
-- results are 'nan' for validation.py 
--- stackedHITs messed up? 
+see TODO for todo items 
 
 # gpu_detect
 
@@ -17,17 +16,38 @@ tensorflow_mf.py - matched filtering via tensorflow
 commfigs.bash - generates images for paper 
 
 # validation test
+<code>
 python util.py -genWT -genLong -genLoss -genPunishment
 python validation.py -validation
+</code>
 
 # generate paper figs
+<code>
 python validation.py -allFigs 
+</code>
 
 # normal test
 ## - generate images 
+<code>
 python util.py -genWT -genLong -genLoss -genPunishment
+</code>
 ## - execute images 
+<code>
 python validation.py -tag "MI" -test ./images/WTFilter.png ./images/LongFilter.png ./images/MI_D_73_annotation.png 0.06 0.38 3.
+</code>
 
-## Silica paper 
+### PNP project
+<code>
 python silicaFigs.py -rocfigs 
+</code>
+
+To generate roc data:
+<code>
+python figs.py -rocfigs # generate roc figures (after running optimizer.py)
+python optimer.py -optimize3
+python figs.py -paperfigs # generate figures for paper
+-- May be broken, but see sparkdetection repo for working version 
+</code>
+
+### Other notes
+optimizer.py was copied from spark detection repo, which was design for silica films 

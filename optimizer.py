@@ -97,13 +97,13 @@ def TestParamsNEW(fusedThresh=1000.,bulkThresh=1050.,scale=1.2,sigma_n=1.,displa
     ## of test set B 
     if 1: 
       fusedPS, fusedNS= Score(fusedPore_fusedTEM.stackedHits,fusedPore_bulkTEM.stackedHits,
-                           positiveTest="testimages/fusedMarked.png", 
+                           positiveTest=root+"fusedMarked.png", 
                            #negativeTest="testimages/bulkMarked.png", 
                            mode="nohits",
                            display=display)
 
       bulkPS, bulkNS = Score(bulkPore_bulkTEM.stackedHits,bulkPore_fusedTEM.stackedHits,
-                            positiveTest="testimages/bulkMarked.png",
+                            positiveTest=root+"bulkMarked.png",
                             #negativeTest="testimages/fusedMarked.png",
                             mode="nohits",
                             display=display)   
@@ -222,25 +222,25 @@ def TestParams(fusedThresh=1000.,bulkThresh=1050.,scale=1.2,
     # negatives refer to hits of filter B on marked 'A' regions
     if 0:   
       fusedPS, bulkNS= Score(fusedPore_fusedTEM.stackedHits,bulkPore_fusedTEM.stackedHits,
-                           "testimages/fusedMarked.png", 
+                           root+"fusedMarked.png", 
                            mode="nohits",
                            display=display)
 
       bulkPS, fusedNS = Score(bulkPore_bulkTEM.stackedHits,fusedPore_bulkTEM.stackedHits,
-                            "testimages/bulkMarked.png",
+                            root+"bulkMarked.png",
                             mode="nohits",
                             display=display)   
     # This approach assess filter A hits in marked regions of A, penalizes filter A hits in marked regions 
     # of test set B 
     if 1: 
       fusedPS, fusedNS= Score(fusedPore_fusedTEM.stackedHits,fusedPore_bulkTEM.stackedHits,
-                           positiveTest="testimages/fusedMarked.png", 
+                           positiveTest=root+"fusedMarked.png", 
                            #negativeTest="testimages/bulkMarked.png", 
                            mode="nohits",
                            display=display)
 
       bulkPS, bulkNS = Score(bulkPore_bulkTEM.stackedHits,bulkPore_fusedTEM.stackedHits,
-                            positiveTest="testimages/bulkMarked.png",
+                            positiveTest=root+"bulkMarked.png",
                             #negativeTest="testimages/fusedMarked.png",
                             mode="nohits",
                             display=display)   
@@ -429,8 +429,8 @@ if __name__ == "__main__":
     # coarse/fine
       #ft = np.concatenate([np.linspace(0.5,0.7,7),np.linspace(0.7,0.95,15)   ])
       #bt = np.concatenate([np.linspace(0.4,0.55,7),np.linspace(0.55,0.65,15)   ])
-      bt = np.linspace(0.05,0.50,3)    
-      ft = np.linspace(0.05,0.30,3)    
+      bt = np.linspace(0.05,0.50,1)    
+      ft = np.linspace(0.05,0.30,1)    
       scales = [1.2]  # tried optimizing, but performance seemed to decline quickly far from 1.2 nspace(1.0,1.5,6)  
       Assess(
         fusedThreshes = ft,

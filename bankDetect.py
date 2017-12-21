@@ -121,9 +121,11 @@ def colorHits(rawOrig,red=None,green=None,outName=None,label="",plotMe=True):
     plt.subplot(1,2,2)
     plt.title("Marked") 
     plt.imshow(Img)  
+    plt.close()
   if outName!=None:
     plt.tight_layout()
     plt.gcf().savefig(outName,dpi=300)
+    plt.close()
   else:
     return Img  
 
@@ -171,9 +173,11 @@ def colorHitsTT(rawOrig,LongStacked,WTStacked,iters,outName=None,label='',plotMe
     plt.subplot(1,2,2)
     plt.title("Marked")
     plt.imshow(Img)
+    plt.close()
   if outName != None:
     plt.tight_layout()
     plt.gcf().savefig(outName,dpi=300)
+    plt.close()
   else:
     return Img
 

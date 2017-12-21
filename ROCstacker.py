@@ -76,6 +76,7 @@ def giveStackedHits(imgName, WTthreshold, Longitudinalthreshold, gamma,
               imshow(combined)
               plt.title(imgName)
               plt.colorbar()
+              plt.close()
 
   # Read in Filters
   maxResponseDict = {}

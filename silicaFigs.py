@@ -1,6 +1,8 @@
 """
 Generates figure for paper 
 """
+import matplotlib
+matplotlib.use('Agg')
 import cv2
 import numpy as np
 import bankDetect as bD

@@ -1,8 +1,9 @@
 """
-
 Purpose of this program is to optimize the threshold parameters 
 to cleanly pick out data features
 """
+import matplotlib
+matplotlib.use('Agg')
 import cv2
 import sys
 import bankDetect as bD

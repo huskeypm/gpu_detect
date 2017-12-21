@@ -74,6 +74,10 @@ def Score(positiveHits,negativeHits,
 
     return positiveScore, negativeScore
 
+## 
+##  Returns true positive/false positive rates for two filters, given respective true positive 
+##  annotated data 
+## 
 def TestParams(
     testDataName = root + 'clahe_Best.jpg',
     filter1TestRegion = [340,440,400,500],
@@ -178,6 +182,9 @@ def TestParams(
     print filter1Thresh,filter2Thresh,filter1PS,filter2NS,filter2PS,filter1NS
     return filter1PS,filter2NS,filter2PS,filter1NS
 
+##
+## Plots data (as read from pandas dataframe) 
+##
 def AnalyzePerformanceData(dfOrig,tag='bulk',normalize=False,roc=True,scale=None,outName=None):
     df = dfOrig
     if scale!=None:
@@ -241,11 +248,12 @@ def AnalyzePerformanceData(dfOrig,tag='bulk',normalize=False,roc=True,scale=None
     if outName:
       plt.gcf().savefig(outName,dpi=300)
 
-import pandas as pd
 
-#
-# Assess output for single rotation 
-# 
+##
+## Iterates over parameter compbinations to find optimal 
+## ROC data 
+## 
+import pandas as pd
 def Assess(
   fusedThreshes = np.linspace(800,1100,10), 
   bulkThreshes = np.linspace(800,1100,10), 
@@ -264,7 +272,8 @@ def Assess(
     for j,bulkThresh in enumerate(bulkThreshes):
       for k,scale      in enumerate(scales):       
         fusedPS,bulkNS,bulkPS,fusedNS = TestParams(
-          filter1Thresh=fusedThresh,filter2Thresh=bulkThresh,
+          filter1Thresh=fusedThresh,
+          filter2Thresh=bulkThresh,
           sigma_n=sigma_n,
           scale=scale,
           useFilterInv=useFilterInv,
@@ -287,6 +296,50 @@ def Assess(
   df.to_hdf(hdf5Name,'table', append=False)
   
   return df,hdf5Name     
+
+
+##
+## Generates ROC data 
+##
+def GenFigROC(
+  loadOnly=False,
+  useFilterInv=True,
+  bt = np.linspace(0.05,0.50,10),
+  ft = np.linspace(0.05,0.30,10),
+  scales = [1.2],# tried optimizing, but performance seemed to decline quickly far from 1.2 nspace(1.0,1.5,6)  
+  hdf5Name = "optimizeinvscale.h5"
+  ):
+
+  ##
+  ## perform trials using parameter ranges 
+  ##
+  if loadOnly:
+    print "Reading ", hdf5Name 
+  else:
+    Assess(
+        fusedThreshes = ft,
+        bulkThreshes = bt,
+        scales = scales,
+        sigma_n = 1.,
+        useFilterInv=True,
+        hdf5Name = hdf5Name,
+        display=False
+      )
+
+
+  ##
+  ## Now analyze and make ROC plots 
+  ## 
+  import pandas as pd
+  df = pd.read_hdf(hdf5Name,'table') 
+
+  AnalyzePerformanceData(df,tag='bulk',
+    normalize=True, roc=True,outName="bulkROC.png")
+  AnalyzePerformanceData(df,tag='fused',
+    normalize=True,roc=True,outName="fusedROC.png")
+
+
+
   
   
 
@@ -355,22 +408,12 @@ if __name__ == "__main__":
       )
       quit()
     if(arg=="-optimizeLight"):
-    # coarse/fine
-      #ft = np.concatenate([np.linspace(0.5,0.7,7),np.linspace(0.7,0.95,15)   ])
-      #bt = np.concatenate([np.linspace(0.4,0.55,7),np.linspace(0.55,0.65,15)   ])
-      print "THESE data need to be appended to h5 fiels" 
-      bt = np.linspace(0.05,0.50,3)    
-      ft = np.linspace(0.05,0.30,3)    
-      scales = [1.2]  # tried optimizing, but performance seemed to decline quickly far from 1.2 nspace(1.0,1.5,6)  
-      Assess(
-        fusedThreshes = ft,
-        bulkThreshes = bt,
-        scales = scales,
-        sigma_n = 1.,
+      GenFigROC(
+        bt = np.linspace(0.05,0.50,3),   
+        ft = np.linspace(0.05,0.30,3),   
+        scales = [1.2],
         useFilterInv=True,   
-        hdf5Name = "optimizeinvscale.h5",
-        display=False
-      )
+      ) 
       quit()
   
 

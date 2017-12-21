@@ -49,6 +49,7 @@ def Score(positiveHits,negativeHits,
       plt.subplot(1,3,3)
       composite = 2.*truthMarked + positiveMasked
       plt.imshow(composite)
+      plt.close()
     #plt.imsave("Test.png",composite)
     positiveScoreImg = truthMarked*positiveMasked
     positiveScore = np.sum(positiveScoreImg)/np.sum(truthMarked)
@@ -64,6 +65,7 @@ def Score(positiveHits,negativeHits,
       plt.subplot(1,3,3)
       composite = 2.*truthMarked + negativeMasked
       plt.imshow(composite)
+      plt.close()
     negativeScoreImg = truthMarked*negativeMasked
 
     if mode=="default": 

@@ -2,6 +2,7 @@
 
 Purpose of this program is to optimize the threshold parameters 
 to cleanly pick out data features
+
 """
 import cv2
 import sys
@@ -9,25 +10,48 @@ import bankDetect as bD
 import numpy as np
 import matplotlib.pylab as plt
 
-# fused Pore 
 class empty():pass
 
 ##
-## PNP specific data 
-##
+## dataset for param optimziation 
+## This class is intended to contain all the necessary information to optmize detection parameters. 
+## They will generally be specific to each type of data set. The definition below defaults to 
+## parameters used for a silica imaging project, but they should be updated as appropriate for new
+## data sets 
+## 
 root = "pnpimages/"
-#root = "testimages/"
-#sigma_n = 22. # based on Ryan's data 
-#fusedThresh = 1000.
-#bulkThresh = 1050. 
+class DataSet:
+  def __init__(self, 
+    root = None,
+    filter1TestName = root + 'clahe_Best.jpg',
+    filter1TestRegion = [340,440,400,500],
+    filter1PositiveTest = root+"fusedMarked.png",
+    filter2PositiveTest = root+"bulkMarked.png",
+    filter2TestName = root + 'clahe_Best.jpg',
+    filter2TestRegion = [250,350,50,150],
+    filter1Name = root+'fusedCellTEM.png',
+    filter1Thresh=1000.,
+    filter2Name = root+'bulkCellTEM.png',
+    filter2Thresh=1050.
+    ): 
 
-#
+    self.root = root 
+    self.filter1TestName =filter1TestName #  root + 'clahe_Best.jpg'
+    self.filter1TestRegion =filter1TestRegion #  [340,440,400,500]
+    self.filter1PositiveTest =filter1PositiveTest #  root+"fusedMarked.png"
+    self.filter2PositiveTest =filter2PositiveTest #  root+"bulkMarked.png"
+    self.filter2TestName =filter2TestName #  root + 'clahe_Best.jpg'
+    self.filter2TestRegion =filter2TestRegion #  [250,350,50,150]
+    self.filter1Name =filter1Name #  root+'fusedCellTEM.png'
+    self.filter1Thresh=filter1Thresh #h1000.
+    self.filter2Name =filter2Name #  root+'bulkCellTEM.png'
+    self.filter2Thresh=filter2Thresh #h1050.
 
 ##
 ## This function essentially measures overlap between detected regions and hand-annotated regions
 ## Positive hits are generated when correctly detected/annotated regions are aligned
 ##
-def Score(positiveHits,negativeHits,
+def ScoreOverlap(positiveHits,negativeHits,
           positiveTest,               
           mode="default", # negative hits are assessed by 'negativeHits' within positive Hits region
                           # negative hits are penalized throughout entire image 
@@ -51,8 +75,8 @@ def Score(positiveHits,negativeHits,
       plt.imshow(composite)
       plt.close()
     #plt.imsave("Test.png",composite)
-    positiveScoreImg = truthMarked*positiveMasked
-    positiveScore = np.sum(positiveScoreImg)/np.sum(truthMarked)
+    positiveScoreOverlapImg = truthMarked*positiveMasked
+    positiveScoreOverlap = np.sum(positiveScoreOverlapImg)/np.sum(truthMarked)
 
     # negative hits 
     negativeMasked = np.array(negativeHits > 0, dtype=np.float)
@@ -66,122 +90,95 @@ def Score(positiveHits,negativeHits,
       composite = 2.*truthMarked + negativeMasked
       plt.imshow(composite)
       plt.close()
-    negativeScoreImg = truthMarked*negativeMasked
+    negativeScoreOverlapImg = truthMarked*negativeMasked
 
     if mode=="default": 
-      negativeScore = np.sum(negativeScoreImg)/np.sum(truthMarked)
+      negativeScoreOverlap = np.sum(negativeScoreOverlapImg)/np.sum(truthMarked)
     elif mode=="nohits":
-      dims = np.shape(negativeScoreImg)
-      negativeScore = np.sum(negativeScoreImg)/np.float(np.prod(dims))
+      dims = np.shape(negativeScoreOverlapImg)
+      negativeScoreOverlap = np.sum(negativeScoreOverlapImg)/np.float(np.prod(dims))
 
-    return positiveScore, negativeScore
+    return positiveScoreOverlap, negativeScoreOverlap
+
 
 ## 
 ##  Returns true positive/false positive rates for two filters, given respective true positive 
 ##  annotated data 
 ## 
 def TestParams(
-    testDataName = root + 'clahe_Best.jpg',
-    filter1TestRegion = [340,440,400,500],
-    filter1PositiveTest = root+"fusedMarked.png",
-    filter2PositiveTest = root+"bulkMarked.png",
-    filter2TestRegion = [250,350,50,150],
-    filter1Name = root+'fusedCellTEM.png',
-    filter1Thresh=1000.,
-    filter2Name = root+'bulkCellTEM.png',
-    filter2Thresh=1050.,
-    scale=1.2,
-    sigma_n=1.,
-    display=False,useFilterInv=False):
-
-    ### Fused pore
-    testCase = empty()
-    testCase.name = testDataName 
-    testCase.subsection=filter1TestRegion   
-    #daImg = cv2.imread(testCase.name)
-    #cut = daImg[testCase.subsection[0]:testCase.subsection[1],testCase.subsection[2]:testCase.subsection[3]]
-    #imshow(cut)
-
-    testCase.filter1 = filter1Name
-    testCase.threshFilter1 = filter1Thresh
-    testCase.filter2 = filter2Name
-    testCase.threshFilter2 = filter2Thresh
-    testCase.sigma_n= sigma_n, # focus on best angle for fused pore data
-    testCase.iters = [30], # focus on best angle for fused pore data
-    testCase.label = None
-
-
+    dataSet,
+    display=False):
+   
+    ### Filter1 (was fusedPore) 
+    #dataSet.iters = [30], # focus on best angle for fused pore data
     ## Test both filters on filter1 test data 
     optimalAngleFused = 30
     filter1_filter1Test, filter2_filter1Test = bD.TestFilters(
-      testCase.name, # testData
-      testCase.filter1,                # fusedfilter Name
-      testCase.filter2,              # bulkFilter name
-      subsection=testCase.subsection, #[200,400,200,500],   # subsection of testData
-      filter1Thresh = testCase.threshFilter1,
-      filter2Thresh = testCase.threshFilter2,
-      sigma_n = sigma_n,
+      dataSet.filter1TestName, # testData
+      dataSet.filter1Name,                # fusedfilter Name
+      dataSet.filter2Name,              # bulkFilter name
+      subsection=dataSet.filter1TestRegion, #[200,400,200,500],   # subsection of testData
+      filter1Thresh = dataSet.filter1Thresh,
+      filter2Thresh = dataSet.filter2Thresh,
+      sigma_n = dataSet.sigma_n,
       #iters = [optimalAngleFused],
-      useFilterInv=useFilterInv,
-      scale=scale,
-      colorHitsOutName="filter1Marked_%f_%f.png"%(filter2Thresh,filter1Thresh),
+      useFilterInv=dataSet.useFilterInv,
+      scale=dataSet.scale,
+      colorHitsOutName="filter1Marked_%f_%f.png"%(dataSet.filter2Thresh,dataSet.filter1Thresh),
       display=display
     )        
 
-    ### Bulk pore
-    #testCase = empty()
-    #testCase.name = root+'clahe_Best.jpg'
-    testCase.subsection=filter2TestRegion
-    #daImg = cv2.imread(testCase.name)
-    #cut = daImg[testCase.subsection[0]:testCase.subsection[1],testCase.subsection[2]:testCase.subsection[3]]
+    ### Filter2 (was bulkPore) 
+    #daImg = cv2.imread(dataSet.name)
+    #cut = daImg[dataSet.subsection[0]:dataSet.subsection[1],dataSet.subsection[2]:dataSet.subsection[3]]
     #imshow(cut)
 
     ## Test both filters on filter2 test data 
     optimalAngleBulk = 5.
     filter1_filter2Test, filter2_filter2Test = bD.TestFilters(
-      testCase.name, # testData
-      testCase.filter1,                # fusedfilter Name
-      testCase.filter2,              # bulkFilter name
-      subsection=testCase.subsection, #[200,400,200,500],   # subsection of testData
-      filter1Thresh = testCase.threshFilter1,
-      filter2Thresh = testCase.threshFilter2,
-      sigma_n = sigma_n,
+      dataSet.filter2TestName, # testData
+      dataSet.filter1Name,                # fusedfilter Name
+      dataSet.filter2Name,              # bulkFilter name
+      subsection=dataSet.filter2TestRegion, #[200,400,200,500],   # subsection of testData
+      filter1Thresh = dataSet.filter1Thresh,
+      filter2Thresh = dataSet.filter2Thresh,
+      sigma_n = dataSet.sigma_n,
       #iters = [optimalAngleFused],
-      useFilterInv=useFilterInv,
-      scale=scale,
-      colorHitsOutName="filter2Marked_%f_%f.png"%(filter2Thresh,filter1Thresh),
+      useFilterInv=dataSet.useFilterInv,
+      scale=dataSet.scale,
+      colorHitsOutName="filter2Marked_%f_%f.png"%(dataSet.filter2Thresh,dataSet.filter1Thresh),
       display=display
      )        
     
     # This approach assess the number of hits of filter A overlapping with regions marked as 'A' in the test data
     # negatives refer to hits of filter B on marked 'A' regions
     #if 0:   
-    #  fusedPS, bulkNS= Score(filter1_filter1Test.stackedHits,filter2_filter1Test.stackedHits,
+    #  fusedPS, bulkNS= ScoreOverlap(filter1_filter1Test.stackedHits,filter2_filter1Test.stackedHits,
     #                       root+"fusedMarked.png", 
     #                       mode="nohits",
     #                       display=display)
 #
-#      bulkPS, fusedNS = Score(filter2_filter2Test.stackedHits,filter1_filter2Test.stackedHits,
+#      bulkPS, fusedNS = ScoreOverlap(filter2_filter2Test.stackedHits,filter1_filter2Test.stackedHits,
 #                            root+"bulkMarked.png",
 #                            mode="nohits",
 #                            display=display)   
     # This approach assess filter A hits in marked regions of A, penalizes filter A hits in marked regions 
     # of test set B  
     if 1: 
-      filter1PS, filter1NS= Score(filter1_filter1Test.stackedHits,filter1_filter2Test.stackedHits,
-                           positiveTest=filter1PositiveTest,
+      filter1PS, filter1NS= ScoreOverlap(filter1_filter1Test.stackedHits,filter1_filter2Test.stackedHits,
+                           positiveTest=dataSet.filter1PositiveTest,
                            #negativeTest="testimages/bulkMarked.png", 
                            mode="nohits",
                            display=display)
 
-      filter2PS, filter2NS = Score(filter2_filter2Test.stackedHits,filter2_filter1Test.stackedHits,
-                            positiveTest=filter2PositiveTest,
+      filter2PS, filter2NS = ScoreOverlap(filter2_filter2Test.stackedHits,filter2_filter1Test.stackedHits,
+                            positiveTest=dataSet.filter2PositiveTest,
                             #negativeTest="testimages/fusedMarked.png",
                             mode="nohits",
                             display=display)   
     
     ## 
-    print filter1Thresh,filter2Thresh,filter1PS,filter2NS,filter2PS,filter1NS
+    print dataSet.filter1Thresh,dataSet.filter2Thresh,filter1PS,filter2NS,filter2PS,filter1NS
     return filter1PS,filter2NS,filter2PS,filter1NS
 
 ##
@@ -259,8 +256,11 @@ def AnalyzePerformanceData(dfOrig,tag='filter1',label=None,normalize=False,roc=T
 ## Iterates over parameter compbinations to find optimal 
 ## ROC data 
 ## 
+## dataSet - a dataset object specific to case you're optimizing (see definition) 
+## 
 import pandas as pd
 def Assess(
+  dataSet,
   filter1Threshes = np.linspace(800,1100,10), 
   filter2Threshes = np.linspace(800,1100,10), 
   scales=[1.2],  
@@ -277,18 +277,19 @@ def Assess(
   for i,filter1Thresh in enumerate(filter1Threshes):
     for j,filter2Thresh in enumerate(filter2Threshes):
       for k,scale      in enumerate(scales):       
+        dataSet.filter1Thresh=filter1Thresh
+        dataSet.filter2Thresh=filter2Thresh
+        dataSet.sigma_n = sigma_n
+        dataSet.scale = scale 
+        dataSet.useFilterInv = useFilterInv
         filter1PS,filter2NS,filter2PS,filter1NS = TestParams(
-          filter1Thresh=filter1Thresh,
-          filter2Thresh=filter2Thresh,
-          sigma_n=sigma_n,
-          scale=scale,
-          useFilterInv=useFilterInv,
+          dataSet,
           display=display)
 
         raw_data =  {\
-         'filter1Thresh': filter1Thresh,
-         'filter2Thresh': filter2Thresh,
-         'scale': scale,                
+         'filter1Thresh': dataSet.filter1Thresh,
+         'filter2Thresh': dataSet.filter2Thresh,
+         'scale': dataSet.scale,                
          'filter1PS': filter1PS,
          'filter2NS': filter2NS,
          'filter2PS': filter2PS,
@@ -308,6 +309,7 @@ def Assess(
 ## Generates ROC data 
 ##
 def GenFigROC(
+  dataSet,
   loadOnly=False,
   useFilterInv=True,
   filter1Label = "fused",
@@ -325,6 +327,7 @@ def GenFigROC(
     print "Reading ", hdf5Name 
   else:
     Assess(
+        dataSet,
         filter1Threshes = ft,
         filter2Threshes = bt,
         scales = scales,
@@ -350,6 +353,26 @@ def GenFigROC(
 
 
   
+##
+## Defines dataset for silica 
+##
+def Silica():
+  root = "pnpimages/"
+  dataSet = DataSet(
+    root = "pnpimages/",
+    filter1TestName = root + 'clahe_Best.jpg',
+    filter1TestRegion = [340,440,400,500],
+    filter1PositiveTest = root+"fusedMarked.png",
+    filter2PositiveTest = root+"bulkMarked.png",
+    filter2TestName = root + 'clahe_Best.jpg',
+    filter2TestRegion = [250,350,50,150],
+    filter1Name = root+'fusedCellTEM.png',
+    filter1Thresh=1000.,
+    filter2Name = root+'bulkCellTEM.png',
+    filter2Thresh=1050.
+    )  
+
+  return dataSet
   
 
 
@@ -400,6 +423,7 @@ if __name__ == "__main__":
   # Loops over each argument in the command line 
   for i,arg in enumerate(sys.argv):
     if(arg=="-optimize3"):
+      dataSet = Silica()
     # coarse/fine
       #ft = np.concatenate([np.linspace(0.5,0.7,7),np.linspace(0.7,0.95,15)   ])
       #bt = np.concatenate([np.linspace(0.4,0.55,7),np.linspace(0.55,0.65,15)   ])
@@ -407,17 +431,17 @@ if __name__ == "__main__":
       ft = np.linspace(0.05,0.30,10) 
       scales = [1.2]  # tried optimizing, but performance seemed to decline quickly far from 1.2 nspace(1.0,1.5,6)  
       Assess(
+        dataSet,
         filter1Threshes = ft,
         filter2Threshes = bt,
-        scales = scales,
-        sigma_n = 1.,
-        useFilterInv=True,   
         hdf5Name = "optimizeinvscale.h5",
         display=False
       )
       quit()
     if(arg=="-optimizeLight"):
+      dataSet = Silica()
       GenFigROC(
+        dataSet,
         bt = np.linspace(0.05,0.50,3),   
         ft = np.linspace(0.05,0.30,3),   
         scales = [1.2],

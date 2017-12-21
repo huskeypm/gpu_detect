@@ -212,8 +212,9 @@ if __name__ == "__main__":
       GenFig3()
       quit()
     if(arg=="-rocfigs"):     
+      dataSet = optimizer.Silica()
       #optimizer.GenFigROC(loadOnly=True)
-      optimizer.GenFigROC(loadOnly=False) 
+      optimizer.GenFigROC(dataSet,loadOnly=False) 
       quit()
   
 

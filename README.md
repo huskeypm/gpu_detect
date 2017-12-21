@@ -17,23 +17,22 @@ commfigs.bash - generates images for paper
 see TODO for todo items 
 
 ## Myocyte 
+Initialize by running
+<code>
+python util.py -genAllMyo
+</code>
+
 ### validation test
 <code>
-python util.py -genWT -genLong -genLoss -genPunishment
 python myocyteFigs.py -validation
 </code>
 
-# generate paper figs
+#$# generate paper figs
 <code>
 python myocyteFigs.py -allFigs 
 </code>
 
-# normal test
-## - generate images 
-<code>
-python util.py -genWT -genLong -genLoss -genPunishment
-</code>
-## - execute images 
+### execute images 
 <code>
 python myocyteFigs.py -tag "MI" -test ./images/WTFilter.png ./images/LongFilter.png ./images/MI_D_73_annotation.png 0.06 0.38 3.
 </code>

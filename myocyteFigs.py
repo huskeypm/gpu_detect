@@ -16,12 +16,14 @@ import cv2
 import matplotlib.pylab as plt
 class empty:pass
 
+root = "myoimages/"
+
 ## WT 
 def fig3(): 
 
   print "DC: need to commit WT data to repo and pass in here" 
   figAnalysis(
-    testImage="./images/MI_D_73_annotation.png",
+    testImage=root+"MI_D_73_annotation.png",
     tag = "MI", 
     writeImage=True) 
 
@@ -34,7 +36,7 @@ def fig4():
 
   print "DC: need to commit HF data to repo and pass in here" 
   figAnalysis(
-    testImage="./images/MI_D_73_annotation.png",
+    testImage=root+"MI_D_73_annotation.png",
     tag = "MI", 
     writeImage=True) 
 
@@ -44,17 +46,17 @@ def fig5():
   print "DC: need to commit prox, med, dist MI data to repo and pass in here" 
   print "DC: combine bar plots into single image?"
   figAnalysis(
-    testImage="./images/MI_D_73_annotation.png",
+    testImage=root+"MI_D_73_annotation.png",
     tag = "MIprox", 
     writeImage=True) 
 
   figAnalysis(
-    testImage="./images/MI_D_73_annotation.png",
+    testImage=root+"MI_D_73_annotation.png",
     tag = "MImed", 
     writeImage=True) 
 
   figAnalysis(
-    testImage="./images/MI_D_73_annotation.png",
+    testImage=root+"MI_D_73_annotation.png",
     tag = "MIdist", 
     writeImage=True) 
 
@@ -62,9 +64,9 @@ def fig5():
 
 
 def figAnalysis(
-      ttFilterName="./images/WTFilter.png",
-      ltFilterName="./images/LongFilter.png",
-      testImage="./images/MI_D_73_annotation.png",
+      ttFilterName=root+"WTFilter.png",
+      ltFilterName=root+"LongFilter.png",
+      testImage=root+"MI_D_73_annotation.png",
       ttThresh=0.06 ,
       ltThresh=0.38 ,
       gamma=3.,
@@ -72,9 +74,9 @@ def figAnalysis(
       writeImage = False):
 
   results = testMF(
-      ttFilterName=ttFilterName,#"./images/WTFilter.png",
-      ltFilterName=ltFilterName,#"./images/LongFilter.png",
-      testImage=testImage,#"./images/MI_D_73_annotation.png",
+      ttFilterName=ttFilterName,#root+"WTFilter.png",
+      ltFilterName=ltFilterName,#root+"LongFilter.png",
+      testImage=testImage,#root+"MI_D_73_annotation.png",
       ttThresh=ttThresh,#0.06 ,
       ltThresh=ltThresh,#0.38 ,
       gamma=gamma)        
@@ -111,9 +113,9 @@ def figAnalysis(
 
 
 def testMF(
-      ttFilterName="./images/WTFilter.png",
-      ltFilterName="./images/LongFilter.png",
-      testImage="./images/MI_D_73_annotation.png",
+      ttFilterName=root+"WTFilter.png",
+      ltFilterName=root+"LongFilter.png",
+      testImage=root+"MI_D_73_annotation.png",
       ttThresh=0.06 ,
       ltThresh=0.38 ,
       gamma=3.,
@@ -187,6 +189,7 @@ if __name__ == "__main__":
 
     # this function will generate input data for the current fig #3 in the paper 
     if(arg=="-fig3"):               
+      1
       # DC: what is my WT test image (top panel)  
       # DC: call to generate middle panel 
       # DC: call to generate bottom panel 
@@ -194,14 +197,14 @@ if __name__ == "__main__":
 
     if(arg=="-fig4"):               
       # DC: same as fig 3, but w HF data 
-
+      1
     if(arg=="-fig5"):               
       # DC: same as fig 3, but will want to pass in the three MI tissue images 
-
+      1
     if(arg=="-fig6"):               
       # RB: generate detected version of Fig 6
       # PKH: add in scaling plot 
-
+      1
     # generates all figs
     if(arg=="-allFigs"):
       fig3()     

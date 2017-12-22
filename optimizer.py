@@ -24,43 +24,96 @@ root = "pnpimages/"
 class DataSet:
   def __init__(self, 
     root = None,
+    # filter1
     filter1TestName = root + 'clahe_Best.jpg',
-    filter1TestRegion = [340,440,400,500],
-    filter1PositiveTest = root+"fusedMarked.png",
-    filter2PositiveTest = root+"bulkMarked.png",
-    filter2TestName = root + 'clahe_Best.jpg',
-    filter2TestRegion = [250,350,50,150],
+    filter1TestRegion = [340,440,400,500],  # None 
     filter1Name = root+'fusedCellTEM.png',
+    filter1PositiveTest = root+"fusedMarked.png",
+    filter1PositiveChannel= -1, # [012] for R, G B
     filter1Thresh=1000.,
+    # filter2
+    filter2TestName = root + 'clahe_Best.jpg',
+    filter2TestRegion = [250,350,50,150],   # None 
     filter2Name = root+'bulkCellTEM.png',
+    filter2PositiveTest = root+"bulkMarked.png",
+    filter2PositiveChannel= -1, # [012] for R, G B
     filter2Thresh=1050.
     ): 
 
     self.root = root 
     self.filter1TestName =filter1TestName #  root + 'clahe_Best.jpg'
     self.filter1TestRegion =filter1TestRegion #  [340,440,400,500]
+    self.filter1Name =filter1Name #  root+'fusedCellTEM.png'
     self.filter1PositiveTest =filter1PositiveTest #  root+"fusedMarked.png"
-    self.filter2PositiveTest =filter2PositiveTest #  root+"bulkMarked.png"
+    self.filter1PositiveChannel = filter1PositiveChannel
+    self.filter1Thresh=filter1Thresh #h1000.
+
     self.filter2TestName =filter2TestName #  root + 'clahe_Best.jpg'
     self.filter2TestRegion =filter2TestRegion #  [250,350,50,150]
-    self.filter1Name =filter1Name #  root+'fusedCellTEM.png'
-    self.filter1Thresh=filter1Thresh #h1000.
     self.filter2Name =filter2Name #  root+'bulkCellTEM.png'
+    self.filter2PositiveTest =filter2PositiveTest #  root+"bulkMarked.png"
+    self.filter2PositiveChannel = filter2PositiveChannel
     self.filter2Thresh=filter2Thresh #h1050.
+
+##
+## Has some logic for processing cropped data and data with multiple channels
+##
+def SetupTests(dataSet):
+  
+  #filter1/, designate channel
+  def LoadFilterData(testDataName, subsection, # may be None
+                     truthName, truthChannel): 
+    ## load data against which filters are tested
+    testData = cv2.imread(testDataName)
+    testData = cv2.cvtColor(testData, cv2.COLOR_BGR2GRAY)
+
+    # crop 
+    if isinstance(subsection, (list, tuple, np.ndarray)):
+      testData = testData[
+        subsection[0]:subsection[1],subsection[2]:subsection[3]]
+  
+    ## positive test
+    truthData = cv2.imread(truthName)
+    # use a specific channel 
+    if truthChannel>-1:
+      truthData = truthData[:,:, truthChannel ] 
+    else:
+      truthData = cv2.cvtColor(truthData, cv2.COLOR_BGR2GRAY)
+    truthData= np.array(truthData> 0, dtype=np.float)
+
+    return testData, truthData
+
+  # filter1
+  dataSet.filter1TestData, dataSet.filter1PositiveData = LoadFilterData(
+    dataSet.filter1TestName,
+    dataSet.filter1TestRegion,
+    dataSet.filter1PositiveTest,
+    dataSet.filter1PositiveChannel
+    )
+  # filter2
+  dataSet.filter2TestData, dataSet.filter2PositiveData = LoadFilterData(
+    dataSet.filter2TestName,
+    dataSet.filter2TestRegion,
+    dataSet.filter2PositiveTest,
+    dataSet.filter2PositiveChannel
+    )
 
 ##
 ## This function essentially measures overlap between detected regions and hand-annotated regions
 ## Positive hits are generated when correctly detected/annotated regions are aligned
 ##
-def ScoreOverlap(positiveHits,negativeHits,
-          positiveTest,               
+def ScoreOverlap(
+          positiveHits,
+          negativeHits,
+          #positiveTest,               
+          truthMarked,                
           mode="default", # negative hits are assessed by 'negativeHits' within positive Hits region
                           # negative hits are penalized throughout entire image 
           display=True):
     # read in 'truth image' 
-    truthMarked = cv2.imread(positiveTest)
-    truthMarked=cv2.cvtColor(truthMarked, cv2.COLOR_BGR2GRAY)
-    truthMarked= np.array(truthMarked> 0, dtype=np.float)
+    #truthMarked = cv2.imread(positiveTest)
+    #truthMarked=cv2.cvtColor(truthMarked, cv2.COLOR_BGR2GRAY)
+    #truthMarked= np.array(truthMarked> 0, dtype=np.float)
     #imshow(fusedMarked)
 
     # positive hits 
@@ -118,7 +171,8 @@ def TestParams(
       dataSet.filter1TestName, # testData
       dataSet.filter1Name,                # fusedfilter Name
       dataSet.filter2Name,              # bulkFilter name
-      subsection=dataSet.filter1TestRegion, #[200,400,200,500],   # subsection of testData
+      testData = dataSet.filter1TestData, 
+      #subsection=dataSet.filter1TestRegion, #[200,400,200,500],   # subsection of testData
       filter1Thresh = dataSet.filter1Thresh,
       filter2Thresh = dataSet.filter2Thresh,
       sigma_n = dataSet.sigma_n,
@@ -140,7 +194,8 @@ def TestParams(
       dataSet.filter2TestName, # testData
       dataSet.filter1Name,                # fusedfilter Name
       dataSet.filter2Name,              # bulkFilter name
-      subsection=dataSet.filter2TestRegion, #[200,400,200,500],   # subsection of testData
+      testData = dataSet.filter2TestData, 
+      #subsection=dataSet.filter2TestRegion, #[200,400,200,500],   # subsection of testData
       filter1Thresh = dataSet.filter1Thresh,
       filter2Thresh = dataSet.filter2Thresh,
       sigma_n = dataSet.sigma_n,
@@ -166,14 +221,16 @@ def TestParams(
     # This approach assess filter A hits in marked regions of A, penalizes filter A hits in marked regions 
     # of test set B  
     if 1: 
-      filter1PS, filter1NS= ScoreOverlap(filter1_filter1Test.stackedHits,filter1_filter2Test.stackedHits,
-                           positiveTest=dataSet.filter1PositiveTest,
+      filter1PS, filter1NS= ScoreOverlap(filter1_filter1Test.stackedHits,
+			   filter1_filter2Test.stackedHits,
+                           dataSet.filter1PositiveData,
                            #negativeTest="testimages/bulkMarked.png", 
                            mode="nohits",
                            display=display)
 
-      filter2PS, filter2NS = ScoreOverlap(filter2_filter2Test.stackedHits,filter2_filter1Test.stackedHits,
-                            positiveTest=dataSet.filter2PositiveTest,
+      filter2PS, filter2NS = ScoreOverlap(filter2_filter2Test.stackedHits,			
+			    filter2_filter1Test.stackedHits,
+                            dataSet.filter2PositiveData,
                             #negativeTest="testimages/fusedMarked.png",
                             mode="nohits",
                             display=display)   
@@ -405,6 +462,7 @@ if __name__ == "__main__":
   for i,arg in enumerate(sys.argv):
     if(arg=="-optimize3"):
       dataSet = DataSet()
+      SetupTests(dataSet) 
     # coarse/fine
       #ft = np.concatenate([np.linspace(0.5,0.7,7),np.linspace(0.7,0.95,15)   ])
       #bt = np.concatenate([np.linspace(0.4,0.55,7),np.linspace(0.55,0.65,15)   ])
@@ -421,6 +479,7 @@ if __name__ == "__main__":
       quit()
     if(arg=="-optimizeLight"):
       dataSet = DataSet()
+      SetupTests(dataSet) 
       GenFigROC(
         dataSet,
         bt = np.linspace(0.05,0.50,3),   

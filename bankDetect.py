@@ -185,7 +185,9 @@ def colorHitsTT(rawOrig,LongStacked,WTStacked,iters,outName=None,label='',plotMe
 
 # main engine 
 
-def TestFilters(testDataName,filter1FilterName,filter2FilterName,
+def TestFilters(testDataName,
+                filter1FilterName,filter2FilterName,
+                testData = None, # can pass in (ultimately preferred) or if none, will read in based on dataName 
                 filter1Thresh=60,filter2Thresh=50,
                 subsection=None,
                 display=False,
@@ -202,13 +204,16 @@ def TestFilters(testDataName,filter1FilterName,filter2FilterName,
                 returnAngles=True):       
 
     if filterType == "Pore":
-      # load data against which filters are tested
-      testData = cv2.imread(testDataName)
-      testData = cv2.cvtColor(testData, cv2.COLOR_BGR2GRAY)
+      if testData is None: 
+        # load data against which filters are tested
+        testData = cv2.imread(testDataName)
+        testData = cv2.cvtColor(testData, cv2.COLOR_BGR2GRAY)
     
-      if isinstance(subsection, (list, tuple, np.ndarray)): 
-        testData = testData[subsection[0]:subsection[1],subsection[2]:subsection[3]]
+        if isinstance(subsection, (list, tuple, np.ndarray)): 
+          testData = testData[subsection[0]:subsection[1],subsection[2]:subsection[3]]
+        print "WARNING: should really use the SetupTests function, as we'll retire this later" 
 
+      ## should offloat elsewhere
       # load fused filter
       filter1Filter = cv2.imread(filter1FilterName)
       filter1Filter = cv2.cvtColor(filter1Filter, cv2.COLOR_BGR2GRAY)
@@ -218,17 +223,20 @@ def TestFilters(testDataName,filter1FilterName,filter2FilterName,
       filter2Filter = cv2.cvtColor(filter2Filter, cv2.COLOR_BGR2GRAY)
 
 
+      ## perform detection 
       filter1PoreResult = DetectFilter(testData,filter1Filter,filter1Thresh,
                                      iters,display=display,sigma_n=sigma_n,
                                      filterMode="fused",label=label,
                                      scale=scale,
                                      useFilterInv=useFilterInv)
+
       filter2PoreResult = DetectFilter( testData,filter2Filter,filter2Thresh,
                                      iters,display=display,sigma_n=sigma_n,
                                      filterMode="bulk",label=label,
                                      scale=scale,
                                      useFilterInv=useFilterInv)
 
+      ## display results 
       if colorHitsOutName!=None: 
         colorHits(testData,
                 red=filter2PoreResult.stackedHits,

@@ -30,41 +30,8 @@ def PadRotate(myFilter1,val):
 
   return rF
 
-# Need to be careful when cropping image
-def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
-                      iters = [0,30,60,90],  
-                      printer = True, filterMode=None,label=None,
-                      useFilterInv=False,
-                      scale = 1.2,  # for rescaling penalty filter 
-                      sigma_n=1.,threshold=None,
-                      doCLAHE=True):
-    # Store all 'hits' at each angle 
-    correlated = []
-
-    # Ryan ?? equalized image?
-    # Dylan - Adding in option to turn off CLAHE
-    if doCLAHE:
-      clahe99 = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(16,16))
-      cl1 = clahe99.apply(myImg)
-      adapt99 = cl1
-    else:
-      adapt99 = myImg
-
-    filterRef = util.renorm(np.array(myFilter1,dtype=float),scale=1.)
-
-    for i, val in enumerate(iters):
-      result = empty()
-      # copy of original image 
-      tN = util.renorm(np.array(adapt99,dtype=float),scale=1.)
-      
-      ## 'positive' filter 
-      # pad/rotate 
-      rFN = PadRotate(filterRef,val)  
-   
-      # matched filtering 
-      yP = mF.matchedFilter(tN,rFN,demean=False,parsevals=True)
-
-      ## negative filter 
+# TODO phase this out 
+def CalcInvFilter(filterRef,tN,val,yP,penaltyscale,sigma_n): 
       s=1.  
       fInv = np.max(filterRef)- s*filterRef
       rFi = PadRotate(fInv,val)
@@ -83,20 +50,68 @@ def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
       yInvN =  util.renorm(yInv,scale=1.)
 
       yPN = np.exp(yPN)
-      yInvS = sigma_n*scale*np.exp(yInvN)
+      yInvS = sigma_n*penaltyscale*np.exp(yInvN)
       scaled = np.log(yPN/(yInvS))
+    
+      return scaled 
 
       # store data 
+      #if useFilterInv:
+      #  result.corr = scaled    
+      #else:
+      #  result.corr = yP 
+
+
+# Need to be careful when cropping image
+def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
+                      iters = [0,30,60,90],  
+                      printer = True, filterMode=None,label=None,
+                      useFilterInv=False,
+                      penaltyscale = 1.2,  # for rescaling penalty filter 
+                      sigma_n=1.,threshold=None,
+                      doCLAHE=True):
+    # Store all 'hits' at each angle 
+    correlated = []
+
+    # Ryan ?? equalized image?
+    # Dylan - Adding in option to turn off CLAHE
+    # TODO - this should be done in preprocessing, not here
+    if doCLAHE:
+      clahe99 = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(16,16))
+      cl1 = clahe99.apply(myImg)
+      adapt99 = cl1
+    else:
+      adapt99 = myImg
+
+    filterRef = util.renorm(np.array(myFilter1,dtype=float),scale=1.)
+
+    # TODO - here is the place to stick in the GPU shizzle 
+    for i, val in enumerate(iters):
+      result = empty()
+      # copy of original image 
+      tN = util.renorm(np.array(adapt99,dtype=float),scale=1.)
+      
+      ## 'positive' filter 
+      # pad/rotate 
+      rFN = PadRotate(filterRef,val)  
+   
+      # matched filtering 
+      yP = mF.matchedFilter(tN,rFN,demean=False,parsevals=True)
+
+      result.corr = yP
+
+
+      ## negative filter 
       if useFilterInv:
-        result.corr = scaled    
-      else:
-        result.corr = yP 
+        result.corr = CalcInvFilter(filterRef,tN,val,yP,penaltyscale,sigma_n)
 
-      if filterMode=="fused":
-        tag = "fused"
-      else: 
-        tag = "bulk"
+      tag = filterMode 
+      #if filterMode=="fused":
+      #  tag = tag"fused"
+      ###else: 
+      #  tag = "bulk"
 
+      #print "MOVE this shit elsewhere" 
       #daTitle = "rot %f "%val + "hit %f "%hit + str(hitLoc)
       daTitle = "rot %4.1f "%val # + "hit %4.1f "%hit 
       #print daTitle
@@ -114,20 +129,20 @@ def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
         #plt.imshow(rFi,cmap="gray")   
         
         plt.subplot(1,5,3)
-        plt.imshow(yPN)   
-        plt.title("corr output") 
-        plt.colorbar()
+        #plt.imshow(yPN)   
+        #plt.title("corr output") 
+        #plt.colorbar()
 
-        if threshold!=None:
-          plt.subplot(1,5,4)
-          #plt.imshow(yP>threshold)   
-          plt.title("Filter inv")
-          plt.imshow(yInvN)                  
-          plt.colorbar()
-          plt.subplot(1,5,5)
-          plt.title("filter/inv") 
-          plt.imshow(scaled)                
-          plt.colorbar()
+        #if threshold!=None:
+        #  plt.subplot(1,5,4)
+        #  #plt.imshow(yP>threshold)   
+        #  plt.title("Filter inv")
+        #  plt.imshow(yInvN)                  
+        #  plt.colorbar()
+        #  plt.subplot(1,5,5)
+        #  plt.title("filter/inv") 
+        #  plt.imshow(scaled)                
+        #  plt.colorbar()
         plt.tight_layout()
         fileName = label+"_"+tag+'_{}_full.png'.format(val)
         plt.gcf().savefig(fileName,dpi=300)

@@ -79,7 +79,8 @@ def figAnalysis(
       testImage=testImage,#root+"MI_D_73_annotation.png",
       ttThresh=ttThresh,#0.06 ,
       ltThresh=ltThresh,#0.38 ,
-      gamma=gamma)        
+      gamma=gamma,        
+      writeImage = writeImage)
 
   stackedHits = results.stackedHits
 
@@ -115,13 +116,13 @@ def testMF(
       ttThresh=0.06 ,
       ltThresh=0.38 ,
       gamma=3.,
-      tag = "default_",
+      tag = "default",
       writeImage = False):
 
   #results = empty()
   results = Rs.giveStackedHits(testImage, 
-		   ttThresh, ltThresh, gamma, WTFilterName=ttFilterName,
-                   LongitudinalFilterName=ltFilterName)
+    ttThresh, ltThresh, gamma, WTFilterName=ttFilterName,
+    LongitudinalFilterName=ltFilterName)
   stackedHits = results.stackedHits
 
   # BE SURE TO REMOVE ME!!
@@ -145,10 +146,15 @@ def testMF(
 ## Defines dataset for myocyte (MI) 
 ##
 import optimizer
-def Myocyte():
-  root = "myoimages/"
-  filter1TestName = root + 'MI_D_73_annotation.png'
-  filter1PositiveTest = root+"MI_D_73_annotation_channels.png"
+root = "myoimages/"
+def Myocyte(
+  filter1TestName = root + 'MI_D_73_annotation.png',
+  filter1PositiveTest = root+"MI_D_73_annotation_channels.png",
+  filter1Name = root+'WTFilter.png',          
+  filter1Thresh=1000.,
+  filter2Name = root+'LongFilter.png',        
+  filter2Thresh=1050.
+  ):
 
   dataSet = optimizer.DataSet(
     root = root,
@@ -157,14 +163,14 @@ def Myocyte():
     filter1PositiveTest = filter1PositiveTest,
     filter1PositiveChannel= 0,  # blue, WT 
     filter1Name = root+'WTFilter.png',          
-    filter1Thresh=1000.,
+    filter1Thresh=filter1Thresh,
 
     filter2TestName = filter1TestName,
     filter2TestRegion = None,
     filter2PositiveTest = filter1PositiveTest,
     filter2PositiveChannel= 1,  # green, longi
     filter2Name = root+'LongFilter.png',        
-    filter2Thresh=1050.
+    filter2Thresh=filter2Thresh,
     )
 
   return dataSet
@@ -183,6 +189,53 @@ def rocData():
         useFilterInv=True,
       )
 
+
+# print for debugging 
+def test2():
+# python myocyteFigs.py -tag "MI" -test ./myoimages/WTFilter.png ./myoimages/LongFilter.png ./myoimages/MI_D_73_annotation.png 0.06 0.38 3.
+  # This works; need to check with TestFilters protocol
+  if 0: 
+    figAnalysis(
+      ttFilterName=root+"WTFilter.png",
+      ltFilterName=root+"LongFilter.png",
+      testImage=root+"MI_D_73_annotation.png",
+      ttThresh=0.06 ,
+      ltThresh=0.38 ,
+      gamma=3.,
+      tag = "default",
+      writeImage = True)    
+
+  print "REMOVE +test" 
+  dataSet = Myocyte(
+    filter1TestName = root + 'MI_D_73_annotation.png',
+    filter1PositiveTest = root+"MI_D_73_annotation_channels.png",
+    filter1Name = root+'WTFilter.png', 
+    filter1Thresh = 0.01, 
+    filter2Name = root+'LongFilter.png',
+    filter2Thresh = 0.0035
+    )
+  optimizer.SetupTests(dataSet)
+
+  print "WARNING: need to expand angle range" 
+  iters = [-30,-20,-10,0,10,20,30]
+  import bankDetect as bD
+  filter1_filter1Test, filter2_filter1Test = bD.TestFilters(
+      dataSet.filter1TestName, # testData
+      dataSet.filter1Name,                # fusedfilter Name
+      dataSet.filter2Name,              # bulkFilter name
+      testData = dataSet.filter1TestData,
+      #subsection=dataSet.filter1TestRegion, #[200,400,200,500],   # subsection of testData
+      filter1Thresh = dataSet.filter1Thresh,
+      filter2Thresh = dataSet.filter2Thresh,
+      sigma_n = dataSet.sigma_n,
+      iters=iters,
+      useFilterInv=False, # dataSet.useFilterInv,
+      penaltyscale=0.,# dataSet.penaltyscale,
+      colorHitsOutName="filter1Marked_%f_%f.png"%(dataSet.filter2Thresh,dataSet.filter1Thresh),
+      display=True     
+    )
+
+   
   
 
 
@@ -231,21 +284,24 @@ if __name__ == "__main__":
 
     # this function will generate input data for the current fig #3 in the paper 
     if(arg=="-fig3"):               
-      1
       # DC: what is my WT test image (top panel)  
       # DC: call to generate middle panel 
       # DC: call to generate bottom panel 
       # PKH: I'll provide bar graphs 
+      fig3()
 
     if(arg=="-fig4"):               
       # DC: same as fig 3, but w HF data 
+      fig4()
       1
     if(arg=="-fig5"):               
       # DC: same as fig 3, but will want to pass in the three MI tissue images 
+      fig5()
       1
     if(arg=="-fig6"):               
       # RB: generate detected version of Fig 6
       # PKH: add in scaling plot 
+      fig6()
       1
     # generates all figs
     if(arg=="-allFigs"):
@@ -274,7 +330,9 @@ if __name__ == "__main__":
 	writeImage = True)            
       quit()
 
-
+    if(arg=="-test2"):
+      test2()
+      quit()
 
 
   raise RuntimeError("Arguments not understood")

@@ -13,8 +13,12 @@ import numpy as np
 import matplotlib.pylab as plt 
 
 
+##
+## For a single matched filter, this function iterates over passed-in angles 
+## and reports highest correlation output for each iteration 
+## 
 def DetectFilter(dataSet,mf,threshold,iters,display=False,sigma_n=1.,
-                 label=None,filterMode=None,useFilterInv=False,scale=1.,
+                 label=None,filterMode=None,useFilterInv=False,penaltyscale=1.,
                  doCLAHE=True,filterType="Pore",returnAngles=True):
 
   # store
@@ -27,14 +31,15 @@ def DetectFilter(dataSet,mf,threshold,iters,display=False,sigma_n=1.,
     # do correlations across all iter
     result.correlated = painter.correlateThresher(
        dataSet,result.mf, threshold = result.threshold, iters=iters,
-       printer=display,sigma_n=sigma_n,
-       scale=scale,
+       printer=display,
+       sigma_n=sigma_n,
+       penaltyscale=penaltyscale,
        filterMode=filterMode,
        useFilterInv=useFilterInv,
        label=label,
        doCLAHE=doCLAHE)
 
-    # 
+    # record snr 
     snrs = [] 
     for i, resulti in enumerate(result.correlated):
       maxSNR = np.max( resulti.snr) 
@@ -47,6 +52,7 @@ def DetectFilter(dataSet,mf,threshold,iters,display=False,sigma_n=1.,
       result.correlated,result.threshold,iters,doKMeans=False, display=False)#,display=display)
     
   elif filterType == "TT":
+    print "WARNING: Need to consolidate this with filterType=Pore"
     result.correlated = painter.correlateThresherTT(
        dataSet,result.mf, thresholdDict=result.threshold,iters=iters,doCLAHE=doCLAHE)
 
@@ -59,9 +65,6 @@ def DetectFilter(dataSet,mf,threshold,iters,display=False,sigma_n=1.,
     #quit() 
   
   return result
-
-    
-
 
 def GetHits(aboveThresholdPoints):
   ## idenfity hits (binary)  
@@ -184,7 +187,7 @@ def colorHitsTT(rawOrig,LongStacked,WTStacked,iters,outName=None,label='',plotMe
 
 
 # main engine 
-
+# TODO remove scale/pass into filter itself
 def TestFilters(testDataName,
                 filter1FilterName,filter2FilterName,
                 testData = None, # can pass in (ultimately preferred) or if none, will read in based on dataName 
@@ -194,7 +197,7 @@ def TestFilters(testDataName,
                 colorHitsOutName=None,
                 sigma_n = 1., 
                 iters = [0,10,20,30,40,50,60,70,80,90], 
-                scale=1.0,      
+                penaltyscale=1.0,      
                 useFilterInv=False,
                 label="test",
                 filterType="Pore",
@@ -226,14 +229,14 @@ def TestFilters(testDataName,
       ## perform detection 
       filter1PoreResult = DetectFilter(testData,filter1Filter,filter1Thresh,
                                      iters,display=display,sigma_n=sigma_n,
-                                     filterMode="fused",label=label,
-                                     scale=scale,
+                                     filterMode="filter1",label=label,
+                                     penaltyscale=penaltyscale,
                                      useFilterInv=useFilterInv)
 
       filter2PoreResult = DetectFilter( testData,filter2Filter,filter2Thresh,
                                      iters,display=display,sigma_n=sigma_n,
-                                     filterMode="bulk",label=label,
-                                     scale=scale,
+                                     filterMode="filter2",label=label,
+                                     penaltyscale=penaltyscale,
                                      useFilterInv=useFilterInv)
 
       ## display results 

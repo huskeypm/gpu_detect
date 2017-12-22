@@ -57,6 +57,7 @@ def DoTest(testCase,
   bulkThresh = 0.46,
   display=False
   ):
+  raise RuntimeError("delete me") 
   fusedPoreResult, bulkPoreResult = bD.TestFilters(
     testCase.name, # testData
     fuzedData,                       # fusedfilter Name
@@ -194,6 +195,7 @@ import sys
 import optimizer
 def Silica():
   root = "pnpimages/"
+  # 0.05 0.3 0.710752318791 0.0043 0.764521193093 0.0728
   dataSet = optimizer.DataSet(
     root = root,
     filter1TestName = root + 'clahe_Best.jpg',
@@ -203,12 +205,38 @@ def Silica():
     filter2TestName = root + 'clahe_Best.jpg',
     filter2TestRegion = [250,350,50,150],
     filter1Name = root+'fusedCellTEM.png',
-    filter1Thresh=1000.,
+    filter1Thresh=0.05,  
     filter2Name = root+'bulkCellTEM.png',
-    filter2Thresh=1050.
+    filter2Thresh=0.3,
+    penaltyscale=1.2,
+    useFilterInv = True
     )  
 
   return dataSet
+
+##
+## More of a unit test than a validation, but will atleast check for breaking code 
+##
+def validate(): 
+  dataSet = Silica()
+  optimizer.SetupTests(dataSet) 
+  filter1PS,filter2NS,filter2PS,filter1NS = optimizer.TestParams(
+    dataSet,
+    display=False)    
+
+  # 122217
+  # 0.05 0.3 0.710752318791 0.0043 0.764521193093 0.0728
+  assert(np.abs(filter1PS-0.710) <0.001), "Test1 failed"
+  assert(np.abs(filter2NS-0.0043)<0.001), "Test2 failed"
+  assert(np.abs(filter2PS-0.765) <0.001), "Test3 failed"
+  assert(np.abs(filter1NS-0.073) <0.001), "Test4 failed"
+  print "PASSED!"
+  
+  
+  
+  
+  
+  
 
 
 #
@@ -236,6 +264,9 @@ if __name__ == "__main__":
       dataSet = Silica()
       #optimizer.GenFigROC(loadOnly=True)
       optimizer.GenFigROC(dataSet,loadOnly=False) 
+      quit()
+    if(arg=="-validate"):    
+      validate()
       quit()
   
 

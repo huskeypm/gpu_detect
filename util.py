@@ -52,6 +52,7 @@ def TestFilter(
   H, # MACE filter
   I  # test img
 ):
+    print "DEPREACATE THIS FUNCTION" 
     #R = fftp.ifftshift(fftp.ifft2(I*conj(H)));
     icH = I * np.conj(H)
     R = fftp.ifftshift ( fftp.ifft2(icH) ) 

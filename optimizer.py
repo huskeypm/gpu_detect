@@ -37,7 +37,10 @@ class DataSet:
     filter2Name = root+'bulkCellTEM.png',
     filter2PositiveTest = root+"bulkMarked.png",
     filter2PositiveChannel= -1, # [012] for R, G B
-    filter2Thresh=1050.
+    filter2Thresh=1050.,
+    sigma_n = 1.,
+    penaltyscale = 1., # TODO remove me 
+    useFilterInv = False  # need to antiquate this   
     ): 
 
     self.root = root 
@@ -54,6 +57,10 @@ class DataSet:
     self.filter2PositiveTest =filter2PositiveTest #  root+"bulkMarked.png"
     self.filter2PositiveChannel = filter2PositiveChannel
     self.filter2Thresh=filter2Thresh #h1050.
+
+    self.sigma_n = sigma_n
+    self.useFilterInv = useFilterInv 
+    self.penaltyscale = penaltyscale
 
 ##
 ## Has some logic for processing cropped data and data with multiple channels
@@ -182,7 +189,7 @@ def TestParams(
       sigma_n = dataSet.sigma_n,
       #iters = [optimalAngleFused],
       useFilterInv=dataSet.useFilterInv,
-      scale=dataSet.scale,
+      penaltyscale=dataSet.penaltyscale,
       colorHitsOutName="filter1Marked_%f_%f.png"%(dataSet.filter2Thresh,dataSet.filter1Thresh),
       display=display
     )        
@@ -205,7 +212,7 @@ def TestParams(
       sigma_n = dataSet.sigma_n,
       #iters = [optimalAngleFused],
       useFilterInv=dataSet.useFilterInv,
-      scale=dataSet.scale,
+      penaltyscale=dataSet.penaltyscale,
       colorHitsOutName="filter2Marked_%f_%f.png"%(dataSet.filter2Thresh,dataSet.filter1Thresh),
       display=display
      )        
@@ -325,7 +332,7 @@ def Assess(
   dataSet,
   filter1Threshes = np.linspace(800,1100,10), 
   filter2Threshes = np.linspace(800,1100,10), 
-  scales=[1.2],  
+  penaltyscales=[1.2],  
   hdf5Name = "optimizer.h5",
   sigma_n = 1.,
   useFilterInv=False,
@@ -338,11 +345,11 @@ def Assess(
   # iterate of thresholds
   for i,filter1Thresh in enumerate(filter1Threshes):
     for j,filter2Thresh in enumerate(filter2Threshes):
-      for k,scale      in enumerate(scales):       
+      for k,penaltyscale      in enumerate(penaltyscales):       
         dataSet.filter1Thresh=filter1Thresh
         dataSet.filter2Thresh=filter2Thresh
         dataSet.sigma_n = sigma_n
-        dataSet.scale = scale 
+        dataSet.penaltyscale = penaltyscale 
         dataSet.useFilterInv = useFilterInv
         filter1PS,filter2NS,filter2PS,filter1NS = TestParams(
           dataSet,
@@ -351,7 +358,7 @@ def Assess(
         raw_data =  {\
          'filter1Thresh': dataSet.filter1Thresh,
          'filter2Thresh': dataSet.filter2Thresh,
-         'scale': dataSet.scale,                
+         'penaltyscale': dataSet.penaltyscale,                
          'filter1PS': filter1PS,
          'filter2NS': filter2NS,
          'filter2PS': filter2PS,
@@ -378,7 +385,7 @@ def GenFigROC(
   filter2Label = "bulk",
   f1ts = np.linspace(0.05,0.50,10),
   f2ts = np.linspace(0.05,0.30,10),
-  scales = [1.2],# tried optimizing, but performance seemed to decline quickly far from 1.2 nspace(1.0,1.5,6)  
+  penaltyscales = [1.2],# tried optimizing, but performance seemed to decline quickly far from 1.2 nspace(1.0,1.5,6)  
   hdf5Name = "optimizeinvscale.h5"
   ):
 
@@ -392,9 +399,9 @@ def GenFigROC(
         dataSet,
         filter1Threshes = f1ts,
         filter2Threshes = f2ts,
-        scales = scales,
+        penaltyscales = penaltyscales,
         sigma_n = 1.,
-        useFilterInv=True,
+        useFilterInv=useFilterInv,
         hdf5Name = hdf5Name,
         display=False
       )
@@ -472,7 +479,7 @@ if __name__ == "__main__":
       #bt = np.concatenate([np.linspace(0.4,0.55,7),np.linspace(0.55,0.65,15)   ])
       f1ts = np.linspace(0.05,0.50,10)  
       f2ts = np.linspace(0.05,0.30,10) 
-      scales = [1.2]  # tried optimizing, but performance seemed to decline quickly far from 1.2 nspace(1.0,1.5,6)  
+      penaltyscales = [1.2]  # tried optimizing, but performance seemed to decline quickly far from 1.2 nspace(1.0,1.5,6)  
       Assess(
         dataSet,
         filter1Threshes = ft,
@@ -488,7 +495,7 @@ if __name__ == "__main__":
         dataSet,
         f1ts = np.linspace(0.05,0.50,3),   
         f2ts = np.linspace(0.05,0.30,3),   
-        scales = [1.2],
+        penaltyscales = [1.2],
         useFilterInv=True,   
       ) 
       quit()

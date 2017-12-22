@@ -34,7 +34,7 @@ python myocyteFigs.py -allFigs
 
 ### execute images 
 <code>
-python myocyteFigs.py -tag "MI" -test ./images/WTFilter.png ./images/LongFilter.png ./images/MI_D_73_annotation.png 0.06 0.38 3.
+python myocyteFigs.py -tag "MI" -test ./myoimages/WTFilter.png ./myoimages/LongFilter.png ./myoimages/MI_D_73_annotation.png 0.06 0.38 3.
 </code>
 
 ## PNP project

@@ -108,10 +108,6 @@ def figAnalysis(
   plt.gcf().savefig(tag+"_content.png") 
 
 
-
-    
-
-
 def testMF(
       ttFilterName=root+"WTFilter.png",
       ltFilterName=root+"LongFilter.png",
@@ -144,6 +140,52 @@ def testMF(
 
 
   return results 
+
+##
+## Defines dataset for myocyte (MI) 
+##
+import optimizer
+def Myocyte():
+  root = "myoimages/"
+  filter1TestName = root + 'MI_D_73_annotation.png'
+  filter1PositiveTest = root+"MI_D_73_annotation_channels.png"
+
+  dataSet = optimizer.DataSet(
+    root = root,
+    filter1TestName = filter1TestName,
+    filter1TestRegion = None,
+    filter1PositiveTest = filter1PositiveTest,
+    filter1PositiveChannel= 0,  # blue, WT 
+    filter1Name = root+'WTFilter.png',          
+    filter1Thresh=1000.,
+
+    filter2TestName = filter1TestName,
+    filter2TestRegion = None,
+    filter2PositiveTest = filter1PositiveTest,
+    filter2PositiveChannel= 1,  # green, longi
+    filter2Name = root+'LongFilter.png',        
+    filter2Thresh=1050.
+    )
+
+  return dataSet
+
+def rocData(): 
+  dataSet = Myocyte() 
+  optimizer.SetupTests(dataSet)
+
+  #pass in data like you are doing in your other tests 
+  #threshold? 
+  optimizer.GenFigROC(
+        dataSet,
+        f1ts = np.linspace(0.05,0.50,3),
+        f2ts = np.linspace(0.05,0.30,3),
+        scales = [1.2],
+        useFilterInv=True,
+      )
+
+  
+
+
 
   
 
@@ -215,6 +257,10 @@ if __name__ == "__main__":
 
     if(arg=="-tag"):
       tag = sys.argv[i+1]
+   
+    if(arg=="-roc"): 
+      rocData()
+      quit()
 	   
     if(arg=="-test"):
       testMF(      

@@ -237,6 +237,38 @@ def test2():
 
    
   
+##
+##
+## 
+def validate(): 
+  dataSet = Myocyte( 
+    filter1TestName = root + 'MI_D_73_annotation.png',
+    filter1PositiveTest = root+"MI_D_73_annotation_channels.png",
+    filter1Name = root+'WTFilter.png', 
+    filter1Thresh = 0.01, 
+    filter2Name = root+'LongFilter.png',
+    filter2Thresh = 0.0035
+    )
+  optimizer.SetupTests(dataSet)
+
+  optimizer.SetupTests(dataSet) 
+  filter1PS,filter2NS,filter2PS,filter1NS = optimizer.TestParams(
+    dataSet,
+    display=False)    
+
+  # 122217
+  # 0.0637741766858 0.00157362602777 0.0378071833648 0.00479955938471
+  assert(np.abs(filter1PS-0.0637)<0.001), "Test1 failed"
+  assert(np.abs(filter2NS-0.0015)<0.001), "Test2 failed"
+  assert(np.abs(filter2PS-0.0378)<0.001), "Test3 failed"
+  assert(np.abs(filter1NS-0.0048)<0.001), "Test4 failed"
+  print "PASSED!"
+  
+  
+  
+  
+  
+  
 
 
 
@@ -332,6 +364,9 @@ if __name__ == "__main__":
 
     if(arg=="-test2"):
       test2()
+      quit()
+    if(arg=="-validate"): 
+      validate()
       quit()
 
 

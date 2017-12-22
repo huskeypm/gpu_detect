@@ -57,6 +57,7 @@ class DataSet:
 
 ##
 ## Has some logic for processing cropped data and data with multiple channels
+## Todo: prolly should load filters here too and remove the IO from bankDetect
 ##
 def SetupTests(dataSet):
   
@@ -73,13 +74,16 @@ def SetupTests(dataSet):
         subsection[0]:subsection[1],subsection[2]:subsection[3]]
   
     ## positive test
-    truthData = cv2.imread(truthName)
     # use a specific channel 
+    truthData = cv2.imread(truthName) 
     if truthChannel>-1:
       truthData = truthData[:,:, truthChannel ] 
     else:
       truthData = cv2.cvtColor(truthData, cv2.COLOR_BGR2GRAY)
     truthData= np.array(truthData> 0, dtype=np.float)
+
+    msg =   "%s != %s"%(np.shape(truthData), np.shape(testData))
+    assert( np.prod(np.shape(truthData)) == np.prod(np.shape(testData))), msg
 
     return testData, truthData
 
@@ -372,8 +376,8 @@ def GenFigROC(
   useFilterInv=True,
   filter1Label = "fused",
   filter2Label = "bulk",
-  bt = np.linspace(0.05,0.50,10),
-  ft = np.linspace(0.05,0.30,10),
+  f1ts = np.linspace(0.05,0.50,10),
+  f2ts = np.linspace(0.05,0.30,10),
   scales = [1.2],# tried optimizing, but performance seemed to decline quickly far from 1.2 nspace(1.0,1.5,6)  
   hdf5Name = "optimizeinvscale.h5"
   ):
@@ -386,8 +390,8 @@ def GenFigROC(
   else:
     Assess(
         dataSet,
-        filter1Threshes = ft,
-        filter2Threshes = bt,
+        filter1Threshes = f1ts,
+        filter2Threshes = f2ts,
         scales = scales,
         sigma_n = 1.,
         useFilterInv=True,
@@ -466,8 +470,8 @@ if __name__ == "__main__":
     # coarse/fine
       #ft = np.concatenate([np.linspace(0.5,0.7,7),np.linspace(0.7,0.95,15)   ])
       #bt = np.concatenate([np.linspace(0.4,0.55,7),np.linspace(0.55,0.65,15)   ])
-      bt = np.linspace(0.05,0.50,10)  
-      ft = np.linspace(0.05,0.30,10) 
+      f1ts = np.linspace(0.05,0.50,10)  
+      f2ts = np.linspace(0.05,0.30,10) 
       scales = [1.2]  # tried optimizing, but performance seemed to decline quickly far from 1.2 nspace(1.0,1.5,6)  
       Assess(
         dataSet,
@@ -482,8 +486,8 @@ if __name__ == "__main__":
       SetupTests(dataSet) 
       GenFigROC(
         dataSet,
-        bt = np.linspace(0.05,0.50,3),   
-        ft = np.linspace(0.05,0.30,3),   
+        f1ts = np.linspace(0.05,0.50,3),   
+        f2ts = np.linspace(0.05,0.30,3),   
         scales = [1.2],
         useFilterInv=True,   
       ) 

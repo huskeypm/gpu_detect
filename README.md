@@ -40,6 +40,9 @@ python myocyteFigs.py -tag "MI" -test ./myoimages/WTFilter.png ./myoimages/LongF
 ### Roc optimization
 - Need to define 'dataSet' object (see inside myocyteFigs)
 - Annotated and original images must be same dimensions 
+<code>
+ python myocyteFigs.py -roc
+</code>
 
 
 ## PNP project
@@ -57,5 +60,6 @@ python figs.py -paperfigs # generate figures for paper
 
 ## Other notes
 optimizer.py was copied from spark detection repo, which was design for silica films 
+before commiting code, be sure to run unittest.bash first 
 
 

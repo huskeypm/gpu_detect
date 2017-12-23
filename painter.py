@@ -145,6 +145,7 @@ def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
         plt.tight_layout()
         fileName = label+"_"+tag+'_{}.png'.format(val)
         plt.gcf().savefig(fileName,dpi=300)
+        plt.close()
      
 
 
@@ -210,6 +211,7 @@ def StackHits(correlated,threshold,iters,
             plt.imshow(img)            
             plt.subplot(1,2,2)
             plt.imshow(daMask)
+            plt.close()
 
           # i don't think this should be rotated 
           #maskList.append((util2.rotater(daMask,iteration)))
@@ -241,6 +243,7 @@ def StackHits(correlated,threshold,iters,
             plt.subplot(1,3,3)
             plt.imshow(masks.Loss)
             plt.title('Loss')
+            plt.close()
 
           # changing values to strings that will later be interpreted by colorHits function
           #colorIndicator = 'rot'+str(i)
@@ -294,6 +297,7 @@ def StackHits(correlated,threshold,iters,
     if display and filterType == "Pore": 
       plt.figure()
       plt.imshow(myList)
+      plt.close()
 
 
 
@@ -320,6 +324,7 @@ def paintME(myImg, myFilter1,  threshold = 190, cropper=[24,129,24,129],iters = 
     plt.title('Correlated_Angle_{}'.format(val))
     plt.savefig('falseColor_{}.png'.format(val))
     plt.axis('equal')
+    plt.close()
     
                 
 

@@ -50,11 +50,12 @@ plotFilters = False
 plotRawFilterResponse = False # MAKE SURE THIS IS OFF FOR LARGE DATA SIZES
 
 # main function
+root = "myoimages/"
 def giveStackedHits(imgName, WTthreshold, Longitudinalthreshold, gamma,
-                     WTFilterName="./images/WTFilter.png",
-                     LongitudinalFilterName="./images/LongFilter.png",
-                     LossFilterName="./images/LossFilter.png",
-                     WTPunishFilterName="./images/WTPunishmentFilter.png",
+                     WTFilterName=root+"WTFilter.png",
+                     LongitudinalFilterName=root+"LongFilter.png",
+                     LossFilterName=root+"LossFilter.png",
+                     WTPunishFilterName=root+"WTPunishmentFilter.png",
                      returnMasks=False):
   # Read Images and Apply Masks
 
@@ -76,6 +77,7 @@ def giveStackedHits(imgName, WTthreshold, Longitudinalthreshold, gamma,
               imshow(combined)
               plt.title(imgName)
               plt.colorbar()
+              plt.close()
 
   # Read in Filters
   maxResponseDict = {}

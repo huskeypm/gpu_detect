@@ -2,6 +2,8 @@ import matplotlib.pylab as plt
 import numpy as np 
 import cv2
 
+root = "myoimages/"
+
 def myplot(img,fileName=None,clim=None):
   plt.axis('equal')
   plt.pcolormesh(img, cmap='gray')
@@ -121,7 +123,7 @@ def preprocessPNG(imgName, twoSarcSize, filterTwoSarcSize):
   cv2.imwrite(name+'_processed'+filetype,clahed)
   
 # # Generating filters
-def GenerateWTFilter(WTFilterRoot="./images/filterImgs/WT/", filterTwoSarcSize=25):
+def GenerateWTFilter(WTFilterRoot=root+"/filterImgs/WT/", filterTwoSarcSize=25):
   WTFilterImgs = []
   import os
   for fileName in os.listdir(WTFilterRoot):
@@ -309,7 +311,7 @@ def fixFilter(Filter,pixelCeiling=0.7,pixelFloor=0.4,rowMin=0, rowMax=None, colM
     fixedFilter = fixedFilter[:,colMin:colMax]
   return fixedFilter
 
-def SaveFixedWTFilter(WTFilterRoot="./images/filterImgs/WT/",filterTwoSarcSize=25,
+def SaveFixedWTFilter(WTFilterRoot=root+"filterImgs/WT/",filterTwoSarcSize=25,
                       pixelCeiling=0.6,pixelFloor=0.25,
                       rowMin=20, rowMax=None, colMin=1, colMax=None):
   # opting now to save WT filter and load into the workhorse script instead of generating filter every call
@@ -320,9 +322,9 @@ def SaveFixedWTFilter(WTFilterRoot="./images/filterImgs/WT/",filterTwoSarcSize=2
   savedFilt = fixedFilter * 255
   savedFilt = savedFilt.astype('uint8')
   # save filter
-  cv2.imwrite("./images/WTFilter.png",savedFilt)
+  cv2.imwrite(root+"WTFilter.png",savedFilt)
 
-def SaveFixedLongFilter(LongFilterRoot="./images/filterImgs/Longitudinal/",
+def SaveFixedLongFilter(LongFilterRoot=root+"filterImgs/Longitudinal/",
                         filterTwoSarcSizeDict={"SongWKY_long1":16, "Xie_RV_Control_long2":14, "Xie_RV_Control_long1":16, "Guo2013Fig1C_long1":22},
                         filterTwoSarcLength=25,
                         pixelCeiling=0.7,pixelFloor=0.4,
@@ -335,18 +337,18 @@ def SaveFixedLongFilter(LongFilterRoot="./images/filterImgs/Longitudinal/",
   savedFilt = fixedFilter * 255
   savedFilt = savedFilt.astype('uint8')
   # save filter
-  cv2.imwrite("./images/LongFilter.png",savedFilt)
+  cv2.imwrite(root+"LongFilter.png",savedFilt)
 
-def SaveFixedLossFilter(LossFilterName="./images/filterImgs/Loss/TT_Idealized_Loss_TruthFilter.png",
+def SaveFixedLossFilter(LossFilterName=root+"filterImgs/Loss/TT_Idealized_Loss_TruthFilter.png",
                         LossScale=float(25)/float(28)):
   LossFilter = GenerateLossFilter(LossFilterName, LossScale) * 255
-  cv2.imwrite("./images/LossFilter.png",LossFilter)
+  cv2.imwrite(root+"LossFilter.png",LossFilter)
 
-def SaveFixedPunishmentFilter(LongitudinalFilterName="./images/LongFilter.png",
+def SaveFixedPunishmentFilter(LongitudinalFilterName=root+"LongFilter.png",
                               rowMin=2,rowMax=-1,colMin=6,colMax=13):
   punishFilter = GenerateWTPunishmentFilter(LongitudinalFilterName,
                                             rowMin=2,rowMax=-1,colMin=6,colMax=13)
-  cv2.imwrite("./images/WTPunishmentFilter.png",punishFilter)
+  cv2.imwrite(root+"WTPunishmentFilter.png",punishFilter)
 
 def PadWithZeros(img, padding = 15):
   '''
@@ -381,6 +383,12 @@ def PasteFilter(img, filt):
   filtDim = np.shape(filt)
   myImg[:filtDim[0],:filtDim[1]] = filt
   return myImg
+
+def SaveAllMyo():
+      SaveFixedWTFilter()
+      SaveFixedLongFilter()
+      SaveFixedLossFilter()
+      SaveFixedPunishmentFilter()
 
 #
 # Message printed when program run without arguments 
@@ -422,6 +430,9 @@ if __name__ == "__main__":
       SaveFixedLossFilter()
     elif(arg=="-genPunishment"):
       SaveFixedPunishmentFilter()
+    elif(arg=="-genAllMyo"): 
+      SaveAllMyo()
+
     elif(i>0):
       raise RuntimeError("Arguments not understood")
 

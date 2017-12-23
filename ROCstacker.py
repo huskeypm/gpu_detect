@@ -9,11 +9,14 @@ import bankDetect as bD
 import painter
 
 
-def ReadResizeNormImg(imgName, scale):
+def ReadResizeNormImg(imgName, scale,renorm=True):
     img = cv2.imread(imgName)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     resized = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
-    normed = resized.astype('float') / float(np.max(resized))
+    if renorm:
+      normed = resized.astype('float') / float(np.max(resized))
+    else:
+      normed = resized.astype('float') / float(255)
     
     return normed
 
@@ -56,22 +59,35 @@ def giveStackedHits(imgName, WTthreshold, Longitudinalthreshold, gamma,
                      LongitudinalFilterName=root+"LongFilter.png",
                      LossFilterName=root+"LossFilter.png",
                      WTPunishFilterName=root+"WTPunishmentFilter.png",
+                     filterTwoSarcSize=25,
+                     ImgTwoSarcSize=None,
                      returnMasks=False):
   # Read Images and Apply Masks
 
   # using old code structure so this dictionary is just arbitrary
-  imgTwoSarcSizesDict = {imgName:'Nonsense'}
+  imgTwoSarcSizesDict = {imgName:ImgTwoSarcSize}
   for imgName,imgTwoSarcSize in imgTwoSarcSizesDict.iteritems():
       if imgName not in filterDataImages:
-          scale = 1. # we're resizing prior to this call
-          # additionally tis image is already renormed using util so 
-	  # this is just reading in the image
-          img = ReadResizeNormImg(imgName, scale)
-          combined = img
-          # routine to pad the image with a border of zeros.
-          if pad:
-              combined = util.PadWithZeros(combined)
-          imgDim = np.shape(combined)
+          if imgTwoSarcSize == None:
+            scale = 1. # we're resizing prior to this call
+            # additionally tis image is already renormed using util so 
+            # this is just reading in the image
+            img = ReadResizeNormImg(imgName, scale,renorm=False)
+            combined = img
+            # routine to pad the image with a border of zeros.
+            if pad:
+                combined = util.PadWithZeros(combined)
+            imgDim = np.shape(combined)
+          else:
+            scale = float(filterTwoSarcSize) / float(imgTwoSarcSize)
+            img = ReadResizeNormImg(imgName,scale)
+            try:
+              maskName,fileType = imgName.split('.')
+              mask = ReadResizeNormImg(maskName+'_mask.'+fileType,scale)
+              mask[mask<1.0] = 0
+              combined = img * mask
+            except:
+              combined = img
           if plotRawImages:
               plt.figure()
               imshow(combined)

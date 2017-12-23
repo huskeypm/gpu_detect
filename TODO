@@ -12,10 +12,24 @@
 ## PKH 
 - DONE port over/refactor MF code for both silica and myo 
 - DONE verify that ROC is working 
--generalize ROC curve generation that is currently defined in fig.py (probably port to optimizer) 
+-DONE generalize ROC curve generation that is currently defined in fig.py (probably port to optimizer) 
 -- DONE Extract silica-specific terms in TestParams()
 -- DONE Merge roc generation from figs into optimizer
--- generalize how annotated data is passed in (subregion vs channel)
+-- DONE generalize how annotated data is passed in (subregion vs channel)
 
 - implement pentalty filter stuff 
+-- look into Dylan's penalty filter formulation
+-- determine if this can be frontloaded into filter definition, e.g. 
+  snr = y
+  y= f'm/(C + p *P)  <--- prev definition 
+     f = mf, m = measured, P = penality (verify) 
+  h' = f/(C + pP) 
+=>y = h'm (s.b. equiv to Dylan's form) 
+  Could also do 
+  P=fi - mean(fj), instead of P=mean(fj) 
 - modify filter to notch out clutter in tissue 
+  m = s + n + c
+  m =     n + c 
+  M = F{m} 
+  M' = M/F{s}
+  

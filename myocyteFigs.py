@@ -181,12 +181,14 @@ def rocData():
 
   #pass in data like you are doing in your other tests 
   #threshold? 
+  #filter1Thresh = 0.01,
+  #  filter2Thresh = 0.0035
   optimizer.GenFigROC(
         dataSet,
-        f1ts = np.linspace(0.05,0.50,3),
-        f2ts = np.linspace(0.05,0.30,3),
-        scales = [1.2],
-        useFilterInv=True,
+        f1ts = np.linspace(0.005,0.03,3),
+        f2ts = np.linspace(0.0025,0.0045,3),
+        penaltyscales = [1.0],
+        useFilterInv=False
       )
 
 

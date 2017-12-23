@@ -14,49 +14,53 @@ import ROCstacker as Rs
 import numpy as np
 import cv2
 import matplotlib.pylab as plt
+import bankDetect as bD
 class empty:pass
 
 root = "myoimages/"
 
 ## WT 
 def fig3(): 
-
-  print "DC: need to commit WT data to repo and pass in here" 
+  testImage = root+"Sham_M_65_annotation.png"
   figAnalysis(
-    testImage=root+"MI_D_73_annotation.png",
-    tag = "MI", 
+    testImage=testImage,
+    tag = "WT", 
     writeImage=True) 
 
   # write angle 
-  print "DC: print mesh of angles here" 
+  print "DC: UPDATE THRESHOLDS TO OPTIMIZED PARAMETERS" 
+  results = Rs.giveStackedHits(testImage, 0.06, 0.38, 3.)
+  print results.stackedAngles.WT
+                           
 
 
 ## HF 
 def fig4(): 
 
-  print "DC: need to commit HF data to repo and pass in here" 
   figAnalysis(
-    testImage=root+"MI_D_73_annotation.png",
-    tag = "MI", 
+    testImage=root+"HF_1_annotation.png",
+    tag = "HF", 
     writeImage=True) 
 
 ## MI 
 def fig5(): 
 
-  print "DC: need to commit prox, med, dist MI data to repo and pass in here" 
   print "DC: combine bar plots into single image?"
   figAnalysis(
-    testImage=root+"MI_D_73_annotation.png",
+    testImage=root+"MI_P_16.png",
+    ImgTwoSarcSize=21,
     tag = "MIprox", 
     writeImage=True) 
 
   figAnalysis(
-    testImage=root+"MI_D_73_annotation.png",
+    testImage=root+"MI_M_45.png",
+    ImgTwoSarcSize=21,
     tag = "MImed", 
     writeImage=True) 
 
   figAnalysis(
-    testImage=root+"MI_D_73_annotation.png",
+    testImage=root+"MI_D_78.png",
+    ImgTwoSarcSize=22,
     tag = "MIdist", 
     writeImage=True) 
 
@@ -70,6 +74,7 @@ def figAnalysis(
       ttThresh=0.06 ,
       ltThresh=0.38 ,
       gamma=3.,
+      ImgTwoSarcSize=None,
       tag = "valid", # tag to prepend to images 
       writeImage = False):
 
@@ -79,7 +84,9 @@ def figAnalysis(
       testImage=testImage,#root+"MI_D_73_annotation.png",
       ttThresh=ttThresh,#0.06 ,
       ltThresh=ltThresh,#0.38 ,
-      gamma=gamma)        
+      gamma=gamma,
+      ImgTwoSarcSize=ImgTwoSarcSize,
+      writeImage=writeImage)        
 
   stackedHits = results.stackedHits
 
@@ -93,7 +100,7 @@ def figAnalysis(
   results.lossContent = 0.
 
 
-  # write bar plot of feature contnent  
+  # write bar plot of feature content  
   fig, ax = plt.subplots()
   ax.set_title("% content") 
   values= np.array([ results.ttContent, results.ltContent, results.lossContent])
@@ -115,17 +122,20 @@ def testMF(
       ttThresh=0.06 ,
       ltThresh=0.38 ,
       gamma=3.,
+      ImgTwoSarcSize=None,
       tag = "default_",
       writeImage = False):
 
   #results = empty()
   results = Rs.giveStackedHits(testImage, 
-		   ttThresh, ltThresh, gamma, WTFilterName=ttFilterName,
+		   ttThresh, ltThresh, gamma, ImgTwoSarcSize=ImgTwoSarcSize,
+                   WTFilterName=ttFilterName,
                    LongitudinalFilterName=ltFilterName)
   stackedHits = results.stackedHits
 
   # BE SURE TO REMOVE ME!!
   print "WARNING: nan returned from stackedHits, so 'circumventing this'"
+  print "DC: Write in routine to apply mask to output image. Function at bottom"
   cI = results.coloredImg
   wt = np.zeros_like( cI[:,:,0]) 
   wt[ np.where(cI[:,:,2] > 100) ] = 1
@@ -183,10 +193,17 @@ def rocData():
         useFilterInv=True,
       )
 
-  
-
-
-
+def ReadResizeApplyMask(img,imgName,ImgTwoSarcSize,filterTwoSarcSize=25):
+  # function to apply the image mask before outputting results
+  maskName, fileType = imgName.split('.')
+  mask = cv2.imread(maskName+'_mask.'+fileType)
+  maskGray = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+  scale = float(filterTwoSarcSize) / float(ImgTwoSarcSize)
+  maskResized = cv2.resize(maskGray,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
+  normed = maskResized.astype('float') / float(np.max(resized))
+  normed[normed < 1.0] = 0
+  combined = img * mask
+  return combined
   
 
 
@@ -242,7 +259,7 @@ if __name__ == "__main__":
       1
     if(arg=="-fig5"):               
       # DC: same as fig 3, but will want to pass in the three MI tissue images 
-      1
+      fig5()
     if(arg=="-fig6"):               
       # RB: generate detected version of Fig 6
       # PKH: add in scaling plot 

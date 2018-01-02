@@ -1,0 +1,8 @@
+VERY primitive proof of concept
+Run only on a big card
+
+source ../config.bash 
+python tissuetests.py
+
+see results in raw/corr.png 
+

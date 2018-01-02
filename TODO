@@ -1,3 +1,7 @@
+
+#### WARNING
+WARNING: use rotate_bound, not rotate for filter images? 
+
 ## Dylan 
 - results are 'nan' for validation.py 
 -- stackedHITs messed up? 
@@ -33,3 +37,8 @@
   M = F{m} 
   M' = M/F{s}
   
+
+- Load in tif.
+  Apply simple filter based on a single cell
+  Do rotations  
+

@@ -137,13 +137,26 @@ subregionLarge = get_fiji(gray,[2000,2000],[1000,1000])
 # In[107]:
 
 print np.shape(gray)
-np.shape(subregionLarge)
+print np.shape(subregionLarge)
 
 
 # In[ ]:
-
-#corrTFCPU = tmf.MF(subregion,mfr,useGPU=False)
+cpuTest = False
+if cpuTest:
+  corrTFCPU = tmf.MF(subregionLarge,mfr,useGPU=False) 
 corrTFGPU = tmf.MF(subregionLarge,mfr,useGPU=True)
+#corrTFGPU = tmf.MF(gray,mfr,useGPU=True)
+#
+
+
+
+def renorm(img):
+  return img*255/np.max(img)
+
+cv2.imwrite("raw.png", renorm(subregionLarge))
+cv2.imwrite("corr.png", renorm(corrTFGPU))
+
+
 
 
 # In[ ]:

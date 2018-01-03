@@ -6,7 +6,7 @@ WARNING: use rotate_bound, not rotate for filter images?
 - results are 'nan' for validation.py 
 -- stackedHITs messed up? 
 - DONE need annotated images for WT and CHF as well 
-- add in unit test (e.g. if assert(content-truth>abs,"somthing changed)" 
+- DONE add in unit test (e.g. if assert(content-truth>abs,"somthing changed)" 
 
 
 ## Ryan 
@@ -36,9 +36,24 @@ WARNING: use rotate_bound, not rotate for filter images?
   m =     n + c 
   M = F{m} 
   M' = M/F{s}
-  
 
-- Load in tif.
-  Apply simple filter based on a single cell
-  Do rotations  
+
+//////
+
+Get successful Dylan example 
+Find where MF prep is 
+
+//////
+
+  
+PrepFilters
+  load h 
+  load not h
+  est noise
+  
+pass prepfilters to detection
+
+
+## Misc
+Merge 'related' scripts and purge unneeded routines 
 

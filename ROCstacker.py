@@ -53,6 +53,7 @@ plotFilters = False
 plotRawFilterResponse = False # MAKE SURE THIS IS OFF FOR LARGE DATA SIZES
 
 # main function
+# DC - will need to merge this in with the workflow used by the ROC routines at some point 
 root = "myoimages/"
 def giveStackedHits(imgName, WTthreshold, Longitudinalthreshold, gamma,
                      WTFilterName=root+"WTFilter.png",
@@ -61,6 +62,7 @@ def giveStackedHits(imgName, WTthreshold, Longitudinalthreshold, gamma,
                      WTPunishFilterName=root+"WTPunishmentFilter.png",
                      filterTwoSarcSize=25,
                      ImgTwoSarcSize=None,
+                     Lossthreshold=0.08,
                      returnMasks=False):
   # Read Images and Apply Masks
 
@@ -120,7 +122,7 @@ def giveStackedHits(imgName, WTthreshold, Longitudinalthreshold, gamma,
 
   rotDegrees = [-20, -15, -10, -5, 0, 5, 10, 15, 20]
   display = False
-  thresholdDict = {'WT':WTthreshold, 'Longitudinal':Longitudinalthreshold, 'Loss':0.08}
+  thresholdDict = {'WT':WTthreshold, 'Longitudinal':Longitudinalthreshold, 'Loss':Lossthreshold}
   Result = bD.TestFilters(img,None,None,filterType="TT",
                               display=display,iters=rotDegrees,filterDict=filterDict,
 			      thresholdDict=thresholdDict,doCLAHE=False,

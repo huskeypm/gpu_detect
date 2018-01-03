@@ -374,6 +374,79 @@ def Depad(img, padding=15):
   newImg = newImg.astype(imgType)
   return newImg
 
+import scipy.fftpack as fftp
+import scipy 
+
+def CalcPSD(Hs): # fourier xformed data
+    psd = np.real(np.conj(Hs)*Hs)
+    eps = 1e-5
+    psd[ psd < eps ] = eps
+    return fftp.fftshift(np.log( psd ))
+
+
+def dissimilar(
+    theFilter,
+    theDecoy,
+    Cv = 1.,
+    Clutter = 1.,
+    beta = 0.,
+    gamma = 0.0001):
+
+    s = 1.
+    s2 = 3.
+
+    # filter FFT
+    kernel = np.ones((s2,s2),np.float32)/np.float(s2*s2)
+    h = np.array(theFilter,dtype=np.float)
+    h = cv2.resize(h, None, fx = s, fy = s, interpolation = cv2.INTER_CUBIC)
+    
+    plt.figure()
+    plt.subplot(2,2,1)
+    plt.imshow(h,cmap="gray")
+    hs = fftp.fftshift(h)
+    Hs = fftp.fftn(hs)
+    plt.subplot(2,2,2)
+    plt.imshow(CalcPSD(Hs))
+
+    # noise FFT 
+    Cn = Cv*np.ones_like(h,dtype=np.float)
+
+    # clutter FFT
+    Cc = np.ones_like(h,dtype=np.float)
+
+    # difference image 
+    p = cv2.resize(theDecoy, None, fx = s, fy = s, interpolation = cv2.INTER_CUBIC)
+    p = cv2.filter2D(p,-1,kernel)
+    k = p - h
+    k[ k < 0] = 0
+    plt.subplot(2,2,3)
+    plt.imshow(k,cmap='gray')
+    ks = fftp.fftshift(k)
+    Ks = fftp.fftn(ks)
+    print np.min(k), np.min(Ks)
+    #Ks = cv2.filter2D(np.real(Ks),-1,kernel)
+    #Ks = cv2.filter2D(np.real(Ks),-1,kernel)
+    #Ks = cv2.filter2D(np.real(Ks),-1,kernel)    
+    plt.subplot(2,2,4)
+    plt.imshow(CalcPSD(Ks))
+
+    ### modified filter
+    Fs = Hs / (Cn + beta*Cc + gamma*np.abs(Ks))
+    
+    fs = fftp.ifftn(Fs)
+    f  = fftp.ifftshift(fs)
+    f-= np.min(f); f/=np.max(f); f*=255
+    f = np.array(np.real(f),dtype=np.uint8)
+    plt.figure()
+    plt.subplot(1,2,1)
+    plt.imshow(f,cmap="gray")
+    plt.subplot(1,2,2)
+    plt.imshow(CalcPSD(Fs))
+    
+    
+    f = cv2.resize(f, None, fx = 1/s, fy = 1/s, interpolation = cv2.INTER_CUBIC)
+    return f, Hs,Ks
+
 def PasteFilter(img, filt):
   '''
   function to paste the filter in the upper left region of the img 

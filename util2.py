@@ -99,6 +99,7 @@ def makeMask(threshold = 245,
 
     #print 'correlated', np.shape(correlated)
     corr = np.copy(correlated.flatten())
+    #print "corrmax",np.max(corr), "rhresh",threshold
     masker = (np.zeros_like(corr))
     #print 'masker', np.shape(masker)
     if inverseThresh == False:

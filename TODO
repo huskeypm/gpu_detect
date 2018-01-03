@@ -2,7 +2,7 @@
 - results are 'nan' for validation.py 
 -- stackedHITs messed up? 
 - DONE need annotated images for WT and CHF as well 
-- add in unit test (e.g. if assert(content-truth>abs,"somthing changed)" 
+- DONE add in unit test (e.g. if assert(content-truth>abs,"somthing changed)" 
 
 
 ## Ryan 
@@ -32,4 +32,24 @@
   m =     n + c 
   M = F{m} 
   M' = M/F{s}
+
+
+//////
+
+Get successful Dylan example 
+Find where MF prep is 
+
+//////
+
   
+PrepFilters
+  load h 
+  load not h
+  est noise
+  
+pass prepfilters to detection
+
+
+## Misc
+Merge 'related' scripts and purge unneeded routines 
+

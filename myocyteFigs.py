@@ -28,7 +28,7 @@ def fig3():
     writeImage=True) 
 
   # write angle 
-  print "DC: UPDATE THRESHOLDS TO OPTIMIZED PARAMETERS" 
+  print "DC: UPDATE THRESHOLDS TO OPTIMIZED PARAMETERS (from ROC) " 
   results = Rs.giveStackedHits(testImage, 0.06, 0.38, 3.)
   print results.stackedAngles.WT
                            
@@ -114,10 +114,32 @@ def figAnalysis(
   ax.set_xticklabels( marks ,rotation=90 )
   plt.gcf().savefig(tag+"_content.png") 
 
+def testMFExp():
+    dataSet = Myocyte() 
+    iters = [-20, -15, -10, -5, 0, 5, 10, 15, 20]
+		
+    filter1_filter1Test, filter2_filter1Test = bD.TestFilters(
+      dataSet.filter1TestName, # testData
+      dataSet.filter1Name,                # fusedfilter Name
+      dataSet.filter2Name,              # bulkFilter name
+      #testData = dataSet.filter1TestData,
+      #subsection=dataSet.filter1TestRegion, #[200,400,200,500],   # subsection of testData
+      filter1Thresh = dataSet.filter1Thresh,
+      filter2Thresh = dataSet.filter2Thresh,
+      sigma_n = dataSet.sigma_n,
+      #iters = [optimalAngleFused],
+      iters=iters,
+      useFilterInv=False,
+      penaltyscale=0.,
+      colorHitsOutName="filter1Marked_%f_%f.png"%(dataSet.filter2Thresh,dataSet.filter1Thresh),
+      display=display
+    )
 
 def testMF(
       ttFilterName=root+"WTFilter.png",
       ltFilterName=root+"LongFilter.png",
+      lossFilterName=root+"LossFilter.png",
+      wtPunishFilterName=root+"WTPunishmentFilter.png",
       testImage=root+"MI_D_73_annotation.png",
       ttThresh=0.06 ,
       ltThresh=0.38 ,
@@ -130,19 +152,28 @@ def testMF(
   results = Rs.giveStackedHits(testImage, 
 		   ttThresh, ltThresh, gamma, ImgTwoSarcSize=ImgTwoSarcSize,
                    WTFilterName=ttFilterName,
-                   LongitudinalFilterName=ltFilterName)
+                   LongitudinalFilterName=ltFilterName,
+                   LossFilterName = lossFilterName,
+                   WTPunishFilterName=wtPunishFilterName
+                   )
   stackedHits = results.stackedHits
 
   # BE SURE TO REMOVE ME!!
   print "WARNING: nan returned from stackedHits, so 'circumventing this'"
   print "DC: Write in routine to apply mask to output image. Function at bottom"
   cI = results.coloredImg
+
   wt = np.zeros_like( cI[:,:,0]) 
   wt[ np.where(cI[:,:,2] > 100) ] = 1
   results.ttContent = stackedHits.WT = wt 
-  lt = np.zeros_like( cI[:,:,0]) 
+
+  lt = np.zeros_like( wt )
   lt[ np.where(cI[:,:,1] > 100) ] = 1   
   stackedHits.Long = lt 
+
+  loss = np.zeros_like( wt )
+  loss[ np.where(cI[:,:,0] > 100) ] = 1   
+  stackedHits.loss = loss 
 
   if writeImage:
     # write putputs	  
@@ -167,14 +198,13 @@ def Myocyte():
     filter1PositiveTest = filter1PositiveTest,
     filter1PositiveChannel= 0,  # blue, WT 
     filter1Name = root+'WTFilter.png',          
-    filter1Thresh=1000.,
-
+    filter1Thresh=0.06, 
     filter2TestName = filter1TestName,
     filter2TestRegion = None,
     filter2PositiveTest = filter1PositiveTest,
     filter2PositiveChannel= 1,  # green, longi
     filter2Name = root+'LongFilter.png',        
-    filter2Thresh=1050.
+    filter2Thresh=0.38 
     )
 
   return dataSet
@@ -279,6 +309,9 @@ if __name__ == "__main__":
       rocData()
       quit()
 	   
+    if(arg=="-testexp"):
+      testMFExp()
+      quit()
     if(arg=="-test"):
       testMF(      
         ttFilterName=sys.argv[i+1],

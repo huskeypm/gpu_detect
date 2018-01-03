@@ -163,24 +163,15 @@ def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
         plt.close()
      
 
-
-
-      # 
+      #  
       result.snr = CalcSNR(result.corr,sigma_n) 
+      # 
+      result.max = np.max(result.corr)
+
       #result.hit = hit
       #result.hitLoc = hitLoc
       correlated.append(result) 
     
-      # store outputs
-      # Ryan: my general preference is to have one line per operation for clarity
-      #  toimage(imutils.rotate(yP,(-val-1))[cropper[0]:cropper[1],cropper[2]:cropper[3]]).save('bulkCorrelated_{}.png'.format(val))
-      #  toimage(yP[cropper[0]:cropper[1],cropper[2]:cropper[3]]).save('bulkCorrelated_Not_rotated_back{}.png'.format(val))
-
-      # save
-      #toimage(rotated).save(tag+'_{}.png'.format(val))
-      #toimage(yP).save(tag+'_Not_rotated_back{}.png'.format(val))
-
-
     return correlated
 
 def CalcSNR(signalResponse,sigma_n=1):
@@ -191,12 +182,13 @@ import util2
 def StackHits(correlated,threshold,iters,
               display=False,rescaleCorr=False,doKMeans=True,
               filterType="Pore",returnAngles=False):
+    print "DC: make into ditionary?" 
     maskList = []
     WTlist = []
     Longlist = []
     Losslist = []
 
-
+    daMax = -1e9
     for i, iteration in enumerate(iters):
         #print i, iteration
         if filterType == "Pore":
@@ -211,6 +203,7 @@ def StackHits(correlated,threshold,iters,
           # Ryan - I don't think this renormalization is appropriate
           # as it will artificially inflate 'bad' correlation hits
           corr_i = correlated[i].corr           
+          daMax = np.max([daMax, np.max(corr_i)]) 
           if rescaleCorr:
              img =  util.renorm(corr_i)
           else: 
@@ -270,9 +263,13 @@ def StackHits(correlated,threshold,iters,
           Longlist.append(masks.Long)
           Losslist.append(masks.Loss)
 
- 
+    #
+    # Return
+    # DC: Need to consolidate 
+    #
     if filterType == "Pore":
       myList  = np.sum(maskList, axis =0)
+      print "max output", daMax   
       return myList 
 
     elif filterType == "TT":

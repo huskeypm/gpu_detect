@@ -40,21 +40,22 @@ def DetectFilter(dataSet,mf,threshold,iters,display=False,sigma_n=1.,
        doCLAHE=doCLAHE)
 
     # record snr 
-    snrs = [] 
-    for i, resulti in enumerate(result.correlated):
-      maxSNR = np.max( resulti.snr) 
-      snrs.append( maxSNR )              
-    result.snrs = np.array( snrs)
-    result.iters = iters 
+    #snrs = [] 
+    #for i, resulti in enumerate(result.correlated):
+    #  maxSNR = np.max( resulti.snr) 
+    #  snrs.append( maxSNR )              
+    #result.snrs = np.array( snrs)
+    #result.iters = iters 
   
     # stack hits to form 'total field' of hits
-    result.stackedHits = painter.StackHits(
+    result.stackedHits= painter.StackHits(
       result.correlated,result.threshold,iters,doKMeans=False, display=False)#,display=display)
     
   elif filterType == "TT":
     print "WARNING: Need to consolidate this with filterType=Pore"
     result.correlated = painter.correlateThresherTT(
-       dataSet,result.mf, thresholdDict=result.threshold,iters=iters,doCLAHE=doCLAHE)
+       dataSet,result.mf, 
+       thresholdDict=result.threshold,iters=iters,doCLAHE=doCLAHE)
 
     # stack filter hits
     result.stackedHits,result.stackedAngles = painter.StackHits(result.correlated,
@@ -191,6 +192,8 @@ def colorHitsTT(rawOrig,LongStacked,WTStacked,iters,outName=None,label='',plotMe
 def TestFilters(testDataName,
                 filter1FilterName,filter2FilterName,
                 testData = None, # can pass in (ultimately preferred) or if none, will read in based on dataName 
+                filter1Data=None,
+                filter2Data=None,
                 filter1Thresh=60,filter2Thresh=50,
                 subsection=None,
                 display=False,
@@ -217,23 +220,27 @@ def TestFilters(testDataName,
         print "WARNING: should really use the SetupTests function, as we'll retire this later" 
 
       ## should offloat elsewhere
-      # load fused filter
-      filter1Filter = cv2.imread(filter1FilterName)
-      filter1Filter = cv2.cvtColor(filter1Filter, cv2.COLOR_BGR2GRAY)
+      if filter1Data is None:
+        print "WARNING: should really use the SetupTests function, as we'll retire this later" 
+        # load fused filter
+        filter1Filter = cv2.imread(filter1FilterName)
+        filter1Data   = cv2.cvtColor(filter1Filter, cv2.COLOR_BGR2GRAY)
 
-      # load bulk filter 
-      filter2Filter = cv2.imread(filter2FilterName)
-      filter2Filter = cv2.cvtColor(filter2Filter, cv2.COLOR_BGR2GRAY)
+      if filter2Data is None:
+        print "WARNING: should really use the SetupTests function, as we'll retire this later" 
+        # load bulk filter 
+        filter2Filter = cv2.imread(filter2FilterName)
+        filter2Data   = cv2.cvtColor(filter2Filter, cv2.COLOR_BGR2GRAY)
 
 
       ## perform detection 
-      filter1PoreResult = DetectFilter(testData,filter1Filter,filter1Thresh,
+      filter1PoreResult = DetectFilter(testData,filter1Data  ,filter1Thresh,
                                      iters,display=display,sigma_n=sigma_n,
                                      filterMode="filter1",label=label,
                                      penaltyscale=penaltyscale,
                                      useFilterInv=useFilterInv)
 
-      filter2PoreResult = DetectFilter( testData,filter2Filter,filter2Thresh,
+      filter2PoreResult = DetectFilter( testData,filter2Data  ,filter2Thresh,
                                      iters,display=display,sigma_n=sigma_n,
                                      filterMode="filter2",label=label,
                                      penaltyscale=penaltyscale,

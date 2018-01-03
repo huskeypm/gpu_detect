@@ -108,7 +108,14 @@ def SetupTests(dataSet):
     dataSet.filter2PositiveTest,
     dataSet.filter2PositiveChannel
     )
+        # load fused filter
 
+  # load filters
+  filter1Filter = cv2.imread(dataSet.filter1Name)
+  dataSet.filter1Data   = cv2.cvtColor(filter1Filter, cv2.COLOR_BGR2GRAY)
+
+  filter2Filter = cv2.imread(dataSet.filter2Name)
+  dataSet.filter2Data   = cv2.cvtColor(filter2Filter, cv2.COLOR_BGR2GRAY)
 ##
 ## This function essentially measures overlap between detected regions and hand-annotated regions
 ## Positive hits are generated when correctly detected/annotated regions are aligned
@@ -172,6 +179,7 @@ def ScoreOverlap(
 ## 
 def TestParams(
     dataSet,
+    iters = [0,10,20,30,40,50,60,70,80,90],
     display=False):
    
     ### Filter1 (was fusedPore) 
@@ -188,6 +196,7 @@ def TestParams(
       filter2Thresh = dataSet.filter2Thresh,
       sigma_n = dataSet.sigma_n,
       #iters = [optimalAngleFused],
+      iters=iters,
       useFilterInv=dataSet.useFilterInv,
       penaltyscale=dataSet.penaltyscale,
       colorHitsOutName="filter1Marked_%f_%f.png"%(dataSet.filter2Thresh,dataSet.filter1Thresh),

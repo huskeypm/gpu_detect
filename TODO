@@ -6,7 +6,7 @@ WARNING: use rotate_bound, not rotate for filter images?
 - results are 'nan' for validation.py 
 -- stackedHITs messed up? 
 - DONE need annotated images for WT and CHF as well 
-- DONE add in unit test (e.g. if assert(content-truth>abs,"somthing changed)" 
+- add in unit test (e.g. if assert(content-truth>abs,"somthing changed)" 
 
 
 ## Ryan 
@@ -21,6 +21,8 @@ WARNING: use rotate_bound, not rotate for filter images?
 -- DONE Merge roc generation from figs into optimizer
 -- DONE generalize how annotated data is passed in (subregion vs channel)
 
+- finalize non-penalty filter response (put in hierarchy of loss, then LT, then TT, then unchar)  
+(which notebook?) 
 - implement pentalty filter stuff 
 -- look into Dylan's penalty filter formulation
 -- determine if this can be frontloaded into filter definition, e.g. 
@@ -36,24 +38,12 @@ WARNING: use rotate_bound, not rotate for filter images?
   m =     n + c 
   M = F{m} 
   M' = M/F{s}
-
-
-//////
-
-Get successful Dylan example 
-Find where MF prep is 
-
-//////
-
   
-PrepFilters
-  load h 
-  load not h
-  est noise
-  
-pass prepfilters to detection
 
+- Finish GPU implementation (./gpu)
 
-## Misc
-Merge 'related' scripts and purge unneeded routines 
+ - check edges
+ - blur responses to show TT loss regions 
 
+- put onto athena 
+- non-gpu version with test input data; need instructions on how to pass in data, optimize parameters  

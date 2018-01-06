@@ -464,6 +464,21 @@ def SaveAllMyo():
       SaveFixedLossFilter()
       SaveFixedPunishmentFilter()
 
+# Embegs signal into known iomage for testing 
+def embedSignal(img,mf,loc=None,scale=0.5):
+    #plt.figure()
+    s= np.max(img)*scale
+    mfs= np.array(mf*s,dtype=np.uint8)
+    imgEmb = np.copy(img)
+    dimr = np.shape(mf)
+    if isinstance(loc,np.ndarray):
+      1
+    else: 
+      loc = [0,0]
+    imgEmb[loc[0]:(loc[0]+dimr[0]),loc[1]:(loc[1]+dimr[1])] += mfs 
+    #imshow(imgEmb)
+    return imgEmb
+
 #
 # Message printed when program run without arguments 
 #
@@ -509,6 +524,8 @@ if __name__ == "__main__":
 
     elif(i>0):
       raise RuntimeError("Arguments not understood")
+
+
 
 
 

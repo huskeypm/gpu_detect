@@ -25,10 +25,10 @@ def DefineAlphaCmap(daMap="Reds"):
 
     return my_cmap
 
-def StackGrayRedAlpha(img1,img2):
+def StackGrayRedAlpha(img1,img2,alpha=1.):
     my_cmap = DefineAlphaCmap()
     plt.imshow(img1,cmap="gray")
-    plt.imshow(img2,cmap=my_cmap,alpha=1.) 
+    plt.imshow(img2,cmap=my_cmap,alpha=alpha)
 
 def ExampleImage():
     img1=np.array(np.random.rand(100*100)*2e7,dtype=np.uint8)
@@ -39,4 +39,4 @@ def ExampleImage():
     StackGrayRedAlpha(img1,img2)
 
 
-ExampleImage()
+#ExampleImage()

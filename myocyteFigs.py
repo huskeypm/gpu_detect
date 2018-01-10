@@ -45,6 +45,8 @@ def fig4():
 
 ## MI 
 def fig5(): 
+  # update if need be
+  filterTwoSarcSize = 25
 
   # Distal, Medial, Proximal
   DImageName = root+"MI_D_78.png"
@@ -53,6 +55,9 @@ def fig5():
   MTwoSarcSize = 21
   PImageName = root+"MI_P_16.png"
   PTwoSarcSize = 21
+
+  imgNames = [DImageName, MImageName, PImageName]
+  ImgTwoSarcSizes = [DTwoSarcSize,MTwoSarcSize,PTwoSarcSize]
 
   # Read in images for figure
   DImage = util.ReadImg(DImageName)
@@ -69,6 +74,10 @@ def fig5():
   keys = ['D', 'M', 'P']
   areas = {}
 
+  ttResults = []
+  ltResults = []
+  lossResults = []
+
   # report responses for each case
   for i,result in enumerate(results):
     sH = result.stackedHits
@@ -76,33 +85,66 @@ def fig5():
     area = float(dimensions[0] * dimensions[1])
     ttContent = np.sum(sH.WT) / area
     ltContent = np.sum(sH.Long) / area
-    lossContent = 0.
+    lossContent = np.sum(sH.loss) / area
     # construct array of areas and norm 
     newAreas = np.array([ttContent, ltContent, lossContent])
     normedAreas = newAreas / np.max(newAreas)
     areas[keys[i]] = normedAreas
+    # append to lists
+    ttResults.append(normedAreas[0])
+    ltResults.append(normedAreas[1])
+    lossResults.append(normedAreas[2])
 
   # generating figure
-  fig, axarr = plt.subplots(3,3)
-  width = 1.0
+  #fig, axarr = plt.subplots(3,3)
+  width = 0.25
   colors = ["blue","green","red"]
   marks = ["WT","LT","Loss"]
-  plt.rcParams['font.size'] = 6.0
-  plt.rcParams['figure.figsize'] = [16,8]
-  plt.rcParams['figure.dpi'] = 300
-  for i,img in enumerate(images):
-    axarr[i,0].imshow(img,cmap='gray')
-    axarr[i,0].set_title(keys[i]+" Raw")
-    axarr[i,1].imshow(results[i].coloredImg)
-    axarr[i,1].set_title(keys[i]+" Marked")
+  #plt.rcParams['font.size'] = 6.0
+  #plt.rcParams['figure.figsize'] = [16,8]
+  #plt.rcParams['figure.dpi'] = 300
+  #for i,img in enumerate(images):
+  #  axarr[i,0].imshow(img,cmap='gray')
+  #  axarr[i,0].set_title(keys[i]+" Raw")
+  #  axarr[i,1].imshow(results[i].coloredImg)
+  #  axarr[i,1].set_title(keys[i]+" Marked")
     # construct bar plot
-    axarr[i,2].set_title(keys[i]+" Content")
-    indices = np.arange(np.shape(areas[keys[i]])[0])
-    rectangles = axarr[i,2].bar(indices,areas[keys[i]],width,color=colors)
-    axarr[i,2].set_xticks(indices+width)
-    axarr[i,2].set_xticklabels(marks, rotation=90)
-  plt.gcf().savefig("fig5.png")
-        
+  #  axarr[i,2].set_title(keys[i]+" Content")
+  #  indices = np.arange(np.shape(areas[keys[i]])[0])
+  #  rectangles = axarr[i,2].bar(indices,areas[keys[i]],width,color=colors)
+  #  axarr[i,2].set_xticks(indices+width)
+  #  axarr[i,2].set_xticklabels(marks, rotation=90)
+  #plt.gcf().savefig("fig5.png")
+
+  # opting to make a single bar chart
+  N = 3
+  indices = np.arange(N) + width
+  fig,ax = plt.subplots()
+  rects1 = ax.bar(indices, ttResults, width, color=colors[0])
+  rects2 = ax.bar(indices+width, ltResults, width, color=colors[1])
+  rects3 = ax.bar(indices+2*width, lossResults,width, color=colors[2])
+  ax.set_ylabel('Normalized Content')
+  ax.set_xticks(indices + width* 3/2)
+  ax.set_xticklabels(keys)
+  ax.legend(marks)
+  plt.gcf().savefig('fig5_BarChart.png')
+
+  # saving individual marked images
+  fig, axarr = plt.subplots(3,2)
+  for i,img in enumerate(images):
+    scale = float(filterTwoSarcSize) / float(ImgTwoSarcSizes[i])
+    resizedImg = cv2.resize(img,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
+    axarr[i,0].imshow(resizedImg,cmap='gray')
+    axarr[i,0].axis('off')
+    #axarr[i,0].set_title(keys[i]+" Raw")
+    # applying masks to each
+    masked = ReadResizeApplyMask(results[i].coloredImg,imgNames[i],ImgTwoSarcSizes[i])
+    axarr[i,1].imshow(masked)
+    axarr[i,1].axis('off')
+    #axarr[i,1].set_title(keys[i]+" Marked")
+  plt.tight_layout()
+  plt.gcf().savefig("fig5_RawAndMarked.png")
+
 def figAnalysis(
       ttFilterName=root+"WTFilter.png",
       ltFilterName=root+"LongFilter.png",
@@ -202,15 +244,21 @@ def testMF(
 
   wt = np.zeros_like( cI[:,:,0]) 
   wt[ np.where(cI[:,:,2] > 100) ] = 1
-  results.ttContent = stackedHits.WT = wt 
+  # applying mask
+  wtMasked = ReadResizeApplyMask(wt,testImage,ImgTwoSarcSize)
+  results.ttContent = stackedHits.WT = wtMasked 
 
   lt = np.zeros_like( wt )
   lt[ np.where(cI[:,:,1] > 100) ] = 1   
-  stackedHits.Long = lt 
+  # applying mask
+  ltMasked = ReadResizeApplyMask(lt,testImage,ImgTwoSarcSize)
+  stackedHits.Long = ltMasked 
 
   loss = np.zeros_like( wt )
   loss[ np.where(cI[:,:,0] > 100) ] = 1   
-  stackedHits.loss = loss 
+  # applying mask
+  lossMasked = ReadResizeApplyMask(loss,testImage,ImgTwoSarcSize)
+  stackedHits.loss = lossMasked 
 
   if writeImage:
     # write putputs	  
@@ -267,9 +315,15 @@ def ReadResizeApplyMask(img,imgName,ImgTwoSarcSize,filterTwoSarcSize=25):
   maskGray = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
   scale = float(filterTwoSarcSize) / float(ImgTwoSarcSize)
   maskResized = cv2.resize(maskGray,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
-  normed = maskResized.astype('float') / float(np.max(resized))
+  normed = maskResized.astype('float') / float(np.max(maskResized))
   normed[normed < 1.0] = 0
-  combined = img * mask
+  dimensions = np.shape(img)
+  if len(dimensions) < 3:
+    combined = img * normed 
+  else:
+    combined = img
+    for i in range(dimensions[2]):
+      combined[:,:,i] = combined[:,:,i] * normed
   return combined
   
 

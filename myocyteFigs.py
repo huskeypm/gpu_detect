@@ -15,6 +15,7 @@ import numpy as np
 import cv2
 import matplotlib.pylab as plt
 import bankDetect as bD
+import util
 class empty:pass
 
 root = "myoimages/"
@@ -45,28 +46,63 @@ def fig4():
 ## MI 
 def fig5(): 
 
-  print "DC: combine bar plots into single image?"
-  figAnalysis(
-    testImage=root+"MI_P_16.png",
-    ImgTwoSarcSize=21,
-    tag = "MIprox", 
-    writeImage=True) 
+  # Distal, Medial, Proximal
+  DImageName = root+"MI_D_78.png"
+  DTwoSarcSize = 22
+  MImageName = root+"MI_M_45.png"
+  MTwoSarcSize = 21
+  PImageName = root+"MI_P_16.png"
+  PTwoSarcSize = 21
 
-  figAnalysis(
-    testImage=root+"MI_M_45.png",
-    ImgTwoSarcSize=21,
-    tag = "MImed", 
-    writeImage=True) 
+  # Read in images for figure
+  DImage = util.ReadImg(DImageName)
+  MImage = util.ReadImg(MImageName)
+  PImage = util.ReadImg(PImageName)
+  images = [DImage, MImage, PImage]
 
-  figAnalysis(
-    testImage=root+"MI_D_78.png",
-    ImgTwoSarcSize=22,
-    tag = "MIdist", 
-    writeImage=True) 
+  # BE SURE TO UPDATE TESTMF WITH OPTIMIZED PARAMS
+  DResults = testMF(testImage=DImageName,ImgTwoSarcSize=DTwoSarcSize)
+  MResults = testMF(testImage=MImageName,ImgTwoSarcSize=MTwoSarcSize)
+  PResults = testMF(testImage=PImageName,ImgTwoSarcSize=PTwoSarcSize)
 
+  results = [DResults, MResults, PResults]
+  keys = ['D', 'M', 'P']
+  areas = {}
 
+  # report responses for each case
+  for i,result in enumerate(results):
+    sH = result.stackedHits
+    dimensions = np.shape(sH.WT)
+    area = float(dimensions[0] * dimensions[1])
+    ttContent = np.sum(sH.WT) / area
+    ltContent = np.sum(sH.Long) / area
+    lossContent = 0.
+    # construct array of areas and norm 
+    newAreas = np.array([ttContent, ltContent, lossContent])
+    normedAreas = newAreas / np.max(newAreas)
+    areas[keys[i]] = normedAreas
 
-
+  # generating figure
+  fig, axarr = plt.subplots(3,3)
+  width = 1.0
+  colors = ["blue","green","red"]
+  marks = ["WT","LT","Loss"]
+  plt.rcParams['font.size'] = 6.0
+  plt.rcParams['figure.figsize'] = [16,8]
+  plt.rcParams['figure.dpi'] = 300
+  for i,img in enumerate(images):
+    axarr[i,0].imshow(img,cmap='gray')
+    axarr[i,0].set_title(keys[i]+" Raw")
+    axarr[i,1].imshow(results[i].coloredImg)
+    axarr[i,1].set_title(keys[i]+" Marked")
+    # construct bar plot
+    axarr[i,2].set_title(keys[i]+" Content")
+    indices = np.arange(np.shape(areas[keys[i]])[0])
+    rectangles = axarr[i,2].bar(indices,areas[keys[i]],width,color=colors)
+    axarr[i,2].set_xticks(indices+width)
+    axarr[i,2].set_xticklabels(marks, rotation=90)
+  plt.gcf().savefig("fig5.png")
+        
 def figAnalysis(
       ttFilterName=root+"WTFilter.png",
       ltFilterName=root+"LongFilter.png",
@@ -112,7 +148,8 @@ def figAnalysis(
   rects = ax.bar(ind, values, width,color=color)   
   ax.set_xticks(ind+width)
   ax.set_xticklabels( marks ,rotation=90 )
-  plt.gcf().savefig(tag+"_content.png") 
+  if writeImage:
+    plt.gcf().savefig(tag+"_content.png") 
 
 def testMFExp():
     dataSet = Myocyte() 
@@ -288,8 +325,8 @@ if __name__ == "__main__":
       # DC: same as fig 3, but w HF data 
       1
     if(arg=="-fig5"):               
-      # DC: same as fig 3, but will want to pass in the three MI tissue images 
       fig5()
+
     if(arg=="-fig6"):               
       # RB: generate detected version of Fig 6
       # PKH: add in scaling plot 

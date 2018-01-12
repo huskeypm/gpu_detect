@@ -187,6 +187,68 @@ def CreateLobeFilter(params,rot=22.):
   return lobemfr
 
 
+def lobeDetect(
+  inputs,    # data sets, filters etc 
+  paramDict  # dictionary of parameters needed for detection
+  ):
+    # get data 
+    img = inputs.img # raw (preprocessed image) 
+    mf  = inputs.mf  # raw (preprocessed image) 
+    lobemf  = inputs.lobemf  # raw (preprocessed image) 
+    results = empty()
+
+    ## get correlation plane w filter 
+    corr = mF.matchedFilter(img,mf,parsevals=False,demean=False)
+
+    ## integrate correlation plane over XxX interval
+    smoothScale = paramDict['smoothScale']
+    smoother = np.ones([smoothScale,smoothScale])
+    integrated =mF.matchedFilter(corr,smoother,parsevals=False,demean=False)
+
+    ## get side lobe penalty
+    if isinstance(lobemf,np.ndarray):
+        #corrlobe = np.ones_like(corr)
+        #out = mF.matchedFilter(corr,lobemf,parsevals=True,demean=False)
+        #out -= np.min(out)
+        #out /= np.max(out)
+        #corrlobe += s*out
+        corrlobe = mF.matchedFilter(corr,lobemf,parsevals=True,demean=False)
+        
+    else:    
+        corrlobe = np.ones_like(corr)
+        
+    snr = integrated/corrlobe ##* corrThreshed
+    #snr = corrThreshed
+
+    #plt.colorbar()
+    #plt.gcf().savefig(name,dpi=300)
+
+    ## thresh
+    threshed = snr > paramDict['snrThresh']
+
+    ## make  loss mask, needs a threshold for defining maximum value a 
+    ## region can take before its no longer a considered a loss region 
+    lossScale = paramDict['lossScale']
+    lossFilter = np.ones([lossScale,lossScale])
+    losscorr = mF.matchedFilter(img,lossFilter,parsevals=False,demean=False)
+    lossRegion = losscorr < paramDict['lossRegionCutoff']
+    mask = 1-lossRegion
+    results.lossFilter = mask
+
+
+    
+    ## 
+    ## Storing 
+    ## 
+    results.img = img
+    results.corr = corr
+    results.corrlobe = corrlobe
+    results.snr = snr
+    results.threshed = threshed
+ 
+    return results
+   
+
 
 def docalc(imgOrig,
            mf,
@@ -208,72 +270,36 @@ def docalc(imgOrig,
     img[ np.where(imgOrig> eps)] =eps # enhance so TT visible
 
 
+    ## Store info 
+    inputs=empty()
+    inputs.img = img
+    inputs.mf  = mf  
+    inputs.lobemf = lobemf
+    paramDict = {
+      'smoothScale':smoothScale,
+      'snrThresh':snrThresh,    
+      'lossScale':lossScale,    
+      'lossRegionCutoff':lossRegionCutoff}    
     
-
-    ## get correlation plane w filter 
-    corr = mF.matchedFilter(img,mf,parsevals=False,demean=False)
+    ## Process Info  
+    results = lobeDetect(inputs,paramDict)
+  
+    ##
+    ## Plotting 
+    ## 
     plt.subplot(2,2,1)
-    plt.imshow(img,cmap='gray')
-    #plt.colorbar()
+    plt.imshow(inputs.img,cmap='gray')
 
     plt.subplot(2,2,3)
-    plt.imshow(corr)
-    #plt.colorbar()
-    #plt.gcf().savefig("x.png",dpi=300)
+    plt.imshow(results.corr)
 
-    ##corrThreshed = np.zeros_like(img)
-    ##corrThreshed[np.where(img>corrThresh)] = 1.
-
-    ## integrate correlation plane over XxX interval
-    smoother = np.ones([smoothScale,smoothScale])
-    integrated =mF.matchedFilter(corr,smoother,parsevals=False,demean=False)
-
-    ## get side lobe penalty
-    if isinstance(lobemf,np.ndarray):
-        #corrlobe = np.ones_like(corr)
-        #out = mF.matchedFilter(corr,lobemf,parsevals=True,demean=False)
-        #out -= np.min(out)
-        #out /= np.max(out)
-        #corrlobe += s*out
-        corrlobe = mF.matchedFilter(corr,lobemf,parsevals=True,demean=False)
-        
-    else:    
-        corrlobe = np.ones_like(corr)
-        
-    # zero out subthresh components
     plt.subplot(2,2,4)
-    plt.imshow(corrlobe)
-    
-    snr = integrated/corrlobe ##* corrThreshed
-    #snr = corrThreshed
-
-    #plt.colorbar()
-    #plt.gcf().savefig(name,dpi=300)
-
-    ## thresh
-    threshed = snr > snrThresh
-
-    ## make  loss mask, needs a threshold for defining maximum value a 
-    ## region can take before its no longer a considered a loss region 
-    lossFilter = np.ones([lossScale,lossScale])
-    losscorr = mF.matchedFilter(img,lossFilter,parsevals=False,demean=False)
-    results.asdf = losscorr       
-    lossRegion = losscorr < lossRegionCutoff
-    mask = 1-lossRegion
-    results.lossFilter = mask
-   
+    plt.imshow(results.corrlobe)
 
     plt.subplot(2,2,2)
     #plt.imshow(snr*mask)
-    DisplayHits(imgOrig,threshed)                 
+    DisplayHits(imgOrig,results.threshed)                 
 
-
-    
-    results.img = img
-    results.corr = corr
-    results.corrlobe = corrlobe
-    results.snr = snr
-    results.threshed = threshed
     
     return results
 

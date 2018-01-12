@@ -54,19 +54,7 @@ def matchedFilter(
     h *= 1/np.float(np.prod(np.shape(h)))
   return h 
 
+def FilterSingle(inputs):
+  1
 
-########
-
-# find the location and signal-to-noise ratio of the convolutions
-def processDetection(corr,threshold):
-  maxLoc = np.unravel_index(np.argmax( corr ),sImg) # find location of maximum 
-  maxVal = np.max( corr )
-  noisevariance = np.var(corr)  # note that we are 'polluting' our estimate of the noise variance with the 
-                                                 #signal maximum, so a more careful approach would be to take an 
-                                                 # annulus around the maximum
-  SNR = maxVal / noisevariance
-  if(SNR>threshold):
-    print "Detection found at ", maxLoc, "with SNR ", SNR
-  else:
-    print "No detection" 
 

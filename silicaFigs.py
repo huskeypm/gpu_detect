@@ -230,6 +230,7 @@ def validate():
   assert(np.abs(filter2NS-0.0043)<0.001), "Test2 failed"
   assert(np.abs(filter2PS-0.765) <0.001), "Test3 failed"
   assert(np.abs(filter1NS-0.073) <0.001), "Test4 failed"
+  print "WARNING: These parameters perform poorly rlative to our published data; need to rerun ROC" 
   print "PASSED!"
   
   

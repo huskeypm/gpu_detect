@@ -40,8 +40,8 @@ def SetupTest():
   return case
   
 def SetupCase(case):
-  gray = Setup()
-  case.subregion = get_fiji(gray,case.loc_um,case.extent_um)
+  case.orig = Setup()
+  case.subregion = get_fiji(case.orig,case.loc_um,case.extent_um)
 
 def SetupFilters(rot=20.):
   mfr = CreateFilter(params,rot=rot)
@@ -67,6 +67,17 @@ def get_fiji(gray, loc_um,d_um):
     loc= conv_fiji(loc_um[0],loc_um[1])
     d = conv_fiji(d_um[0],d_um[1])
     subregion = gray[loc[0]:(loc[0]+d[0]),loc[1]:(loc[1]+d[1])]
+    subregionDim = np.shape(subregion) 
+  
+    print "Extracting %dx%d region from %dx%d image"%(
+      #d_um[0]*params.px_per_um[0],
+      #d_um[1]*params.px_per_um[1],
+      subregionDim[0]/params.px_per_um[0],
+      subregionDim[1]/params.px_per_um[1],
+      params.dim[0]/params.px_per_um[1],
+      params.dim[1]/params.px_per_um[0])
+
+
     return subregion
 
 import display_util as du
@@ -121,8 +132,11 @@ def dbgimg(case,results,
         plt.colorbar()     
 
 def DisplayHits(img,threshed):
+        # smooth out image to make it easier to visualize hits 
         daround=np.ones([40,40])
         sadf=mF.matchedFilter(threshed,daround,parsevals=False,demean=False)
+
+        # merge two fields 
         du.StackGrayRedAlpha(img,sadf)
 
 
@@ -263,9 +277,12 @@ def docalc(imgOrig,
     
     return results
 
-def Test1():
-  import cv2
-  import util
+import cv2
+import util
+def Test1(
+  fileName = None # "test.png" 
+  ):
+
   class empty:pass
   cases = dict()
   
@@ -281,16 +298,93 @@ def Test1():
   SetupFilters()
   
   results=docalc(case.subregion,
-                        params.mfr,lobemf=params.lobemfr,
-                        snrThresh=42000)
+                 params.mfr,lobemf=params.lobemfr,
+                 snrThresh=42000)
 
-  plt.figure()
-  DisplayHits(case.subregion,results.threshed)                 
-  plt.gcf().savefig("output.png",dpi=300)
+  if fileName!=None: 
+    plt.figure()
+    DisplayHits(case.subregion,results.threshed)                 
+    plt.gcf().savefig(fileName,dpi=300)
+
   
+  # if orig. figure needed 
+  #plt.figure()
+  #plt.imshow(case.orig,cmap="gray")
+  #plt.gcf().savefig("orig.png",dpi=300)
+  return results 
   
   
   
   
 #Test1()
+
+def validate(): 
+  results = Test1(fileName=None)
+
+  # threshed contains matched filtering response 
+  totInfo = np.sum( results.threshed ) 
+
+  # assert 
+  print "WARNING: this test only verifies that the integrated total response is conserved - says nothing about accuracy" 
+  truthVal = 24437
+  assert( np.abs( totInfo - truthVal) < 1), "FAIL: %f != %f"%(totInfo,truthVal) 
+  print "PASS" 
+
   
+import sys
+#
+# Message printed when program run without arguments 
+#
+def helpmsg():
+  scriptName= sys.argv[0]
+  msg="""
+Purpose: 
+  Tissue-based characterization of tissue 
+ 
+Usage:
+"""
+  msg+="  %s -validation" % (scriptName)
+  msg+="""
+  
+ 
+Notes:
+
+"""
+  return msg
+
+#
+# MAIN routine executed when launching this script from command line 
+#
+if __name__ == "__main__":
+  import sys
+  msg = helpmsg()
+  remap = "none"
+
+  if len(sys.argv) < 2:
+      raise RuntimeError(msg)
+
+  #fileIn= sys.argv[1]
+  #if(len(sys.argv)==3):
+  #  1
+  #  #print "arg"
+
+  # Loops over each argument in the command line 
+  for i,arg in enumerate(sys.argv):
+    # calls 'doit' with the next argument following the argument '-validation'
+    if(arg=="-validate"): 
+      validate()
+      quit()
+    if(arg=="-test1"):
+      Test1(fileName="tissuetest1.png")      
+      quit()
+  
+
+
+
+
+
+  raise RuntimeError("Arguments not understood")
+
+
+
+

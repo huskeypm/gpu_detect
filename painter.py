@@ -372,6 +372,7 @@ def WT_SNR(Img, WTfilter, WTPunishmentFilter,C,gamma):
 
   return SNR
 
+import matchedFilter as mf
 def correlateThresherTT (Img, filterDict, iters=[-10,0,10],
              printer=False, label=None, scale=1.0, sigma_n=1.,
              #WTthreshold=None, LossThreshold=None, LongitudinalThreshold=None,
@@ -401,6 +402,11 @@ def correlateThresherTT (Img, filterDict, iters=[-10,0,10],
     result = empty()
     # copy of original image
     tN = util.renorm(np.array(adapt99,dtype=float),scale=1.)
+
+    print "DC: lines below should be stored in a separate function, since I think here is where the filtering treatments could diverge. Creating a dummy entry here"
+    inputs = empty() # will revise later
+    results = mf.FilterSingle(inputs,mode="do nothing")
+    # DC: consider generalizing the labels here. WT --> label1, etc
 
     ## WT filter and WT punishment filter
     # pad/rotate

@@ -209,6 +209,8 @@ def TestFilters(testDataName,
                 gamma=3.,
                 returnAngles=True):       
 
+    print "DC: do away with the filterType Pore distinction here"
+    print "DC: can keep the case-specific coloring for now"
     if filterType == "Pore":
       if testData is None: 
         # load data against which filters are tested
@@ -258,8 +260,11 @@ def TestFilters(testDataName,
 
     elif filterType == "TT":
       # utilizing runner functions to produce stacked images
-      resultContainer = DetectFilter(testDataName,filterDict,thresholdDict,iters,display=display,sigma_n=sigma_n,
-                                     filterType="TT",doCLAHE=doCLAHE,returnAngles=returnAngles)
+      resultContainer = DetectFilter(testDataName,
+                                     filterDict,thresholdDict,
+                                     iters,display=display,sigma_n=sigma_n,
+                                     filterType="TT",
+                                     doCLAHE=doCLAHE,returnAngles=returnAngles)
 
       if colorHitsOutName != None and saveColoredFig:
         # need to update once I have working code 

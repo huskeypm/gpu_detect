@@ -63,6 +63,7 @@ def CalcInvFilter(filterRef,tN,val,yP,penaltyscale,sigma_n):
 
 
 # Need to be careful when cropping image
+import detection_protocols as dps
 def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
                       iters = [0,30,60,90],  
                       printer = True, filterMode=None,label=None,
@@ -90,6 +91,10 @@ def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
       result = empty()
       # copy of original image 
       tN = util.renorm(np.array(adapt99,dtype=float),scale=1.)
+
+      print "PKH: todo"
+      inputs = empty() 
+      results = dps.FilterSingle(inputs,mode="logMode")     
       
       ## 'positive' filter 
       # pad/rotate 
@@ -227,6 +232,7 @@ def StackHits(correlated,threshold,iters,
       #print maskList
 
         elif filterType == "TT":
+          print "DCL Merge me with oth er filter type" 
           masks = empty()
           corr_i_WT = correlated[i].WT
           corr_i_Long = correlated[i].Long
@@ -267,6 +273,7 @@ def StackHits(correlated,threshold,iters,
     # Return
     # DC: Need to consolidate 
     #
+    print "PKH: Need to conslidate" 
     if filterType == "Pore":
       myList  = np.sum(maskList, axis =0)
       print "max output", daMax   

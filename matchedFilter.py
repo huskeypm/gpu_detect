@@ -59,19 +59,3 @@ def matchedFilter(
   return h 
 
 
-import detection_protocols as dps 
-class empty:pass
-
-print "WARNING: I think this needs to go into a script called 'detection_protocol', since it has nothing to do with filtering"
-def FilterSingle(
-  inputs, # object with specific filters, etc needed for matched filtering
-  mode = None # ['logMode','dylanmode','lobemode']
-  ):
-
-  if mode=="lobemode":
-    dps.lobeDetect()
-  else: 
-    raise
-
-
-

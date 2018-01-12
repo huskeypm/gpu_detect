@@ -282,12 +282,15 @@ def Myocyte():
     filter1TestRegion = None,
     filter1PositiveTest = filter1PositiveTest,
     filter1PositiveChannel= 0,  # blue, WT 
+    filter1Label = "TT",
     filter1Name = root+'WTFilter.png',          
     filter1Thresh=0.06, 
+
     filter2TestName = filter1TestName,
     filter2TestRegion = None,
     filter2PositiveTest = filter1PositiveTest,
     filter2PositiveChannel= 1,  # green, longi
+    filter2Label = "LT",
     filter2Name = root+'LongFilter.png',        
     filter2Thresh=0.38 
     )
@@ -302,9 +305,11 @@ def rocData():
   #threshold? 
   optimizer.GenFigROC(
         dataSet,
-        f1ts = np.linspace(0.05,0.50,3),
-        f2ts = np.linspace(0.05,0.30,3),
-        scales = [1.2],
+        filter1Label = dataSet.filter1Label,
+        filter2Label = dataSet.filter2Label,
+        f1ts = np.linspace(0.05,0.50,9),
+        f2ts = np.linspace(0.05,0.30,9),
+        penaltyscales = [1.2],
         useFilterInv=True,
       )
 
@@ -362,9 +367,9 @@ if __name__ == "__main__":
   # Loops over each argument in the command line 
   for i,arg in enumerate(sys.argv):
     # will return a single marked image 
-    if(arg=="-validation"):
-      testmf()     
-      print "WARNING: add unit test here!!" 
+    if(arg=="-validate"):
+      1
+      raise RuntimeError("WARNING: add unit test here!!")
       quit()
 
     # this function will generate input data for the current fig #3 in the paper 
@@ -373,7 +378,6 @@ if __name__ == "__main__":
       # DC: what is my WT test image (top panel)  
       # DC: call to generate middle panel 
       # DC: call to generate bottom panel 
-      # PKH: I'll provide bar graphs 
 
     if(arg=="-fig4"):               
       # DC: same as fig 3, but w HF data 

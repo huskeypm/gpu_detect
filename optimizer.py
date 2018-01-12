@@ -27,6 +27,7 @@ class DataSet:
     # filter1
     filter1TestName = root + 'clahe_Best.jpg',
     filter1TestRegion = [340,440,400,500],  # None 
+    filter1Label= 'fused',
     filter1Name = root+'fusedCellTEM.png',
     filter1PositiveTest = root+"fusedMarked.png",
     filter1PositiveChannel= -1, # [012] for R, G B
@@ -34,6 +35,7 @@ class DataSet:
     # filter2
     filter2TestName = root + 'clahe_Best.jpg',
     filter2TestRegion = [250,350,50,150],   # None 
+    filter2Label= 'bulk',   
     filter2Name = root+'bulkCellTEM.png',
     filter2PositiveTest = root+"bulkMarked.png",
     filter2PositiveChannel= -1, # [012] for R, G B
@@ -46,6 +48,7 @@ class DataSet:
     self.root = root 
     self.filter1TestName =filter1TestName #  root + 'clahe_Best.jpg'
     self.filter1TestRegion =filter1TestRegion #  [340,440,400,500]
+    self.filter1Label =filter1Label #  root+'fusedCellTEM.png'
     self.filter1Name =filter1Name #  root+'fusedCellTEM.png'
     self.filter1PositiveTest =filter1PositiveTest #  root+"fusedMarked.png"
     self.filter1PositiveChannel = filter1PositiveChannel
@@ -53,6 +56,7 @@ class DataSet:
 
     self.filter2TestName =filter2TestName #  root + 'clahe_Best.jpg'
     self.filter2TestRegion =filter2TestRegion #  [250,350,50,150]
+    self.filter2Label =filter2Label #  root+'fusedCellTEM.png'
     self.filter2Name =filter2Name #  root+'bulkCellTEM.png'
     self.filter2PositiveTest =filter2PositiveTest #  root+"bulkMarked.png"
     self.filter2PositiveChannel = filter2PositiveChannel
@@ -111,6 +115,7 @@ def SetupTests(dataSet):
         # load fused filter
 
   # load filters
+  #print dataSet.filter1Name
   filter1Filter = cv2.imread(dataSet.filter1Name)
   dataSet.filter1Data   = cv2.cvtColor(filter1Filter, cv2.COLOR_BGR2GRAY)
 
@@ -355,15 +360,19 @@ def Assess(
   for i,filter1Thresh in enumerate(filter1Threshes):
     for j,filter2Thresh in enumerate(filter2Threshes):
       for k,penaltyscale      in enumerate(penaltyscales):       
+        # set params 
         dataSet.filter1Thresh=filter1Thresh
         dataSet.filter2Thresh=filter2Thresh
         dataSet.sigma_n = sigma_n
         dataSet.penaltyscale = penaltyscale 
         dataSet.useFilterInv = useFilterInv
+
+        # run test 
         filter1PS,filter2NS,filter2PS,filter1NS = TestParams(
           dataSet,
           display=display)
 
+        # store outputs 
         raw_data =  {\
          'filter1Thresh': dataSet.filter1Thresh,
          'filter2Thresh': dataSet.filter2Thresh,
@@ -421,12 +430,12 @@ def GenFigROC(
   ## 
   import pandas as pd
   df = pd.read_hdf(hdf5Name,'table') 
-  tag = 'filter1'
+  tag = "filter1"      
   AnalyzePerformanceData(df,tag=tag,label=filter1Label,    
-    normalize=True, roc=True,outName=tag+ "ROC.png")
-  tag = 'filter2'
+    normalize=True, roc=True,outName=filter1Label+ "_ROC.png")
+  tag = "filter2"          
   AnalyzePerformanceData(df,tag=tag,   label=filter2Label, 
-    normalize=True,roc=True,outName=tag+"ROC.png")
+    normalize=True,roc=True,outName=filter2Label+"_ROC.png")
 
 
 

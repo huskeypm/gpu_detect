@@ -37,11 +37,11 @@ python myocyteFigs.py -allFigs
 python myocyteFigs.py -tag "MI" -test ./myoimages/WTFilter.png ./myoimages/LongFilter.png ./myoimages/MI_D_73_annotation.png 0.06 0.38 3.
 </code>
 
-### Roc optimization
+### ROC optimization
 - Need to define 'dataSet' object (see inside myocyteFigs)
 - Annotated and original images must be same dimensions 
 <code>
- python myocyteFigs.py -roc
+python myocyteFigs.py -roc
 </code>
 
 

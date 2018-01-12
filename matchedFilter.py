@@ -4,6 +4,10 @@ Performs basic matched filter test by FFT-correlating a measured signal with an 
 # import modules we'll need 
 import scipy.fftpack as fftp
 import numpy as np
+
+##
+## Basic steps of matched filtering process
+## 
 def matchedFilter(
   dimg, # imgs wherein signal (filter) is hypothesized to exist
   daFilter,# signal 
@@ -54,7 +58,20 @@ def matchedFilter(
     h *= 1/np.float(np.prod(np.shape(h)))
   return h 
 
-def FilterSingle(inputs):
-  1
+
+import detection_protocols as dps 
+class empty:pass
+
+print "WARNING: I think this needs to go into a script called 'detection_protocol', since it has nothing to do with filtering"
+def FilterSingle(
+  inputs, # object with specific filters, etc needed for matched filtering
+  mode = None # ['logMode','dylanmode','lobemode']
+  ):
+
+  if mode=="lobemode":
+    dps.lobeDetect()
+  else: 
+    raise
+
 
 

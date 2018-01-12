@@ -135,7 +135,8 @@ def colorHits(rawOrig,red=None,green=None,outName=None,label="",plotMe=True):
     return Img  
 
 def colorHitsTT(rawOrig,LongStacked,WTStacked,iters,outName=None,label='',plotMe=True):
-  # need a function for coloring TT differently than PNP since we are using a heatmap of red v blue
+  # need a function for coloring TT differently than PNP since we are using a
+  # heatmap of red v blue to denote rotation degree
   dims=np.shape(rawOrig)
 
   # make RGB version

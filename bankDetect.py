@@ -152,6 +152,8 @@ def colorHitsTT(rawOrig,LongStacked,WTStacked,iters,outName=None,label='',plotMe
   #plt.figure()
   #plt.imshow(LongStacked)
   #plt.colorbar()
+
+  print "DC: refactor as colorAngles"
   ColorChannel(Img,LongStacked,chIdx=1)
 
   # mark WT wrt rotation degree via heatmap
@@ -236,6 +238,7 @@ def TestFilters(testDataName,
 
 
       ## perform detection 
+      print "DC: this part can be replaced with a dictionary of filters" 
       filter1PoreResult = DetectFilter(testData,filter1Data  ,filter1Thresh,
                                      iters,display=display,sigma_n=sigma_n,
                                      filterMode="filter1",label=label,
@@ -247,6 +250,13 @@ def TestFilters(testDataName,
                                      filterMode="filter2",label=label,
                                      penaltyscale=penaltyscale,
                                      useFilterInv=useFilterInv)
+
+      print "DC: color channels by dictionary results"
+      # colorHits(asdfsdf, red=filter1output, green=filter2output)
+      reportAngle = False
+      if reportAngle:
+        1
+        # colorMyANgles(data,filterOutput)
 
       ## display results 
       if colorHitsOutName!=None: 

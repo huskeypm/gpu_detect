@@ -40,6 +40,7 @@ def lobeDetect(
     else:    
         corrlobe = np.ones_like(corr)
         
+    ## Determine SNR by comparing integrated area with corrlobe response 
     snr = integrated/corrlobe ##* corrThreshed
     #snr = corrThreshed
 
@@ -70,4 +71,47 @@ def lobeDetect(
     results.threshed = threshed
  
     return results
+
+
+
+class empty:pass
+
+
+
+# This script determines detections by integrating the correlation response
+# over a small area, then dividing that by the response of a 'lobe' filter 
+# need to write this in paper, if it works 
+def dcDetect(
+  inputs,    # data sets, filters etc 
+  paramDict  # dictionary of parameters needed for detection
+  ):
+    # get data 
+    img = inputs.img # raw (preprocessed image) 
+    mf  = inputs.mf  # raw (preprocessed image) 
+    results = empty()
+
+    ## get correlation plane w filter 
+    corr = mF.matchedFilter(img,mf,parsevals=False,demean=False)
+
+    results = empty()
+
+
+def FilterSingle(
+  inputs, # object with specific filters, etc needed for matched filtering
+  paramDict = dict(),# pass in parameters through here
+  mode = None # ['logMode','dylanmode','lobemode']
+  ):
+
+  if mode=="lobemode":
+    results = lobeDetect(inputs,paramDict)
+  elif mode=="dcmode": 
+    results = dcDetect(inputs,paramDict)
+  else: 
+    #raise RuntimeError("need to define mode") 
+    print "Patiently ignoring you until this is implemented" 
+    results = empty()
+
+  return results
+
+
 

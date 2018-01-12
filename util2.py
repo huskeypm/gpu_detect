@@ -116,6 +116,8 @@ def makeMask(threshold = 245,
 
     if doKMeans ==False:
       return newmasker     
+    else:
+      raise RuntimeError("probably don't need this anymore") 
 
     print "WARNING: please dig into why find_centers fails from time to time (or look into more robust clustering routine)"
     

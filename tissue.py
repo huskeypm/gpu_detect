@@ -250,6 +250,7 @@ def lobeDetect(
    
 
 
+import detection_protocols as dps
 def docalc(imgOrig,
            mf,
            rawFloor = 1., # minimum value to image (usually don't chg)
@@ -282,7 +283,7 @@ def docalc(imgOrig,
       'lossRegionCutoff':lossRegionCutoff}    
     
     ## Process Info  
-    results = lobeDetect(inputs,paramDict)
+    results = dps.lobeDetect(inputs,paramDict)
   
     ##
     ## Plotting 

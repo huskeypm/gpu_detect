@@ -4,7 +4,8 @@ constitutes a detection
 """
 
 import numpy as np 
-import matchedFilter as mf
+import matchedFilter as mF
+class empty:pass
 
 # This script determines detections by integrating the correlation response
 # over a small area, then dividing that by the response of a 'lobe' filter 

@@ -411,8 +411,8 @@ def correlateThresherTT (Img, filterDict, iters=[-10,0,10],
     tN = util.renorm(np.array(adapt99,dtype=float),scale=1.)
 
     print "DC: lines below should be stored in a separate function, since I think here is where the filtering treatments could diverge. Creating a dummy entry here"
-    inputs = empty() # will revise later
-    results = mf.FilterSingle(inputs,mode="do nothing")
+    #inputs = empty() # will revise later
+    #results = mf.FilterSingle(inputs,mode="do nothing")
     # DC: consider generalizing the labels here. WT --> label1, etc
 
     ## WT filter and WT punishment filter

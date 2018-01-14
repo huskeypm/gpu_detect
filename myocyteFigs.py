@@ -239,29 +239,27 @@ def testMF(
 
   # BE SURE TO REMOVE ME!!
   print "WARNING: nan returned from stackedHits, so 'circumventing this'"
-  print "DC: Write in routine to apply mask to output image. Function at bottom"
   cI = results.coloredImg
 
   wt = np.zeros_like( cI[:,:,0]) 
   wt[ np.where(cI[:,:,2] > 100) ] = 1
-  # applying mask
-  wtMasked = ReadResizeApplyMask(wt,testImage,ImgTwoSarcSize)
-  results.ttContent = stackedHits.WT = wtMasked 
-
   lt = np.zeros_like( wt )
-  lt[ np.where(cI[:,:,1] > 100) ] = 1   
-  # applying mask
-  ltMasked = ReadResizeApplyMask(lt,testImage,ImgTwoSarcSize)
-  stackedHits.Long = ltMasked 
-
+  lt[ np.where(cI[:,:,1] > 100) ] = 1
   loss = np.zeros_like( wt )
-  loss[ np.where(cI[:,:,0] > 100) ] = 1   
-  # applying mask
+  loss[ np.where(cI[:,:,0] > 100) ] = 1
+
+  # apply masks
+  wtMasked = ReadResizeApplyMask(wt,testImage,ImgTwoSarcSize)
+  ltMasked = ReadResizeApplyMask(lt,testImage,ImgTwoSarcSize)
   lossMasked = ReadResizeApplyMask(loss,testImage,ImgTwoSarcSize)
+
+  # add to containers
+  stackedHits.WT = wtMasked 
+  stackedHits.Long = ltMasked 
   stackedHits.loss = lossMasked 
 
   if writeImage:
-    # write putputs	  
+    # write outputs	  
     cv2.imwrite(tag+"_output.png",results.coloredImg)       
 
 
@@ -330,7 +328,36 @@ def ReadResizeApplyMask(img,imgName,ImgTwoSarcSize,filterTwoSarcSize=25):
     for i in range(dimensions[2]):
       combined[:,:,i] = combined[:,:,i] * normed
   return combined
-  
+
+# function to validate that code has not changed since last commit
+def validate(testImage=root+"MI_D_78.png",
+             ImgTwoSarcSize=22,
+             ):
+  # run algorithm
+  results = testMF(testImage=testImage,ImgTwoSarcSize=ImgTwoSarcSize)
+
+  ## run test
+  cI = results.coloredImg
+  wt = np.zeros_like( cI[:,:,0])
+  wt[ np.where(cI[:,:,2] > 100) ] = 1
+  lt = np.zeros_like( wt )
+  lt[ np.where(cI[:,:,1] > 100) ] = 1
+  loss = np.zeros_like( wt )
+  loss[ np.where(cI[:,:,0] > 100) ] = 1
+  # apply masks
+  wtMasked = ReadResizeApplyMask(wt,testImage,ImgTwoSarcSize)
+  ltMasked = ReadResizeApplyMask(lt,testImage,ImgTwoSarcSize)
+  lossMasked = ReadResizeApplyMask(loss,testImage,ImgTwoSarcSize)
+  # find total content
+  wtContent = np.sum(wtMasked)
+  ltContent = np.sum(ltMasked)
+  lossContent = np.sum(lossMasked)
+  # compare to previously tested output
+  print "WARNING: Dig into why longitdunial content = 0"
+  assert(abs(wtContent - 35.0) < 1)
+  assert(abs(ltContent - 0) < 1)
+  assert(abs(lossContent - 300.0) < 1)
+  #  print wtContent, ltContent, lossContent
 
 
 #
@@ -366,10 +393,9 @@ if __name__ == "__main__":
 
   # Loops over each argument in the command line 
   for i,arg in enumerate(sys.argv):
-    # will return a single marked image 
     if(arg=="-validate"):
-      1
-      raise RuntimeError("WARNING: add unit test here!!")
+      print "Consider developing a more robust behavior test"
+      validate()
       quit()
 
     # this function will generate input data for the current fig #3 in the paper 

@@ -134,7 +134,8 @@ def colorHits(rawOrig,red=None,green=None,outName=None,label="",plotMe=True):
     plt.close()
     return Img  
 
-def colorHitsTT(rawOrig,LongStacked,WTStacked,iters,outName=None,label='',plotMe=True):
+def colorHitsTT(rawOrig,LongStacked,WTStacked,iters,outName=None,label='',plotMe=True,
+                returnAngles=False):
   # need a function for coloring TT differently than PNP since we are using a
   # heatmap of red v blue to denote rotation degree
   dims=np.shape(rawOrig)
@@ -148,11 +149,12 @@ def colorHitsTT(rawOrig,LongStacked,WTStacked,iters,outName=None,label='',plotMe
 
   # mark longitudinal hits without regard to rotation for now (green)
   # to do this we must modify the LongStacked array
-  LongStacked[np.invert(np.isnan(LongStacked))] = 1
+  LongStacked[np.invert(np.isnan(LongStacked))] = 1 
   LongStacked = np.nan_to_num(LongStacked).astype('uint8')
   #plt.figure()
   #plt.imshow(LongStacked)
   #plt.colorbar()
+  #plt.show()
 
   print "DC: refactor as colorAngles"
   ColorChannel(Img,LongStacked,chIdx=1)
@@ -270,6 +272,15 @@ def TestFilters(testDataName,
       return filter1PoreResult, filter2PoreResult 
 
     elif filterType == "TT":
+      # moving dictionary abstraction up a lvl from DetectFilters to TestFilters
+      #resultsDict = {}
+      #for filterName,filterArray in filterDict.iteritems():
+      #  resultsDict[filterName] = DetectFilter(testDataName,filterArray,thresholdDict[filterName],
+      #                                         iters,display=display,sigma_n=sigma_n,filterType="TT",
+      #                                         doCLAHE=doCLAHE,returnAngles=returnAngles)
+
+
+
       # utilizing runner functions to produce stacked images
       resultContainer = DetectFilter(testDataName,
                                      filterDict,thresholdDict,
@@ -288,22 +299,23 @@ def TestFilters(testDataName,
         colorImg = testDataName
         # keep in mind when calling this function that red and green are for the matplotlib convention.
         # CV2 spits out red -> blue
-        #resultContainer.coloredImg = colorHits(colorImg, red=resultContainer.stackedHits.WT,
-        #                                       green=resultContainer.stackedHits.Long,
-        #                                       label=label,outName=None, plotMe=False)
-        
+
         # changing since we return the angle at which the maximum response is
-        resultContainer.coloredImg = colorHitsTT(colorImg, resultContainer.stackedHits.Long,
+        resultContainer.coloredImg = colorHitsTT(colorImg.copy(), resultContainer.stackedHits.Long,
                                                  resultContainer.stackedHits.WT, iters,
                                                  label=label,outName=None,plotMe=False)
+        if returnAngles:
+          resultContainer.coloredAngles = colorHitsTT(colorImg.copy(), resultContainer.stackedHits.Long,
+                                                      resultContainer.stackedHits.WT, iters,
+                                                      returnAngles=True,
+                                                      label=label,outName=None,plotMe=False)
       return resultContainer
-
     else:
       raise RuntimeError, "Filtering type not understood"
 
 
 def TestTrueData():
-  root = "/net/share/shared/papers/nanoporous/images/"
+  root 							= "/net/share/shared/papers/nanoporous/images/"
   img1 = '/home/AD/srbl226/spark/sparkdetection/roc/clahe_Best.jpg'
   img2 = root+"full.png"
   dummy = TestFilters(

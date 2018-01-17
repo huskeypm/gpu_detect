@@ -16,7 +16,7 @@ commfigs.bash - generates images for paper
 ## Todo
 see TODO for todo items 
 
-## Myocyte 
+## Myocyte filter generation
 Initialize by running
 <code>
 python util.py -genAllMyo
@@ -31,6 +31,12 @@ python myocyteFigs.py -validation
 <code>
 python myocyteFigs.py -allFigs 
 </code>
+
+### Minor validation test
+<code>
+python myocyteFigs.py -minorValidate
+</code>
+Meant to serve as a rapid validation test between commits
 
 ### execute images 
 <code>

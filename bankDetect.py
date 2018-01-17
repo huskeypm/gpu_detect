@@ -36,10 +36,10 @@ def DetectFilter(
   # difference for TT routines these are now dictionaries
   print "PKH: why needed?"  
   result.threshold = paramDict['snrThresh']
-  result.mf= inputs.mf
+  result.mf= inputs.mfOrig
 
   result.stackedDict = dict()
-
+  ##print inputs.lobemf
   if filterType == "Pore":
     # do correlations across all iter
     result.correlated = painter.correlateThresher(
@@ -281,7 +281,7 @@ def TestFilters(testDataName,
       ## perform detection 
       print "DC: this part can be replaced with a dictionary of filters" 
       inputs = empty()
-      inputs.img = testData
+      inputs.imgOrig = testData
     
       params = dict() # need to make into class
       params['penaltyscale'] = penaltyscale
@@ -291,13 +291,13 @@ def TestFilters(testDataName,
       params['filterMode'] = "simple"      
 
       ### filter 1 
-      inputs.mf = filter1Data
+      inputs.mfOrig = filter1Data
       params['snrThresh'] = filter1Thresh
       filter1PoreResult = DetectFilter(inputs,params,iters,
                                        display=display,filterMode="filter1",label=label)
       
       ### filter 2 
-      inputs.mf = filter2Data
+      inputs.mfOrig = filter2Data
       params['snrThresh'] = filter2Thresh
       filter2PoreResult = DetectFilter(inputs,params,iters,
                                        display=display,filterMode="filter2",label=label)

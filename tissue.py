@@ -214,10 +214,14 @@ def docalc(imgOrig,
 
     ## Store info 
     inputs=empty()
-    inputs.img = img
-    inputs.mf  = mf  
+    inputs.imgOrig = img
+    inputs.mfOrig  = mf  
     inputs.lobemf = lobemf
     paramDict = {
+      'doCLAHE':False,      
+      'useFilterInv':False,      
+      'sigma_n':1,
+      'filterMode':"lobemode",
       'smoothScale':smoothScale,
       'snrThresh':snrThresh,    
       'lossScale':lossScale,    
@@ -225,26 +229,29 @@ def docalc(imgOrig,
 
 
     import bankDetect as bD
-    bD(inputs,paramDict)
+    filter1PoreResult = bD.DetectFilter(inputs,paramDict,iters=[0])
     
     ## Process Info  
-    results = dps.lobeDetect(inputs,paramDict)
+    #results = dps.lobeDetect(inputs,paramDict)
   
     ##
     ## Plotting 
     ## 
+    print "RESTORE PLOTTING ONCE I UNDERSTAND"
+    print "WARNING: SDFSDFDFSDF"
+    results.threshed = 1
     plt.subplot(2,2,1)
-    plt.imshow(inputs.img,cmap='gray')
+    plt.imshow(inputs.imgOrig,cmap='gray')
 
-    plt.subplot(2,2,3)
-    plt.imshow(results.corr)
+    #plt.subplot(2,2,3)
+    #plt.imshow(results.corr)
 
-    plt.subplot(2,2,4)
-    plt.imshow(results.corrlobe)
+    #plt.subplot(2,2,4)
+    #plt.imshow(results.corrlobe)
 
-    plt.subplot(2,2,2)
+    #plt.subplot(2,2,2)
     #plt.imshow(snr*mask)
-    DisplayHits(imgOrig,results.threshed)                 
+    #DisplayHits(imgOrig,results.threshed)                 
 
     
     return results

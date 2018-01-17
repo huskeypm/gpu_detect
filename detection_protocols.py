@@ -94,6 +94,7 @@ def dcDetect(
     corr = mF.matchedFilter(img,mf,parsevals=False,demean=False)
 
     results = empty()
+    return results 
 
 #
 # Original detection procedure included with PNP paper

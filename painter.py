@@ -79,8 +79,8 @@ def correlateThresher(
     correlated = []
 
     print "REPALCEME PKH"
-    myImg = inputs.img
-    myFilter1 = inputs.mf
+    myImg = inputs.imgOrig
+    myFilter1 = inputs.mfOrig
 
     # Ryan ?? equalized image?
     # Dylan - Adding in option to turn off CLAHE
@@ -92,8 +92,10 @@ def correlateThresher(
     else:
       adapt99 = myImg
 
+    print "VERIFY WE STILL NEED" 
     filterRef = util.renorm(np.array(myFilter1,dtype=float),scale=1.)
 
+    
     # TODO - here is the place to stick in the GPU shizzle 
     for i, val in enumerate(iters):
       result = empty()
@@ -101,7 +103,6 @@ def correlateThresher(
       tN = util.renorm(np.array(adapt99,dtype=float),scale=1.)
 
       print "PKH: todo"
-      inputs = empty() 
       inputs.img = tN
       
       ## 'positive' filter 
@@ -110,8 +111,8 @@ def correlateThresher(
       inputs.mf = rFN  
    
       # matched filtering 
-      results = dps.FilterSingle(inputs,params)      
-      yP = results.corr ; print "REMOVE ME" 
+      result = dps.FilterSingle(inputs,params)      
+      yP = result.corr ; print "REMOVE ME" 
       #yP = mF.matchedFilter(tN,rFN,demean=False,parsevals=True)
 
       #result.corr = yP
@@ -119,6 +120,7 @@ def correlateThresher(
 
       ## negative filter 
       if params['useFilterInv']:
+        print "NEEDS TO BE MERGED INTO detection protocol"  
         result.corr = CalcInvFilter(filterRef,tN,val,yP,
                                     params['penaltyscale'],
                                     params['sigma_n'])
@@ -180,7 +182,7 @@ def correlateThresher(
         plt.gcf().savefig(fileName,dpi=300)
         plt.close()
      
-
+      print "NEEDS TO BE MOVED INSIDE PROTOCOL"
       #  
       result.snr = CalcSNR(result.corr,params['sigma_n']) 
       # 

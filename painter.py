@@ -237,30 +237,32 @@ def StackHits(correlated,threshold,iters,
         elif filterType == "TT":
           print "DCL Merge me with oth er filter type" 
           masks = empty()
-          corr_i_WT = correlated[i].WT
-          corr_i_Long = correlated[i].Long
-          corr_i_Loss = correlated[i].Loss
+          corr_i = correlated[i].corr 
+          #corr_i_WT = correlated[i].WT
+          #corr_i_Long = correlated[i].Long
+          #corr_i_Loss = correlated[i].Loss
 
-          masks.WT = util2.makeMask(threshold['WT'], img=corr_i_WT, doKMeans=doKMeans)
-          masks.Long = util2.makeMask(threshold['Longitudinal'], img=corr_i_Long, doKMeans=doKMeans)
-          masks.Loss = util2.makeMask(threshold['Loss'], img=corr_i_Loss, doKMeans=doKMeans,inverseThresh=True)
+          mask    = util2.makeMask(threshold, img=corr_i, doKMeans=doKMeans)
+          #masks.WT = util2.makeMask(threshold['WT'], img=corr_i_WT, doKMeans=doKMeans)
+          #masks.Long = util2.makeMask(threshold['Longitudinal'], img=corr_i_Long, doKMeans=doKMeans)
+          #masks.Loss = util2.makeMask(threshold['Loss'], img=corr_i_Loss, doKMeans=doKMeans,inverseThresh=True)
           if display:
             #WT
             plt.figure()
             #plt.subplot(1,1)
             #plt.imshow(img)
             plt.subplot(1,3,1)
-            plt.imshow(masks.WT)
-            plt.title('WT')
+            plt.imshow(mask) #s.WT)
+            #plt.title('WT')
             # Longituindal
-            plt.subplot(1,3,2)
-            plt.imshow(masks.Long)
-            plt.title('Longitudinal')
+            #plt.subplot(1,3,2)
+            #plt.imshow(masks.Long)
+            #plt.title('Longitudinal')
             # Loss
-            plt.subplot(1,3,3)
-            plt.imshow(masks.Loss)
-            plt.title('Loss')
-            plt.close()
+            #plt.subplot(1,3,3)
+            #plt.imshow(masks.Loss)
+            #plt.title('Loss')
+            #plt.close()
 
           # changing values to strings that will later be interpreted by colorHits function
           #colorIndicator = 'rot'+str(i)
@@ -268,9 +270,10 @@ def StackHits(correlated,threshold,iters,
           #masks.Long[masks.Long != 0] = colorIndicator
           # not going to mark Loss in the same way to make code a bit more efficient later
 
-          WTlist.append(masks.WT)
-          Longlist.append(masks.Long)
-          Losslist.append(masks.Loss)
+          maskList.append(mask)
+          #WTlist.append(masks.WT)
+          #Longlist.append(masks.Long)
+          #Losslist.append(masks.Loss)
 
     #
     # Return
@@ -283,21 +286,26 @@ def StackHits(correlated,threshold,iters,
       return myList 
 
     elif filterType == "TT":
-      stacked = empty()
+      #stacked = empty()
       # creating a class that also contains the angle with which the most intense hit was located
 
-      dims = np.shape(WTlist[0]) # all rotations and filter correlations should be the same dimensions
+      #dims = np.shape(WTlist[0]) # all rotations and filter correlations should be the same dimensions
      
       # creating 'poor mans mask' through use of NaN
-      WTholder = np.argmax(WTlist,axis=0).astype('float')
-      WTholder[WTlist[0] < 0.00001] = np.nan
-      stacked.WT = WTholder
-      Longholder = np.argmax(Longlist,axis=0).astype('float')
-      Longholder[Longlist[0] < 0.00001] = np.nan
-      stacked.Long = Longholder
-      stacked.Loss = np.sum(Losslist,axis=0)
+      myHolder = np.argmax(maskList,axis=0).astype('float') 
+      myHolder[maskList[0] < 0.00001] = np.nan
+      return myHolder 
+      
+      #WTholder = np.argmax(WTlist,axis=0).astype('float')
+      #WTholder[WTlist[0] < 0.00001] = np.nan
+      #stacked.WT = WTholder
+      #Longholder = np.argmax(Longlist,axis=0).astype('float')
+      #Longholder[Longlist[0] < 0.00001] = np.nan
+      #stacked.Long = Longholder
+      #stacked.Loss = np.sum(Losslist,axis=0)
 
-      if returnAngles:
+      #if returnAngles:
+      if 0: 
         stackedAngles = empty()
         WTAngle = WTholder.flatten().astype('float')
         for i,idx in enumerate(np.invert(np.isnan(WTholder.flatten()))):

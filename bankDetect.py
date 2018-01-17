@@ -27,6 +27,8 @@ def DetectFilter(dataSet,mf,threshold,iters,display=False,sigma_n=1.,
   result.threshold = threshold
   result.mf= mf
 
+  result.stackedDict = dict()
+
   if filterType == "Pore":
     # do correlations across all iter
     result.correlated = painter.correlateThresher(
@@ -58,10 +60,34 @@ def DetectFilter(dataSet,mf,threshold,iters,display=False,sigma_n=1.,
        thresholdDict=result.threshold,iters=iters,doCLAHE=doCLAHE)
 
     # stack filter hits
-    result.stackedHits,result.stackedAngles = painter.StackHits(result.correlated,
-                                                                threshold,iters,display=display,
+    print "REPLCE ME" 
+    for i,iteration in enumerate(iters):
+      result.correlated[i].corr = result.correlated[i].WT
+    daThresh = threshold['WT']
+    result.stackedHits                      = painter.StackHits(result.correlated,
+    #result.stackedHits,result.stackedAngles = painter.StackHits(result.correlated,
+                                                                daThresh,iters,display=display,
                                                                 doKMeans=False,
                                                                 filterType="TT",returnAngles=returnAngles)
+    result.stackedDict["WT"] = result.stackedHits
+    result.stackedHits = empty()
+    result.stackedHits.WT = result.stackedDict["WT"]
+    print "FDIX ME" 
+    result.stackedHits.Long = result.stackedDict["WT"]
+    result.stackedHits.Loss = result.stackedDict["WT"]
+
+    result.stackedAngles = empty()
+    result.stackedAngles.WT = result.stackedDict["WT"]
+    result.stackedAngles.Long= result.stackedDict["WT"]
+    result.stackedAngles.Loss=result.stackedDict["WT"]
+    #result.stackedHits,result.stackedAngles = painter.StackHits(result.correlated,
+    #                                                            threshold,iters,display=display,
+    #                                                            doKMeans=False,
+    #                                                            filterType="TT",returnAngles=returnAngles)
+    #result.stackedHits,result.stackedAngles = painter.StackHits(result.correlated,
+    #                                                            threshold,iters,display=display,
+    #                                                            doKMeans=False,
+    #                                                            filterType="TT",returnAngles=returnAngles)
     #print result.stackedHits.WT
     #quit() 
   
@@ -282,6 +308,7 @@ def TestFilters(testDataName,
 
 
       # utilizing runner functions to produce stacked images
+      print "DC: this is wehre you'll want to iterature over WT, Longi and loss" 
       resultContainer = DetectFilter(testDataName,
                                      filterDict,thresholdDict,
                                      iters,display=display,sigma_n=sigma_n,

@@ -95,7 +95,31 @@ def dcDetect(
 
     results = empty()
 
+#
+# Original detection procedure included with PNP paper
+#
+def simpleDetect(
+  inputs,    # data sets, filters etc 
+  paramDict  # dictionary of parameters needed for detection
+  ):
+  # get data 
+  img = inputs.img # raw (preprocessed image) 
+  mf  = inputs.mf  # raw (preprocessed image) 
 
+  ## get correlation plane w filter 
+  results = empty()
+  results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=True) 
+
+  ## had an snr criterion somewhere
+  print "PKH: where's the SNR criterion?" 
+
+  # need to pull out of caller function [see CalcInvFilter] stuff
+
+  return results
+
+#
+# Calls different modes of selecting best hits 
+#
 def FilterSingle(
   inputs, # object with specific filters, etc needed for matched filtering
   paramDict = dict(),# pass in parameters through here
@@ -106,6 +130,8 @@ def FilterSingle(
     results = lobeDetect(inputs,paramDict)
   elif mode=="dcmode": 
     results = dcDetect(inputs,paramDict)
+  elif mode=="simple":
+    results = simpleDetect(inputs,paramDict)
   else: 
     #raise RuntimeError("need to define mode") 
     print "Patiently ignoring you until this is implemented" 

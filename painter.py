@@ -94,16 +94,19 @@ def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
 
       print "PKH: todo"
       inputs = empty() 
-      results = dps.FilterSingle(inputs,mode="logMode")     
+      inputs.img = tN
       
       ## 'positive' filter 
       # pad/rotate 
       rFN = PadRotate(filterRef,val)  
+      inputs.mf = rFN  
    
       # matched filtering 
-      yP = mF.matchedFilter(tN,rFN,demean=False,parsevals=True)
+      results = dps.FilterSingle(inputs,mode="simple")      
+      yP = results.corr ; print "REMOVE ME" 
+      #yP = mF.matchedFilter(tN,rFN,demean=False,parsevals=True)
 
-      result.corr = yP
+      #result.corr = yP
 
 
       ## negative filter 

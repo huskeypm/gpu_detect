@@ -64,20 +64,28 @@ def CalcInvFilter(filterRef,tN,val,yP,penaltyscale,sigma_n):
 
 # Need to be careful when cropping image
 import detection_protocols as dps
-def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
-                      iters = [0,30,60,90],  
-                      printer = True, filterMode=None,label=None,
-                      useFilterInv=False,
-                      penaltyscale = 1.2,  # for rescaling penalty filter 
-                      sigma_n=1.,threshold=None,
-                      doCLAHE=True):
+def correlateThresher(
+        inputs,
+        params,
+        #myImg, myFilter1,  #cropper=[25,125,25,125],
+        iters = [0,30,60,90],  
+        printer = True, filterMode=None,label=None,
+        #              useFilterInv=False,
+        #              penaltyscale = 1.2,  # for rescaling penalty filter 
+        #              sigma_n=1.,threshold=None,
+        #              doCLAHE=True
+        ):
     # Store all 'hits' at each angle 
     correlated = []
+
+    print "REPALCEME PKH"
+    myImg = inputs.img
+    myFilter1 = inputs.mf
 
     # Ryan ?? equalized image?
     # Dylan - Adding in option to turn off CLAHE
     # TODO - this should be done in preprocessing, not here
-    if doCLAHE:
+    if params['doCLAHE']:
       clahe99 = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(16,16))
       cl1 = clahe99.apply(myImg)
       adapt99 = cl1
@@ -102,7 +110,7 @@ def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
       inputs.mf = rFN  
    
       # matched filtering 
-      results = dps.FilterSingle(inputs,mode="simple")      
+      results = dps.FilterSingle(inputs,params)      
       yP = results.corr ; print "REMOVE ME" 
       #yP = mF.matchedFilter(tN,rFN,demean=False,parsevals=True)
 
@@ -110,8 +118,10 @@ def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
 
 
       ## negative filter 
-      if useFilterInv:
-        result.corr = CalcInvFilter(filterRef,tN,val,yP,penaltyscale,sigma_n)
+      if params['useFilterInv']:
+        result.corr = CalcInvFilter(filterRef,tN,val,yP,
+                                    params['penaltyscale'],
+                                    params['sigma_n'])
 
       tag = filterMode 
       #if filterMode=="fused":
@@ -172,7 +182,7 @@ def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
      
 
       #  
-      result.snr = CalcSNR(result.corr,sigma_n) 
+      result.snr = CalcSNR(result.corr,params['sigma_n']) 
       # 
       result.max = np.max(result.corr)
 

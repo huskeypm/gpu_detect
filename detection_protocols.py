@@ -125,7 +125,10 @@ def FilterSingle(
   paramDict = dict(),# pass in parameters through here
   mode = None # ['logMode','dylanmode','lobemode']
   ):
-
+  if mode is not None:
+      print "WARNING: replacing with paramDict"
+    
+  mode = paramDict['filterMode']  
   if mode=="lobemode":
     results = lobeDetect(inputs,paramDict)
   elif mode=="dcmode": 

@@ -225,7 +225,8 @@ def testMF(
       gamma=3.,
       ImgTwoSarcSize=None,
       tag = "default_",
-      writeImage = False):
+      writeImage = False,
+      iters=[-20,-15,-10,-5,0,5,10,15,20]):
 
   #results = empty()
   results = Rs.giveStackedHits(testImage, 
@@ -233,7 +234,8 @@ def testMF(
                    WTFilterName=ttFilterName,
                    LongitudinalFilterName=ltFilterName,
                    LossFilterName = lossFilterName,
-                   WTPunishFilterName=wtPunishFilterName
+                   WTPunishFilterName=wtPunishFilterName,
+                   iters=iters
                    )
   stackedHits = results.stackedHits
 
@@ -313,9 +315,13 @@ def rocData():
 
 def ReadResizeApplyMask(img,imgName,ImgTwoSarcSize,filterTwoSarcSize=25):
   # function to apply the image mask before outputting results
-  maskName, fileType = imgName.split('.')
-  mask = cv2.imread(maskName+'_mask.'+fileType)
-  maskGray = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+  maskName = imgName[:-4]; fileType = imgName[-4:]
+  mask = cv2.imread(maskName+'_mask'+fileType)
+  try:
+    maskGray = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+  except:
+    print "No mask named '"+imgName+"' was found. Circumventing masking."
+    return img
   scale = float(filterTwoSarcSize) / float(ImgTwoSarcSize)
   maskResized = cv2.resize(maskGray,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
   normed = maskResized.astype('float') / float(np.max(maskResized))
@@ -359,6 +365,40 @@ def validate(testImage=root+"MI_D_78.png",
   assert(abs(lossContent - 300.0) < 1)
   #  print wtContent, ltContent, lossContent
   print "PASSED!"
+
+def minorValidate(testImage="./myoimages/unittest.png",
+                  ImgTwoSarcSize=21,
+                  iters=[-10,0,10]):
+
+  # A minor validation function to serve as small tests between commits
+  ## run algorithm
+  results = testMF(testImage=testImage, ImgTwoSarcSize=ImgTwoSarcSize,iters=iters)
+
+  ## run test
+  cI = results.coloredImg
+  wt = np.zeros_like( cI[:,:,0])
+  wt[ np.where(cI[:,:,2] > 100) ] = 1
+  lt = np.zeros_like( wt )
+  lt[ np.where(cI[:,:,1] > 100) ] = 1
+  loss = np.zeros_like( wt )
+  loss[ np.where(cI[:,:,0] > 100) ] = 1
+  # apply masks
+  wtMasked = ReadResizeApplyMask(wt,testImage,ImgTwoSarcSize)
+  ltMasked = ReadResizeApplyMask(lt,testImage,ImgTwoSarcSize)
+  lossMasked = ReadResizeApplyMask(loss,testImage,ImgTwoSarcSize)
+  # find total content
+  wtContent = np.sum(wtMasked)
+  ltContent = np.sum(ltMasked)
+  lossContent = np.sum(lossMasked)
+  # compare to previously tested output
+  #print wtContent,ltContent,lossContent
+  print "WARNING: Unit test is currently broken due to commited code but values are correct. Fix code immediately."
+  assert(abs(wtContent - 15) < 1)
+  assert(abs(ltContent - 0) < 1)
+  assert(abs(lossContent - 553) < 1)
+  #  print wtContent, ltContent, lossContent
+  print "PASSED!"
+
 
 
 #
@@ -444,6 +484,9 @@ if __name__ == "__main__":
         gamma=np.float(sys.argv[i+6]),
 	tag = tag,
 	writeImage = True)            
+      quit()
+    if(arg=="-minorValidate"):
+      minorValidate()
       quit()
 
 

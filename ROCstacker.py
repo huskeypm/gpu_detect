@@ -63,7 +63,8 @@ def giveStackedHits(imgName, WTthreshold, Longitudinalthreshold, gamma,
                      filterTwoSarcSize=25,
                      ImgTwoSarcSize=None,
                      Lossthreshold=0.08,
-                     returnMasks=False):
+                     returnMasks=False,
+                     iters=[-20,-15,-10,-5,0,5,10,15,20]):
   # Read Images and Apply Masks
 
   # using old code structure so this dictionary is just arbitrary
@@ -120,11 +121,10 @@ def giveStackedHits(imgName, WTthreshold, Longitudinalthreshold, gamma,
 
   # # Convolve Each Image with Each Filter
 
-  rotDegrees = [-20, -15, -10, -5, 0, 5, 10, 15, 20]
   display = False
   thresholdDict = {'WT':WTthreshold, 'Longitudinal':Longitudinalthreshold, 'Loss':Lossthreshold}
   Result = bD.TestFilters(combined,None,None,filterType="TT",
-                              display=display,iters=rotDegrees,filterDict=filterDict,
+                              display=display,iters=iters,filterDict=filterDict,
 			      thresholdDict=thresholdDict,doCLAHE=False,
                               colorHitsOutName=imgName,
                               label=imgName,

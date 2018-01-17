@@ -17,13 +17,40 @@ import matplotlib.pylab as plt
 ## For a single matched filter, this function iterates over passed-in angles 
 ## and reports highest correlation output for each iteration 
 ## 
-def DetectFilter(dataSet,mf,threshold,iters,display=False,sigma_n=1.,
-                 label=None,filterMode=None,useFilterInv=False,penaltyscale=1.,
-                 doCLAHE=True,filterType="Pore",returnAngles=True):
+def DetectFilter(dataSet, # measured data 
+		 mf,      # matched filter
+		 threshold, # threshold for accepting hits
+		 iters,   # rotations over which mf will be tested
+		 display=False,
+		 sigma_n=1.,
+                 label=None,
+		 filterMode=None,
+		 useFilterInv=False,penaltyscale=1.,
+                 doCLAHE=True,
+		 filterType="Pore",
+		 returnAngles=True,
+          inputs = None,  # PKH this will replace current means of calling DetectFilter 
+          paramDict=None  # PKH 
+        ):
+
+  if inputs is None:
+    print "PLACEHOLDER TO REMIND ONE TO USE INPUT/PARAMDICT OBJECTS"
+    inputs = empty()
+    inputs.img = dataSet
+    inputs.mf = mf 
+    
+    params = dict() # need to make into class
+    params['snrThresh'] = threshold
+    params['penaltyscale'] = penaltyscale
+    params['sigma_n'] = sigma_n       
+    params['doCLAHE'] = doCLAHE
+    params['useFilterInv'] = useFilterInv      
+    params['filterMode'] = "simple"      
 
   # store
   result = empty()
   # difference for TT routines these are now dictionaries
+  print "PKH: why needed?"  
   result.threshold = threshold
   result.mf= mf
 
@@ -32,14 +59,19 @@ def DetectFilter(dataSet,mf,threshold,iters,display=False,sigma_n=1.,
   if filterType == "Pore":
     # do correlations across all iter
     result.correlated = painter.correlateThresher(
-       dataSet,result.mf, threshold = result.threshold, iters=iters,
+       inputs,
+       params,
+       #dataSet,result.mf, 
+       #threshold = result.threshold, 
+       iters=iters,
        printer=display,
-       sigma_n=sigma_n,
-       penaltyscale=penaltyscale,
+       #sigma_n=sigma_n,
+       #penaltyscale=penaltyscale,
        filterMode=filterMode,
-       useFilterInv=useFilterInv,
+       #useFilterInv=useFilterInv,
        label=label,
-       doCLAHE=doCLAHE)
+       #doCLAHE=doCLAHE,
+       )
 
     # record snr 
     #snrs = [] 
@@ -239,6 +271,8 @@ def TestFilters(testDataName,
                 doCLAHE=True,saveColoredFig=True,
                 gamma=3.,
                 returnAngles=True):       
+
+    #raise RuntimeError("Require Dataset object, as done for tissue validation") 
 
     print "DC: do away with the filterType Pore distinction here"
     print "DC: can keep the case-specific coloring for now"

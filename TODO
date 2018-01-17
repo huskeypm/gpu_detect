@@ -10,8 +10,8 @@ WARNING: use rotate_bound, not rotate for filter images?
 
 
 ## Ryan 
--Integrate MF stuff into gpu code
--test by running unit tests 
+-DONE Integrate MF stuff into gpu code
+-DONE test by running unit tests 
 
 ## PKH 
 - DONE port over/refactor MF code for both silica and myo 

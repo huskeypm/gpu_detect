@@ -17,6 +17,7 @@ class empty:pass
 class Params:pass
 params = Params()
 params.imgName = "/home/AD/pmke226/DataLocker/cardiac/Sachse/171127_tissue/tissue.tif"
+params.imgName = "tissue.tif"
 params.fov = np.array([3916.62,4093.31]) # um (from image caption in imagej. NOTE: need to reverse spatial dimensions to correspond to the way cv2 loads image)
 
 
@@ -221,6 +222,10 @@ def docalc(imgOrig,
       'snrThresh':snrThresh,    
       'lossScale':lossScale,    
       'lossRegionCutoff':lossRegionCutoff}    
+
+
+    import bankDetect as bD
+    bD(inputs,paramDict)
     
     ## Process Info  
     results = dps.lobeDetect(inputs,paramDict)

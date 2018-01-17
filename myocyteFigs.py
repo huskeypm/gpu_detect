@@ -358,6 +358,7 @@ def validate(testImage=root+"MI_D_78.png",
   assert(abs(ltContent - 0) < 1)
   assert(abs(lossContent - 300.0) < 1)
   #  print wtContent, ltContent, lossContent
+  print "PASSED!"
 
 
 #

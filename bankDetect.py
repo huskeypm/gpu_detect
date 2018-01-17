@@ -17,42 +17,26 @@ import matplotlib.pylab as plt
 ## For a single matched filter, this function iterates over passed-in angles 
 ## and reports highest correlation output for each iteration 
 ## 
-def DetectFilter(dataSet, # measured data 
-		 mf,      # matched filter
-		 threshold, # threshold for accepting hits
+def DetectFilter(
+          inputs,  # basically contains test data and matched filter 
+          paramDict,  # parameter dictionary  
 		 iters,   # rotations over which mf will be tested
 		 display=False,
-		 sigma_n=1.,
-                 label=None,
+         label=None,
 		 filterMode=None,
-		 useFilterInv=False,penaltyscale=1.,
-                 doCLAHE=True,
 		 filterType="Pore",
 		 returnAngles=True,
-          inputs = None,  # PKH this will replace current means of calling DetectFilter 
-          paramDict=None  # PKH 
         ):
 
   if inputs is None:
-    print "PLACEHOLDER TO REMIND ONE TO USE INPUT/PARAMDICT OBJECTS"
-    inputs = empty()
-    inputs.img = dataSet
-    inputs.mf = mf 
-    
-    params = dict() # need to make into class
-    params['snrThresh'] = threshold
-    params['penaltyscale'] = penaltyscale
-    params['sigma_n'] = sigma_n       
-    params['doCLAHE'] = doCLAHE
-    params['useFilterInv'] = useFilterInv      
-    params['filterMode'] = "simple"      
+    raise RuntimeError("PLACEHOLDER TO REMIND ONE TO USE INPUT/PARAMDICT OBJECTS")
 
   # store
   result = empty()
   # difference for TT routines these are now dictionaries
   print "PKH: why needed?"  
-  result.threshold = threshold
-  result.mf= mf
+  result.threshold = paramDict['snrThresh']
+  result.mf= inputs.mf
 
   result.stackedDict = dict()
 
@@ -60,17 +44,11 @@ def DetectFilter(dataSet, # measured data
     # do correlations across all iter
     result.correlated = painter.correlateThresher(
        inputs,
-       params,
-       #dataSet,result.mf, 
-       #threshold = result.threshold, 
+       paramDict,
        iters=iters,
        printer=display,
-       #sigma_n=sigma_n,
-       #penaltyscale=penaltyscale,
        filterMode=filterMode,
-       #useFilterInv=useFilterInv,
        label=label,
-       #doCLAHE=doCLAHE,
        )
 
     # record snr 
@@ -83,7 +61,7 @@ def DetectFilter(dataSet, # measured data
   
     # stack hits to form 'total field' of hits
     result.stackedHits= painter.StackHits(
-      result.correlated,result.threshold,iters,doKMeans=False, display=False)#,display=display)
+      result.correlated,paramDict,iters, display=False)#,display=display)
     
   elif filterType == "TT":
     print "WARNING: Need to consolidate this with filterType=Pore"
@@ -302,17 +280,27 @@ def TestFilters(testDataName,
 
       ## perform detection 
       print "DC: this part can be replaced with a dictionary of filters" 
-      filter1PoreResult = DetectFilter(testData,filter1Data  ,filter1Thresh,
-                                     iters,display=display,sigma_n=sigma_n,
-                                     filterMode="filter1",label=label,
-                                     penaltyscale=penaltyscale,
-                                     useFilterInv=useFilterInv)
+      inputs = empty()
+      inputs.img = testData
+    
+      params = dict() # need to make into class
+      params['penaltyscale'] = penaltyscale
+      params['sigma_n'] = sigma_n       
+      params['doCLAHE'] = doCLAHE
+      params['useFilterInv'] = useFilterInv      
+      params['filterMode'] = "simple"      
 
-      filter2PoreResult = DetectFilter( testData,filter2Data  ,filter2Thresh,
-                                     iters,display=display,sigma_n=sigma_n,
-                                     filterMode="filter2",label=label,
-                                     penaltyscale=penaltyscale,
-                                     useFilterInv=useFilterInv)
+      ### filter 1 
+      inputs.mf = filter1Data
+      params['snrThresh'] = filter1Thresh
+      filter1PoreResult = DetectFilter(inputs,params,iters,
+                                       display=display,filterMode="filter1",label=label)
+      
+      ### filter 2 
+      inputs.mf = filter2Data
+      params['snrThresh'] = filter2Thresh
+      filter2PoreResult = DetectFilter(inputs,params,iters,
+                                       display=display,filterMode="filter2",label=label)
 
       print "DC: color channels by dictionary results"
       # colorHits(asdfsdf, red=filter1output, green=filter2output)

@@ -197,9 +197,14 @@ def CalcSNR(signalResponse,sigma_n=1):
 
 import util 
 import util2
-def StackHits(correlated,threshold,iters,
-              display=False,rescaleCorr=False,doKMeans=True,
-              filterType="Pore",returnAngles=False):
+def StackHits(correlated,
+              paramDict, # threshold,
+              iters,
+              display=False,
+              rescaleCorr=False,
+              doKMeans=False, #True,
+              filterType="Pore",
+              returnAngles=False):
     # Function that iterates through correlations at varying rotations of a single filter,
     # constructs a mask consisting of 'NaNs' and returns a list of these masked correlations
 
@@ -227,13 +232,15 @@ def StackHits(correlated,threshold,iters,
           daMax = np.max([daMax, np.max(corr_i)]) 
           if rescaleCorr:
              img =  util.renorm(corr_i)
-          else: 
-             img=corr_i
+             raise RuntimeError("Neede?")
+          #else: 
+          #   img=corr_i
+          img = corr_i
           #print img
 
           # routine for identifying 'unique' hits
           #performed on 'yP' images 
-          daMask = util2.makeMask(threshold,img = img,doKMeans=doKMeans)
+          daMask = util2.makeMask(paramDict['snrThresh'],img = img,doKMeans=doKMeans)
           if display:
             plt.figure()
             plt.subplot(1,2,1)

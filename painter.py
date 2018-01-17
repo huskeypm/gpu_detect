@@ -190,6 +190,9 @@ import util2
 def StackHits(correlated,threshold,iters,
               display=False,rescaleCorr=False,doKMeans=True,
               filterType="Pore",returnAngles=False):
+    # Function that iterates through correlations at varying rotations of a single filter,
+    # constructs a mask consisting of 'NaNs' and returns a list of these masked correlations
+
     print "DC: make into ditionary?" 
     maskList = []
     WTlist = []
@@ -293,7 +296,7 @@ def StackHits(correlated,threshold,iters,
      
       # creating 'poor mans mask' through use of NaN
       myHolder = np.argmax(maskList,axis=0).astype('float') 
-      myHolder[maskList[0] < 0.00001] = np.nan
+      myHolder[maskList[0] < 1e-5] = np.nan
       return myHolder 
       
       #WTholder = np.argmax(WTlist,axis=0).astype('float')
@@ -304,7 +307,7 @@ def StackHits(correlated,threshold,iters,
       #stacked.Long = Longholder
       #stacked.Loss = np.sum(Losslist,axis=0)
 
-      #if returnAngles:
+      #if returnAngles: Turning off for code dev
       if 0: 
         stackedAngles = empty()
         WTAngle = WTholder.flatten().astype('float')

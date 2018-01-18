@@ -227,63 +227,34 @@ def colorHitsTT(rawOrig,LongStacked,WTStacked,iters,outName=None,label='',plotMe
 
 # main engine 
 # TODO remove scale/pass into filter itself
-def TestFilters(testDataName,
-    filter1FilterName,filter2FilterName,
-    testData = None, # can pass in (ultimately preferred) or if none, will read in based on dataName 
-    filter1Data=None,
-    filter2Data=None,
+# tests filters1 and filters2 against a test data set
+def TestFilters(
+    testData, # data against which filters 1 and 2 are applied
+    filter1Data, # matched filter 1
+    filter2Data, # matched filter 2
     filter1Thresh=60,filter2Thresh=50,
-    subsection=None,
+    iters = [0,10,20,30,40,50,60,70,80,90], 
+            
     display=False,
     colorHitsOutName=None,
-    sigma_n = 1., 
-    iters = [0,10,20,30,40,50,60,70,80,90], 
-    penaltyscale=1.0,      
-    useFilterInv=False,
     label="test",
     filterType="Pore",
     filterDict=None, thresholdDict=None,
-    doCLAHE=True,saveColoredFig=True,
-    gamma=3.,
-    returnAngles=True):       
+    saveColoredFig=True,
+    returnAngles=True,
+
+######
+    paramDict=None   # PUT ALL PARAMETERS HERE COMMON TO ALL FILTERS
+):       
 
     #raise RuntimeError("Require Dataset object, as done for tissue validation") 
-
+    params=paramDict
     if filterType == "Pore":
-      if testData is None: 
-        # load data against which filters are tested
-        testData = cv2.imread(testDataName)
-        testData = cv2.cvtColor(testData, cv2.COLOR_BGR2GRAY)
-    
-        if isinstance(subsection, (list, tuple, np.ndarray)): 
-          testData = testData[subsection[0]:subsection[1],subsection[2]:subsection[3]]
-        print "WARNING: should really use the SetupTests function, as we'll retire this later" 
-
-      ## should offloat elsewhere
-      if filter1Data is None:
-        print "WARNING: should really use the SetupTests function, as we'll retire this later" 
-        # load fused filter
-        filter1Filter = cv2.imread(filter1FilterName)
-        filter1Data   = cv2.cvtColor(filter1Filter, cv2.COLOR_BGR2GRAY)
-
-      if filter2Data is None:
-        print "WARNING: should really use the SetupTests function, as we'll retire this later" 
-        # load bulk filter 
-        filter2Filter = cv2.imread(filter2FilterName)
-        filter2Data   = cv2.cvtColor(filter2Filter, cv2.COLOR_BGR2GRAY)
-
-
       ## perform detection 
-      print "DC: this part can be replaced with a dictionary of filters" 
       inputs = empty()
       inputs.imgOrig = testData
-    
-      params = dict() # need to make into class
-      params['penaltyscale'] = penaltyscale
-      params['sigma_n'] = sigma_n       
-      params['doCLAHE'] = doCLAHE
-      params['useFilterInv'] = useFilterInv      
-      params['filterMode'] = "simple"      
+
+      print "DC: this part can be replaced with a dictionary of filters"     
 
       ### filter 1 
       inputs.mfOrig = filter1Data

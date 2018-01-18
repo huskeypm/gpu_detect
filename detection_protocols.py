@@ -47,9 +47,6 @@ def lobeDetect(
     #plt.colorbar()
     #plt.gcf().savefig(name,dpi=300)
 
-    ## thresh
-    threshed = snr > paramDict['snrThresh']
-
     ## make  loss mask, needs a threshold for defining maximum value a 
     ## region can take before its no longer a considered a loss region 
     lossScale = paramDict['lossScale']
@@ -68,7 +65,6 @@ def lobeDetect(
     results.corr = corr
     results.corrlobe = corrlobe
     results.snr = snr
-    results.threshed = threshed
 
     return results
 
@@ -122,7 +118,6 @@ def dcDetect(
     # get data 
     img = inputs.img # raw (preprocessed image) 
     mf  = inputs.mf  # raw (preprocessed image) 
-    results = empty()
 
     ## get correlation plane w filter 
     corr = mF.matchedFilter(img,mf,parsevals=False,demean=False)
@@ -146,13 +141,12 @@ def simpleDetect(
   results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=True) 
   
   if paramDict['useFilterInv']:
-      results.corr = CalcInvFilter(inputs,paramDict,results.corr)
+      results.snr = CalcInvFilter(inputs,paramDict,results.corr)
+
+  else:
+      results.snr = results.corr  /paramDict['sigma_n']
 
 
-  ## had an snr criterion somewhere
-  print "PKH: where's the SNR criterion?" 
-
-  # need to pull out of caller function [see CalcInvFilter] stuff
 
   return results
 

@@ -32,9 +32,11 @@ class empty:pass
 
 
 
-# Need to be careful when cropping image
-import detection_protocols as dps
 
+import detection_protocols as dps
+##
+## Performs matched filtering over desired angles
+##
 def correlateThresher(
         inputs,
         params,
@@ -113,6 +115,10 @@ def CalcSNR(signalResponse,sigma_n=1):
 
 import util 
 import util2
+##
+## Collects all hits above some criterion for a given angle and 'stacks' them
+## into a single image
+##
 def StackHits(correlated,  # an array of 'correlation planes'
               paramDict, # threshold,
               iters,
@@ -121,44 +127,46 @@ def StackHits(correlated,  # an array of 'correlation planes'
               doKMeans=False, #True,
               filterType="Pore",
               returnAngles=False):
+     # TODO
+    if rescaleCorr:
+      raise RuntimeError("Why is this needed? IGNORING")
+      
     # Function that iterates through correlations at varying rotations of a single filter,
     # constructs a mask consisting of 'NaNs' and returns a list of these masked correlations
 
-    maskList = []
-    
-    #print "REMOVE ME" 
-    #WTlist = []
-    #Longlist = []
-    #Losslist = []
 
-#    daMax = -1e9
+    ##
+    ##
+    ##
+    maskList = []
     for i, iteration in enumerate(iters):
         #print i, iteration
         if filterType == "Pore":
-          corr_i = correlated[i].corr           
- #         daMax = np.max([daMax, np.max(corr_i)]) 
-          
-          if rescaleCorr:
-             img =  util.renorm(corr_i)
-             print "Why is this needed? IGNORING"
-
           # routine for identifying 'unique' hits
-          daMask = util2.makeMask(paramDict['snrThresh'],img = corr_i,doKMeans=doKMeans)
-          if display:
-            plt.figure()
-            plt.subplot(1,2,1)
-            plt.imshow(img)            
-            plt.subplot(1,2,2)
-            plt.imshow(daMask)
-            plt.close()
+          daMask = util2.makeMask(paramDict['snrThresh'],img = correlated[i].snr,
+                                  doKMeans=doKMeans)
 
           # i don't think this should be rotated 
           #maskList.append((util2.rotater(daMask,iteration)))
           maskList.append(daMask)
-      #print maskList
 
-        elif filterType == "TT":
-          print "DCL Merge me with oth er filter type" 
+      #print maskList
+    if filterType == "Pore":  
+      stacked  = np.sum(maskList, axis =0)
+      return stacked 
+  
+    ##
+    ##
+    ##
+    
+        #print "REMOVE ME" 
+    #WTlist = []
+    #Longlist = []
+    #Losslist = []
+    print "DCL Merge me with oth er filter type" 
+    for i, iteration in enumerate(iters):
+        if filterType == "TT":
+          
           masks = empty()
           corr_i = correlated[i].corr 
           #corr_i_WT = correlated[i].WT
@@ -202,12 +210,9 @@ def StackHits(correlated,  # an array of 'correlation planes'
     # Return
     # DC: Need to consolidate 
     #
-    print "PKH: Need to conslidate" 
-    if filterType == "Pore":
-      stacked  = np.sum(maskList, axis =0)
-      return stacked 
 
-    elif filterType == "TT":
+
+    if filterType == "TT":
       #stacked = empty()
       # creating a class that also contains the angle with which the most intense hit was located
 
@@ -246,10 +251,6 @@ def StackHits(correlated,  # an array of 'correlation planes'
         stackedAngles = None
       return stacked, stackedAngles
    
-    if display and filterType == "Pore": 
-      plt.figure()
-      plt.imshow(myList)
-      plt.close()
 
 
 

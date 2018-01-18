@@ -2,11 +2,33 @@
 #### WARNING
 WARNING: use rotate_bound, not rotate for filter images? 
 
+
+#######
+Fix lobe filter stuff for tissue
+
+optimizer  
+- img
+- filter 1, thersholds 1, annotated 1
+- filter 2, thersholds 2, annotated 2 
+- filter approach (simple, etc)
+
+
+test
+- img
+(by order of largest integarted intensity)
+- filter 1, thresh 1
+- filter 2, thresh 2
+..
+return unclass 
+return noisefloor
+
+
+
 ## Dylan 
 - results are 'nan' for validation.py 
 -- stackedHITs messed up? 
 - DONE need annotated images for WT and CHF as well 
-- add in unit test (e.g. if assert(content-truth>abs,"somthing changed)" 
+- DONE add in unit test (e.g. if assert(content-truth>abs,"somthing changed)" 
 
 
 ## Ryan 

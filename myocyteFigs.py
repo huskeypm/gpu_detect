@@ -304,13 +304,14 @@ def Myocyte():
 
 def rocData(): 
   dataSet = Myocyte() 
-  optimizer.SetupTests(dataSet)
 
 
   ## Testing TT first 
   dataSet.filter1PositiveChannel=0
   dataSet.filter1Label = "TT"
   dataSet.filter1Name = root+'WTFilter.png'
+  optimizer.SetupTests(dataSet)
+
   optimizer.GenFigROC_TruePos_FalsePos(
         dataSet,
         filter1Label = dataSet.filter1Label,
@@ -319,10 +320,11 @@ def rocData():
       )
 
   ## Testing LT now
-  print "WARNING: seems to be using the wrong truth channel"
-  dataSet.filter1PositiveChannel=7
+  dataSet.filter1PositiveChannel=1
   dataSet.filter1Label = "LT"
   dataSet.filter1Name = root+'LongFilter.png'
+  optimizer.SetupTests(dataSet)
+  
   optimizer.GenFigROC_TruePos_FalsePos(
         dataSet,
         filter1Label = dataSet.filter1Label,

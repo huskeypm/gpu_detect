@@ -188,9 +188,6 @@ def TestParams(
     iters = [0,10,20,30,40,50,60,70,80,90],
     display=False):
 
-    print "DEFINE ME EARLIER"
-    paramDict['filterMode'] = "simple"   
-    paramDict['doCLAHE'] = True       
    
     ### Filter1 (was fusedPore) 
     #dataSet.iters = [30], # focus on best angle for fused pore data
@@ -406,7 +403,6 @@ def GenFigROC(
   hdf5Name = "optimizeinvscale.h5"
   ):
   
-  paramDict['sigma_n'] = 1. 
   #print "A",dataSet.filter1Data
            
   ##
@@ -495,6 +491,9 @@ if __name__ == "__main__":
       paramDict={
         'penaltyscale': 1.2,
         'useFilterInv':True,   
+        'sigma_n': 1. ,
+        'filterMode': "simple"   ,
+        'doCLAHE':  True   
         }
       GenFigROC(
         dataSet,
@@ -509,6 +508,9 @@ if __name__ == "__main__":
       paramDict={
         'penaltyscale': 1.2,
         'useFilterInv':True,   
+        'sigma_n': 1. ,
+        'filterMode': "simple"   ,
+        'doCLAHE':  True   
         }      
       GenFigROC(
         dataSet,

@@ -232,7 +232,6 @@ def TestParams_Single(
     dataSet,
     iters = [0,10,20,30,40,50,60,70,80,90],
     display=False):
-
     # test filter across all angles 
     filter1_filter1Test, dummy = bD.TestFilters(
       dataSet.filter1TestName, # testData
@@ -399,6 +398,10 @@ def AnalyzePerformanceData(dfOrig,tag='filter1',label=None,normalize=False,roc=T
     ax.scatter(dfNS,dfPS)
     ax.set_ylim([0,1])
     ax.set_xlim(xmin=0)
+    
+    # give 50 pct line
+    vs = np.linspace(0,1,10)
+    ax.plot(vs,vs,'k--')
 
     i =  np.int(0.45*np.shape(result)[0])
     numbers = np.arange( np.shape(result)[0])
@@ -519,19 +522,32 @@ def GenFigROC_TruePos_FalsePos(
   filter1Label = "fused",
   f1ts = np.linspace(0.05,0.50,10),
   hdf5Name ="single.hdf5",
-  loadOnly=False
+  loadOnly=False,
+  display=False
   ):
   ##
   ## perform trials using parameter ranges 
   ##
+
   if loadOnly:
     print "Reading ", hdf5Name 
   else:
     Assess_Single(
         dataSet,
         filter1Threshes = f1ts,
-        hdf5Name = hdf5Name
+        hdf5Name = hdf5Name,
+        display=display
       )
+      
+  ##
+  ## Now analyze and make ROC plots 
+  ## 
+  import pandas as pd
+  df = pd.read_hdf(hdf5Name,'table') 
+  tag = "filter1"      
+  AnalyzePerformanceData(df,tag=tag,label=filter1Label,    
+    normalize=True, roc=True,outName=filter1Label+ "_ROC.png")
+      
 ##
 ## Generates ROC data 
 ##

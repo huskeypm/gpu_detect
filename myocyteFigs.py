@@ -307,16 +307,28 @@ def rocData():
   optimizer.SetupTests(dataSet)
 
 
-   
-  #pass in data like you are doing in your other tests 
-  #threshold? 
+  ## Testing TT first 
+  dataSet.filter1PositiveChannel=0
+  dataSet.filter1Label = "TT"
+  dataSet.filter1Name = root+'WTFilter.png'
   optimizer.GenFigROC_TruePos_FalsePos(
         dataSet,
-        filter1Label = "testing",
-        #f1ts = np.linspace(0.5,30,2),
-        f1ts = np.linspace(30,50,2),
+        filter1Label = dataSet.filter1Label,
+        f1ts = np.linspace(30,50,5),
+        #display=True
       )
 
+  ## Testing LT now
+  print "WARNING: seems to be using the wrong truth channel"
+  dataSet.filter1PositiveChannel=7
+  dataSet.filter1Label = "LT"
+  dataSet.filter1Name = root+'LongFilter.png'
+  optimizer.GenFigROC_TruePos_FalsePos(
+        dataSet,
+        filter1Label = dataSet.filter1Label,
+        f1ts = np.linspace(10,20,3),
+        display=True
+      )
 def rocDataOLD(): 
   dataSet = Myocyte() 
   optimizer.SetupTests(dataSet)

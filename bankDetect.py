@@ -293,8 +293,9 @@ def TestFilters(testDataName,
         1
         # colorMyANgles(data,filterOutput)
 
-      ## display results 
-      if colorHitsOutName!=None: 
+      ## display results
+      if display: 
+       if colorHitsOutName!=None: 
         if single is False:   
           colorHits(testData,
                 red=filter2PoreResult.stackedHits,

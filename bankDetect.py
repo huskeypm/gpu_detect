@@ -59,7 +59,6 @@ def DetectFilter(
     # stack hits to form 'total field' of hits
     result.stackedHits= painter.StackHits(
       result.correlated,paramDict,iters, display=False)#,display=display)
-    print result.correlated
     
   elif filterType == "TT":
     print "WARNING: Need to consolidate this with filterType=Pore"

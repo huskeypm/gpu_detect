@@ -74,7 +74,41 @@ def lobeDetect(
 
 
 
-class empty:pass
+
+
+# TODO phase this out 
+import util
+def CalcInvFilter(inputs,paramDict,corr):
+    
+      penaltyscale = paramDict['penaltyscale'] 
+      sigma_n  = paramDict['sigma_n']
+      angle  = paramDict['angle']
+      tN = inputs.img
+      filterRef = inputs.mfOrig
+      yP = corr
+    
+      s=1.  
+      fInv = np.max(filterRef)- s*filterRef
+      rFi = util.PadRotate(fInv,angle)
+      rFiN = util.renorm(np.array(rFi,dtype=float),scale=1.)
+      yInv  = mF.matchedFilter(tN,rFiN,demean=False,parsevals=True)   
+      
+      # spot check results
+      #hit = np.max(yP) 
+      #hitLoc = np.argmax(yP) 
+      #hitLoc =np.unravel_index(hitLoc,np.shape(yP))
+
+      ## rescale by penalty 
+      # part of the problem earlier was that the 'weak' responses of the 
+      # inverse filter would amplify the response, since they were < 1.0. 
+      yPN =  util.renorm(yP,scale=1.)
+      yInvN =  util.renorm(yInv,scale=1.)
+
+      yPN = np.exp(yPN)
+      yInvS = sigma_n*penaltyscale*np.exp(yInvN)
+      scaled = np.log(yPN/(yInvS))
+    
+      return scaled 
 
 
 
@@ -110,6 +144,10 @@ def simpleDetect(
   ## get correlation plane w filter 
   results = empty()
   results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=True) 
+  
+  if paramDict['useFilterInv']:
+      results.corr = CalcInvFilter(inputs,paramDict,results.corr)
+
 
   ## had an snr criterion somewhere
   print "PKH: where's the SNR criterion?" 

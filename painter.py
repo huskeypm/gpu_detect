@@ -11,55 +11,25 @@ import imutils
 from imtools import *
 from matplotlib import cm
 
-def padWithZeros(array, padwidth, iaxis, kwargs):
-    array[:padwidth[0]] = 0
-    array[-padwidth[1]:]= 0
-    return array
+#def padWithZeros(array, padwidth, iaxis, kwargs):
+#    array[:padwidth[0]] = 0
+#    array[-padwidth[1]:]= 0
+#    return array
 
 
 
 class empty:pass
 
 
-def PadRotate(myFilter1,val):
-  dims = np.shape(myFilter1)
-  diff = np.min(dims)
-  paddedFilter = np.lib.pad(myFilter1,diff,padWithZeros)
-  rotatedFilter = imutils.rotate(paddedFilter,-val)
-  rF = np.copy(rotatedFilter)
+#def PadRotate(myFilter1,val):
+#  dims = np.shape(myFilter1)
+#  diff = np.min(dims)
+#  paddedFilter = np.lib.pad(myFilter1,diff,padWithZeros)
+#  rotatedFilter = imutils.rotate(paddedFilter,-val)
+#  rF = np.copy(rotatedFilter)
 
-  return rF
+#  return rF
 
-# TODO phase this out 
-def CalcInvFilter(filterRef,tN,val,yP,penaltyscale,sigma_n): 
-      s=1.  
-      fInv = np.max(filterRef)- s*filterRef
-      rFi = PadRotate(fInv,val)
-      rFiN = util.renorm(np.array(rFi,dtype=float),scale=1.)
-      yInv  = mF.matchedFilter(tN,rFiN,demean=False,parsevals=True)   
-      
-      # spot check results
-      #hit = np.max(yP) 
-      #hitLoc = np.argmax(yP) 
-      #hitLoc =np.unravel_index(hitLoc,np.shape(yP))
-
-      ## rescale by penalty 
-      # part of the problem earlier was that the 'weak' responses of the 
-      # inverse filter would amplify the response, since they were < 1.0. 
-      yPN =  util.renorm(yP,scale=1.)
-      yInvN =  util.renorm(yInv,scale=1.)
-
-      yPN = np.exp(yPN)
-      yInvS = sigma_n*penaltyscale*np.exp(yInvN)
-      scaled = np.log(yPN/(yInvS))
-    
-      return scaled 
-
-      # store data 
-      #if useFilterInv:
-      #  result.corr = scaled    
-      #else:
-      #  result.corr = yP 
 
 
 # Need to be careful when cropping image
@@ -73,120 +43,69 @@ def correlateThresher(
         filterMode=None,
         label=None,
         ):
-    # Store all 'hits' at each angle 
-    correlated = []
-
-    print "REPALCEME PKH"
-    myImg = inputs.imgOrig
-    myFilter1 = inputs.mfOrig
 
     # Ryan ?? equalized image?
     # Dylan - Adding in option to turn off CLAHE
     # TODO - this should be done in preprocessing, not here
+    print "PKH: turn into separate proproccessing routine"
+    img = inputs.imgOrig
     if params['doCLAHE']:
       clahe99 = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(16,16))
-      cl1 = clahe99.apply(myImg)
-      adapt99 = cl1
-    else:
-      adapt99 = myImg
+      img = clahe99.apply(inputs.imgOrig)
 
-    print "VERIFY WE STILL NEED" 
-    filterRef = util.renorm(np.array(myFilter1,dtype=float),scale=1.)
-
+    filterRef = util.renorm(np.array(inputs.mfOrig,dtype=float),scale=1.)
     
-    # TODO - here is the place to stick in the GPU shizzle 
-    print "HERE"
-    for i, val in enumerate(iters):
-      print i, val  
+    ##
+    ## Iterate over all filter rotations desired 
+    ## TODO - here is the place to stick in the GPU shizzle 
+    ## 
+    # Store all 'hits' at each angle 
+    correlated = []
+
+    inputs.img = util.renorm(np.array(img,dtype=float),scale=1.)
+    for i, angle in enumerate(iters):
       result = empty()
       # copy of original image 
-      inputs.img = util.renorm(np.array(adapt99,dtype=float),scale=1.)
 
-      
-      ## 'positive' filter 
       # pad/rotate 
-      rFN = PadRotate(filterRef,val)  
+      params['angle'] = angle
+      rFN = util.PadRotate(filterRef,angle)  
       inputs.mf = rFN  
+      
    
       # matched filtering 
       result = dps.FilterSingle(inputs,params)      
 
+      # store
+      result.rFN = np.copy(rFN)
+      correlated.append(result) 
+      
+      
 
-      ## negative filter 
-      if params['useFilterInv']:
-        print "NEEDS TO BE MERGED INTO detection protocol"  
-        result.corr = CalcInvFilter(filterRef,inputs.img,val,result.corr,
-                                    params['penaltyscale'],
-                                    params['sigma_n'])
+    ##
+    ## write
+    ##
+    if label!=None and printer:
+       for i, angle in enumerate(iters):
+        tag = filterMode 
+        daTitle = "rot %4.1f "%angle # + "hit %4.1f "%hit 
 
-      tag = filterMode 
-      #if filterMode=="fused":
-      #  tag = tag"fused"
-      ###else: 
-      #  tag = "bulk"
-
-      #print "MOVE this shit elsewhere" 
-      #daTitle = "rot %f "%val + "hit %f "%hit + str(hitLoc)
-      daTitle = "rot %4.1f "%val # + "hit %4.1f "%hit 
-      #print daTitle
-      if printer:   
-        plt.figure(figsize=(16,5))
-        plt.subplot(1,5,1)
-        plt.imshow(adapt99,cmap='gray')          
-        plt.subplot(1,5,2)
-        plt.title(daTitle)
-        testImg = np.zeros_like(adapt99)
-        dim = np.shape(rFN)
-        testImg[0:dim[0],0:dim[1]] = 255*rFN
-        #testImg[0:dim[0],0:dim[1]] = rFiN
-        plt.imshow(testImg,cmap="gray")
-        #plt.imshow(rFi,cmap="gray")   
-        
-        plt.subplot(1,5,3)
-        #plt.imshow(yPN)   
-        #plt.title("corr output") 
-        #plt.colorbar()
-
-        #if threshold!=None:
-        #  plt.subplot(1,5,4)
-        #  #plt.imshow(yP>threshold)   
-        #  plt.title("Filter inv")
-        #  plt.imshow(yInvN)                  
-        #  plt.colorbar()
-        #  plt.subplot(1,5,5)
-        #  plt.title("filter/inv") 
-        #  plt.imshow(scaled)                
-        #  plt.colorbar()
-        plt.tight_layout()
-        fileName = label+"_"+tag+'_{}_full.png'.format(val)
-        plt.gcf().savefig(fileName,dpi=300)
-
-      # write
-      if label!=None and printer:
+        result = correlated[i]   
         plt.figure()
         plt.subplot(1,2,1)
         plt.title("Rotated filter") 
-        plt.imshow(rFN,cmap='gray')
+        plt.imshow(result.rFN,cmap='gray')
         plt.subplot(1,2,2)
         plt.title("Correlation plane") 
         plt.imshow(result.corr)                
         plt.colorbar()
         plt.tight_layout()
-        fileName = label+"_"+tag+'_{}.png'.format(val)
+        fileName = label+"_"+tag+'_{}.png'.format(angle)
         plt.gcf().savefig(fileName,dpi=300)
         plt.close()
      
-      print "NEEDS TO BE MOVED INSIDE PROTOCOL"
-      #  
-      result.snr = CalcSNR(result.corr,params['sigma_n']) 
-      # 
-      result.max = np.max(result.corr)
+      
 
-      #result.hit = hit
-      #result.hitLoc = hitLoc
-      correlated.append(result) 
-    print np.shape(correlated)
-    print np.shape(correlated[0].corr)
     return correlated  # a list of objects that contain SNR, etc 
 
 def CalcSNR(signalResponse,sigma_n=1):
@@ -205,13 +124,12 @@ def StackHits(correlated,  # an array of 'correlation planes'
     # Function that iterates through correlations at varying rotations of a single filter,
     # constructs a mask consisting of 'NaNs' and returns a list of these masked correlations
 
-    print "DC: make into ditionary?" 
     maskList = []
     
-    print "REMOVE ME" 
-    WTlist = []
-    Longlist = []
-    Losslist = []
+    #print "REMOVE ME" 
+    #WTlist = []
+    #Longlist = []
+    #Losslist = []
 
 #    daMax = -1e9
     for i, iteration in enumerate(iters):

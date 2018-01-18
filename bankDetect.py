@@ -33,13 +33,10 @@ def DetectFilter(
 
   # store
   result = empty()
-  # difference for TT routines these are now dictionaries
-  print "PKH: why needed?"  
-  result.threshold = paramDict['snrThresh']
-  result.mf= inputs.mfOrig
 
   result.stackedDict = dict()
-  ##print inputs.lobemf
+
+
   if filterType == "Pore":
     # do correlations across all iter
     result.correlated = painter.correlateThresher(
@@ -62,6 +59,7 @@ def DetectFilter(
     # stack hits to form 'total field' of hits
     result.stackedHits= painter.StackHits(
       result.correlated,paramDict,iters, display=False)#,display=display)
+    print result.correlated
     
   elif filterType == "TT":
     print "WARNING: Need to consolidate this with filterType=Pore"

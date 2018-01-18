@@ -203,7 +203,6 @@ def docalc(imgOrig,
            lobemf=None,
            corrThresh=0.,
            s=1.,name="corr.png"):
-    results = empty()
 
     # correct image so TT features are brightest
     # set noise floor 
@@ -229,32 +228,33 @@ def docalc(imgOrig,
 
 
     import bankDetect as bD
-    filter1PoreResult = bD.DetectFilter(inputs,paramDict,iters=[0])
+    results = bD.DetectFilter(inputs,paramDict,iters=[0])
+    result = results.correlated[0]
+    #corr = np.asarray(results.correlated[0],dtype=float) # or
+    results.threshed = results.stackedHits
     
-    ## Process Info  
-    #results = dps.lobeDetect(inputs,paramDict)
   
     ##
     ## Plotting 
     ## 
     print "RESTORE PLOTTING ONCE I UNDERSTAND"
     print "WARNING: SDFSDFDFSDF"
-    results.threshed = 1
     plt.subplot(2,2,1)
     plt.imshow(inputs.imgOrig,cmap='gray')
 
-    #plt.subplot(2,2,3)
-    #plt.imshow(results.corr)
+    plt.subplot(2,2,3)
+    plt.imshow(result.corr)
 
-    #plt.subplot(2,2,4)
-    #plt.imshow(results.corrlobe)
+    plt.subplot(2,2,4)
+    plt.imshow(result.corrlobe)
 
-    #plt.subplot(2,2,2)
-    #plt.imshow(snr*mask)
-    #DisplayHits(imgOrig,results.threshed)                 
+    plt.subplot(2,2,2)
+    
+    
+    DisplayHits(inputs.imgOrig,results.threshed)                 
 
     
-    return results
+    return inputs,results
 
 import cv2
 import util
@@ -276,9 +276,9 @@ def Test1(
   
   SetupFilters()
   
-  results=docalc(case.subregion,
+  inputs,results=docalc(case.subregion,
                  params.mfr,lobemf=params.lobemfr,
-                 snrThresh=42000)
+                 snrThresh=50.)
 
   if fileName!=None: 
     plt.figure()
@@ -305,7 +305,7 @@ def validate():
 
   # assert 
   print "WARNING: this test only verifies that the integrated total response is conserved - says nothing about accuracy" 
-  truthVal = 24437
+  truthVal = 4167011.
   assert( np.abs( totInfo - truthVal) < 1), "FAIL: %f != %f"%(totInfo,truthVal) 
   print "PASS" 
 

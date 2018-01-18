@@ -64,16 +64,14 @@ def CalcInvFilter(filterRef,tN,val,yP,penaltyscale,sigma_n):
 
 # Need to be careful when cropping image
 import detection_protocols as dps
+
 def correlateThresher(
         inputs,
         params,
-        #myImg, myFilter1,  #cropper=[25,125,25,125],
         iters = [0,30,60,90],  
-        printer = True, filterMode=None,label=None,
-        #              useFilterInv=False,
-        #              penaltyscale = 1.2,  # for rescaling penalty filter 
-        #              sigma_n=1.,threshold=None,
-        #              doCLAHE=True
+        printer = True, 
+        filterMode=None,
+        label=None,
         ):
     # Store all 'hits' at each angle 
     correlated = []
@@ -97,13 +95,13 @@ def correlateThresher(
 
     
     # TODO - here is the place to stick in the GPU shizzle 
+    print "HERE"
     for i, val in enumerate(iters):
+      print i, val  
       result = empty()
       # copy of original image 
-      tN = util.renorm(np.array(adapt99,dtype=float),scale=1.)
+      inputs.img = util.renorm(np.array(adapt99,dtype=float),scale=1.)
 
-      print "PKH: todo"
-      inputs.img = tN
       
       ## 'positive' filter 
       # pad/rotate 
@@ -112,16 +110,12 @@ def correlateThresher(
    
       # matched filtering 
       result = dps.FilterSingle(inputs,params)      
-      yP = result.corr ; print "REMOVE ME" 
-      #yP = mF.matchedFilter(tN,rFN,demean=False,parsevals=True)
-
-      #result.corr = yP
 
 
       ## negative filter 
       if params['useFilterInv']:
         print "NEEDS TO BE MERGED INTO detection protocol"  
-        result.corr = CalcInvFilter(filterRef,tN,val,yP,
+        result.corr = CalcInvFilter(filterRef,inputs.img,val,result.corr,
                                     params['penaltyscale'],
                                     params['sigma_n'])
 
@@ -191,15 +185,16 @@ def correlateThresher(
       #result.hit = hit
       #result.hitLoc = hitLoc
       correlated.append(result) 
-    
-    return correlated
+    print np.shape(correlated)
+    print np.shape(correlated[0].corr)
+    return correlated  # a list of objects that contain SNR, etc 
 
 def CalcSNR(signalResponse,sigma_n=1):
   return signalResponse/sigma_n
 
 import util 
 import util2
-def StackHits(correlated,
+def StackHits(correlated,  # an array of 'correlation planes'
               paramDict, # threshold,
               iters,
               display=False,
@@ -212,37 +207,25 @@ def StackHits(correlated,
 
     print "DC: make into ditionary?" 
     maskList = []
+    
+    print "REMOVE ME" 
     WTlist = []
     Longlist = []
     Losslist = []
 
-    daMax = -1e9
+#    daMax = -1e9
     for i, iteration in enumerate(iters):
         #print i, iteration
         if filterType == "Pore":
-          #print "iter", iteration
-          #maskList.append(makeMask(threshold,'fusedCorrelated_Not_rotated_back{}.png'.format(iteration)))
-
-          # RYAN
-          #maskList.append((util2.rotater(util2.makeMask(threshold,imgName='fusedCorrelated_{}.png'.format(iteration)),iteration)))
-          #imgName='fusedCorrelated_{}.png'.format(iteration)
-          #daMask = util2.makeMask(threshold,imgName=imgName)
-
-          # Ryan - I don't think this renormalization is appropriate
-          # as it will artificially inflate 'bad' correlation hits
           corr_i = correlated[i].corr           
-          daMax = np.max([daMax, np.max(corr_i)]) 
+ #         daMax = np.max([daMax, np.max(corr_i)]) 
+          
           if rescaleCorr:
              img =  util.renorm(corr_i)
-             raise RuntimeError("Neede?")
-          #else: 
-          #   img=corr_i
-          img = corr_i
-          #print img
+             print "Why is this needed? IGNORING"
 
           # routine for identifying 'unique' hits
-          #performed on 'yP' images 
-          daMask = util2.makeMask(paramDict['snrThresh'],img = img,doKMeans=doKMeans)
+          daMask = util2.makeMask(paramDict['snrThresh'],img = corr_i,doKMeans=doKMeans)
           if display:
             plt.figure()
             plt.subplot(1,2,1)
@@ -303,9 +286,8 @@ def StackHits(correlated,
     #
     print "PKH: Need to conslidate" 
     if filterType == "Pore":
-      myList  = np.sum(maskList, axis =0)
-      print "max output", daMax   
-      return myList 
+      stacked  = np.sum(maskList, axis =0)
+      return stacked 
 
     elif filterType == "TT":
       #stacked = empty()

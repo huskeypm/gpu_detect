@@ -187,26 +187,28 @@ def TestParams(
     paramDict,
     iters = [0,10,20,30,40,50,60,70,80,90],
     display=False):
+
+    print "DEFINE ME EARLIER"
+    paramDict['filterMode'] = "simple"   
+    paramDict['doCLAHE'] = True       
    
     ### Filter1 (was fusedPore) 
     #dataSet.iters = [30], # focus on best angle for fused pore data
     ## Test both filters on filter1 test data 
     optimalAngleFused = 30
     filter1_filter1Test, filter2_filter1Test = bD.TestFilters(
-      dataSet.filter1TestName, # testData
-      dataSet.filter1Name,                # fusedfilter Name
-      dataSet.filter2Name,              # bulkFilter name
       testData = dataSet.filter1TestData, 
+      filter1Data = dataSet.filter1Data,
+      filter2Data = dataSet.filter2Data,
       #subsection=dataSet.filter1TestRegion, #[200,400,200,500],   # subsection of testData
       filter1Thresh = dataSet.filter1Thresh,
       filter2Thresh = dataSet.filter2Thresh,
-      sigma_n = paramDict['sigma_n'],
       #iters = [optimalAngleFused],
       iters=iters,
-      useFilterInv=paramDict['useFilterInv'],
-      penaltyscale=paramDict['penaltyscale'],
       colorHitsOutName="filter1Marked_%f_%f.png"%(dataSet.filter2Thresh,dataSet.filter1Thresh),
-      display=display
+      display=display,
+
+      paramDict = paramDict
     )        
 
     ### Filter2 (was bulkPore) 
@@ -217,19 +219,16 @@ def TestParams(
     ## Test both filters on filter2 test data 
     optimalAngleBulk = 5.
     filter1_filter2Test, filter2_filter2Test = bD.TestFilters(
-      dataSet.filter2TestName, # testData
-      dataSet.filter1Name,                # fusedfilter Name
-      dataSet.filter2Name,              # bulkFilter name
       testData = dataSet.filter2TestData, 
-      #subsection=dataSet.filter2TestRegion, #[200,400,200,500],   # subsection of testData
+      filter1Data = dataSet.filter1Data,
+      filter2Data = dataSet.filter2Data,
       filter1Thresh = dataSet.filter1Thresh,
       filter2Thresh = dataSet.filter2Thresh,
-      sigma_n = paramDict['sigma_n'],
       #iters = [optimalAngleFused],
-      useFilterInv=paramDict['useFilterInv'],
-      penaltyscale=paramDict['penaltyscale'],
       colorHitsOutName="filter2Marked_%f_%f.png"%(dataSet.filter2Thresh,dataSet.filter1Thresh),
-      display=display
+      display=display,
+
+      paramDict = paramDict
      )        
     
     # This approach assess the number of hits of filter A overlapping with regions marked as 'A' in the test data
@@ -367,6 +366,7 @@ def Assess(
 #        dataSet.useFilterInv = paramDict['useFilterInv']
 
         # run test 
+        #print "B",dataSet.filter1Data
         filter1PS,filter2NS,filter2PS,filter1NS = TestParams(
           dataSet,
           paramDict,
@@ -407,6 +407,7 @@ def GenFigROC(
   ):
   
   paramDict['sigma_n'] = 1. 
+  #print "A",dataSet.filter1Data
            
   ##
   ## perform trials using parameter ranges 

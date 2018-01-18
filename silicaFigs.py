@@ -223,7 +223,9 @@ def doROC():
       paramDict={
         'penaltyscale': 1.2,
         'useFilterInv':True,   
-        'sigma_n': 1.
+        'sigma_n': 1.,
+        'filterMode': "simple"   ,
+        'doCLAHE':  True
         }
       optimizer.GenFigROC(dataSet,paramDict,loadOnly=False) 
     
@@ -237,7 +239,9 @@ def validate():
   paramDict={
         'penaltyscale': 1.2,
         'useFilterInv':True,  
-        'sigma_n': 1.
+        'sigma_n': 1.,
+        'filterMode': "simple"   ,
+        'doCLAHE':  True
         }
   filter1PS,filter2NS,filter2PS,filter1NS = optimizer.TestParams(
     dataSet,

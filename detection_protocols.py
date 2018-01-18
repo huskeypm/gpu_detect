@@ -35,13 +35,17 @@ def lobeDetect(
         #out -= np.min(out)
         #out /= np.max(out)
         #corrlobe += s*out
+        print "Needs work - something awry (negative numbes etc) "
         corrlobe = mF.matchedFilter(corr,lobemf,parsevals=True,demean=False)
+        corrlobe = np.ones_like(corr)
         
     else:    
         corrlobe = np.ones_like(corr)
         
     ## Determine SNR by comparing integrated area with corrlobe response 
     snr = integrated/corrlobe ##* corrThreshed
+    print "Overriding snr for now - NEED TO DEBUG" 
+    snr = corr
     #snr = corrThreshed
 
     #plt.colorbar()
@@ -64,7 +68,7 @@ def lobeDetect(
     results.img = img
     results.corr = corr
     results.corrlobe = corrlobe
-    results.snr = snr
+    results.snr = snr  
 
     return results
 

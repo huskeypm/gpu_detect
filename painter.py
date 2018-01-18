@@ -49,7 +49,7 @@ def correlateThresher(
     # Ryan ?? equalized image?
     # Dylan - Adding in option to turn off CLAHE
     # TODO - this should be done in preprocessing, not here
-    print "PKH: turn into separate proproccessing routine"
+    #print "PKH: turn into separate proproccessing routine"
     img = inputs.imgOrig
     if params['doCLAHE']:
       clahe99 = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(16,16))

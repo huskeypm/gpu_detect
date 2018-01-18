@@ -254,21 +254,22 @@ def TestFilters(
       inputs = empty()
       inputs.imgOrig = testData
 
-      print "DC: this part can be replaced with a dictionary of filters"     
-
+      
+      daColors =dict()
       ### filter 1 
       inputs.mfOrig = filter1Data
       params['snrThresh'] = filter1Thresh
-      filter1PoreResult = DetectFilter(inputs,params,iters,
+      filter1Result = DetectFilter(inputs,params,iters,
                                        display=display,filterMode="filter1",label=label)
+      daColors['green']= filter1Result.stackedHits
       
       ### filter 2 
       inputs.mfOrig = filter2Data
       params['snrThresh'] = filter2Thresh
-      filter2PoreResult = DetectFilter(inputs,params,iters,
+      filter2Result = DetectFilter(inputs,params,iters,
                                        display=display,filterMode="filter2",label=label)
+      daColors['red']= filter2Result.stackedHits
 
-      print "DC: color channels by dictionary results"
       # colorHits(asdfsdf, red=filter1output, green=filter2output)
       reportAngle = False
       if reportAngle:
@@ -278,12 +279,13 @@ def TestFilters(
       ## display results 
       if colorHitsOutName!=None: 
         colorHits(testData,
-                red=filter2PoreResult.stackedHits,
-                green=filter1PoreResult.stackedHits,
+                red=daColors['red'],
+                green=daColors['green'],
                 label=label,
                 outName=colorHitsOutName)                       
 
-      return filter1PoreResult, filter2PoreResult 
+      # DC this could be generalized into a dictionary to add more filter; might make ROC difficult though 
+      return filter1Result, filter2Result 
 
     elif filterType == "TT":
       # moving dictionary abstraction up a lvl from DetectFilters to TestFilters
@@ -298,6 +300,7 @@ def TestFilters(
 
       # utilizing runner functions to produce stacked images
       print "DC: this is wehre you'll want to iterature over WT, Longi and loss" 
+      raise RuntimeError("Exiting here, since DetectFilter inputs different now")
       resultContainer = DetectFilter(testDataName,
                                      filterDict,thresholdDict,
                                      iters,display=display,sigma_n=sigma_n,

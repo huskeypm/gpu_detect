@@ -249,6 +249,7 @@ def docalc(imgOrig,
 
     plt.subplot(2,2,2)
     DisplayHits(inputs.imgOrig,results.threshed)                 
+    plt.gcf().savefig('x.png')
 
     
     return inputs,results

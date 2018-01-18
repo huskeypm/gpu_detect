@@ -119,17 +119,18 @@ def giveStackedHits(imgName, WTthreshold, Longitudinalthreshold, gamma,
 
 
   # # Convolve Each Image with Each Filter
-
+  paramDict={'doCLAHE':False}
   rotDegrees = [-20, -15, -10, -5, 0, 5, 10, 15, 20]
   display = False
   thresholdDict = {'WT':WTthreshold, 'Longitudinal':Longitudinalthreshold, 'Loss':Lossthreshold}
   Result = bD.TestFilters(combined,None,None,filterType="TT",
                               display=display,iters=rotDegrees,filterDict=filterDict,
-			      thresholdDict=thresholdDict,doCLAHE=False,
+			      thresholdDict=thresholdDict,
                               colorHitsOutName=imgName,
                               label=imgName,
                               saveColoredFig=False,
-                              gamma=gamma)
+                              paramDict = paramDict)
+                              #gamma=gamma)
   #print Result.coloredImg
   #cv2.imwrite("test.png", Result.coloredImg)
   #quit()

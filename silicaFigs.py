@@ -215,13 +215,33 @@ def Silica():
   return dataSet
 
 ##
+## Generate ROC curves
+## 
+def doROC():
+      dataSet = Silica()
+      optimizer.SetupTests(dataSet) 
+      paramDict={
+        'penaltyscale': 1.2,
+        'useFilterInv':True,   
+        'sigma_n': 1.
+        }
+      optimizer.GenFigROC(dataSet,paramDict,loadOnly=False) 
+    
+
+##
 ## More of a unit test than a validation, but will atleast check for breaking code 
 ##
 def validate(): 
   dataSet = Silica()
   optimizer.SetupTests(dataSet) 
+  paramDict={
+        'penaltyscale': 1.2,
+        'useFilterInv':True,  
+        'sigma_n': 1.
+        }
   filter1PS,filter2NS,filter2PS,filter1NS = optimizer.TestParams(
     dataSet,
+    paramDict,
     display=False)    
 
   # 122217
@@ -261,11 +281,8 @@ if __name__ == "__main__":
     if(arg=="-paperfigs"):     
       GenFig3()
       quit()
-    if(arg=="-rocfigs"):     
-      dataSet = Silica()
-      optimizer.SetupTests(dataSet) 
-      #optimizer.GenFigROC(loadOnly=True)
-      optimizer.GenFigROC(dataSet,loadOnly=False) 
+    if(arg=="-rocfigs"):
+      doROC()
       quit()
     if(arg=="-validate"):    
       validate()

@@ -397,21 +397,17 @@ def Assess(
 ##
 def GenFigROC(
   dataSet,
+  paramDict,
   loadOnly=False,
-  useFilterInv=True,
   filter1Label = "fused",
   filter2Label = "bulk",
   f1ts = np.linspace(0.05,0.50,10),
   f2ts = np.linspace(0.05,0.30,10),
-  penaltyscale = 1.2,# tried optimizing, but performance seemed to decline quickly far from 1.2 nspace(1.0,1.5,6)  
   hdf5Name = "optimizeinvscale.h5"
   ):
   
-  paramDict ={
-    'useFilterInv':useFilterInv,
-    'penaltyscale':penaltyscale,
-    'sigma_n': 1.        
-  }
+  paramDict['sigma_n'] = 1. 
+           
   ##
   ## perform trials using parameter ranges 
   ##
@@ -495,23 +491,29 @@ if __name__ == "__main__":
     if(arg=="-optimize"):
       dataSet = DataSet()
       SetupTests(dataSet) 
+      paramDict={
+        'penaltyscale': 1.2,
+        'useFilterInv':True,   
+        }
       GenFigROC(
         dataSet,
+        paramDict,
         f1ts = np.linspace(0.05,0.50,10),   
         f2ts = np.linspace(0.05,0.30,10),   
-        penaltyscale = 1.2,
-        useFilterInv=True,   
       ) 
       quit()
     if(arg=="-optimizeLight"):
       dataSet = DataSet()
       SetupTests(dataSet) 
+      paramDict={
+        'penaltyscale': 1.2,
+        'useFilterInv':True,   
+        }      
       GenFigROC(
         dataSet,
+        paramDict,
         f1ts = np.linspace(0.05,0.50,3),   
         f2ts = np.linspace(0.05,0.30,3),   
-        penaltyscale = 1.2,
-        useFilterInv=True,   
       ) 
       # just checking that all still runs 
       print "PASS"

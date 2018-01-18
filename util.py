@@ -50,20 +50,20 @@ def CalcX(
     X[i,:]=Xif
   return X  
 
-def TestFilter(
-  H, # MACE filter
-  I  # test img
-):
-    print "DEPREACATE THIS FUNCTION" 
-    #R = fftp.ifftshift(fftp.ifft2(I*conj(H)));
-    icH = I * np.conj(H)
-    R = fftp.ifftshift ( fftp.ifft2(icH) ) 
-    #R = fftp.ifft2(icH) 
-
-    daMax = np.max(np.real(R))
-    print "Response %e"%( daMax )
-    #myplot(R)
-    return R,daMax
+#def TestFilter(
+#  H, # MACE filter
+#  I  # test img
+#):
+#    print "DEPREACATE THIS FUNCTION" 
+#    #R = fftp.ifftshift(fftp.ifft2(I*conj(H)));
+#    icH = I * np.conj(H)
+#    R = fftp.ifftshift ( fftp.ifft2(icH) ) 
+#    #R = fftp.ifft2(icH) 
+#
+#    daMax = np.max(np.real(R))
+#    print "Response %e"%( daMax )
+#    #myplot(R)
+#    return R,daMax
 
 # renormalizes images to exist from 0-255
 # rescale/renomalize image 

@@ -18,15 +18,15 @@ import matplotlib.pylab as plt
 ## and reports highest correlation output for each iteration 
 ## 
 def DetectFilter(
-          inputs,  # basically contains test data and matched filter 
-          paramDict,  # parameter dictionary  
-		 iters,   # rotations over which mf will be tested
-		 display=False,
-         label=None,
-		 filterMode=None,
-		 filterType="Pore",
-		 returnAngles=True,
-        ):
+  inputs,  # basically contains test data and matched filter 
+  paramDict,  # parameter dictionary  
+  iters,   # rotations over which mf will be tested
+  display=False,
+  label=None,
+  filterMode=None,
+  filterType="Pore",
+  returnAngles=True,
+):
 
   if inputs is None:
     raise RuntimeError("PLACEHOLDER TO REMIND ONE TO USE INPUT/PARAMDICT OBJECTS")
@@ -228,29 +228,27 @@ def colorHitsTT(rawOrig,LongStacked,WTStacked,iters,outName=None,label='',plotMe
 # main engine 
 # TODO remove scale/pass into filter itself
 def TestFilters(testDataName,
-                filter1FilterName,filter2FilterName,
-                testData = None, # can pass in (ultimately preferred) or if none, will read in based on dataName 
-                filter1Data=None,
-                filter2Data=None,
-                filter1Thresh=60,filter2Thresh=50,
-                subsection=None,
-                display=False,
-                colorHitsOutName=None,
-                sigma_n = 1., 
-                iters = [0,10,20,30,40,50,60,70,80,90], 
-                penaltyscale=1.0,      
-                useFilterInv=False,
-                label="test",
-                filterType="Pore",
-                filterDict=None, thresholdDict=None,
-                doCLAHE=True,saveColoredFig=True,
-                gamma=3.,
-                returnAngles=True):       
+    filter1FilterName,filter2FilterName,
+    testData = None, # can pass in (ultimately preferred) or if none, will read in based on dataName 
+    filter1Data=None,
+    filter2Data=None,
+    filter1Thresh=60,filter2Thresh=50,
+    subsection=None,
+    display=False,
+    colorHitsOutName=None,
+    sigma_n = 1., 
+    iters = [0,10,20,30,40,50,60,70,80,90], 
+    penaltyscale=1.0,      
+    useFilterInv=False,
+    label="test",
+    filterType="Pore",
+    filterDict=None, thresholdDict=None,
+    doCLAHE=True,saveColoredFig=True,
+    gamma=3.,
+    returnAngles=True):       
 
     #raise RuntimeError("Require Dataset object, as done for tissue validation") 
 
-    print "DC: do away with the filterType Pore distinction here"
-    print "DC: can keep the case-specific coloring for now"
     if filterType == "Pore":
       if testData is None: 
         # load data against which filters are tested
@@ -325,6 +323,7 @@ def TestFilters(testDataName,
       #                                         doCLAHE=doCLAHE,returnAngles=returnAngles)
 
 
+      print "DC: merge up the case-specific coloring for now"
 
       # utilizing runner functions to produce stacked images
       print "DC: this is wehre you'll want to iterature over WT, Longi and loss" 
@@ -360,26 +359,6 @@ def TestFilters(testDataName,
       raise RuntimeError, "Filtering type not understood"
 
 
-def TestTrueData():
-  root 							= "/net/share/shared/papers/nanoporous/images/"
-  img1 = '/home/AD/srbl226/spark/sparkdetection/roc/clahe_Best.jpg'
-  img2 = root+"full.png"
-  dummy = TestFilters(
-    img1, # testData
-    root+'fusedBase.png',         # fusedfilter Name
-    root+'bulkCellTEM.png',        # bulkFilter name
-    #subsection=[200,400,200,500],   # subsection of testData
-    subsection=[200,400,200,500],   # subsection of testData
-    fusedThresh = 6.,  
-    bulkThresh = 6., 
-    colorHitsoutName = "filters_on_pristine.png",
-    display=False   
-  )  
-  
-  
-  
-  
-  
   
   
 #
@@ -401,35 +380,5 @@ Notes:
 """
   return msg
 
-#
-# MAIN routine executed when launching this script from command line 
-#
-if __name__ == "__main__":
-  import sys
-  msg = helpmsg()
-  remap = "none"
-
-  if len(sys.argv) < 2:
-      raise RuntimeError(msg)
-
-  #fileIn= sys.argv[1]
-  #if(len(sys.argv)==3):
-  #  1
-  #  #print "arg"
-
-  # Loops over each argument in the command line 
-  for i,arg in enumerate(sys.argv):
-    # calls 'doit' with the next argument following the argument '-validation'
-    if(arg=="-validation"):
-      #arg1=sys.argv[i+1] 
-      TestTrueData() 
-      quit()
-
-
-
-
-
-
-  raise RuntimeError("Arguments not understood")
 
 

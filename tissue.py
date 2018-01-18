@@ -237,8 +237,7 @@ def docalc(imgOrig,
     ##
     ## Plotting 
     ## 
-    print "RESTORE PLOTTING ONCE I UNDERSTAND"
-    print "WARNING: SDFSDFDFSDF"
+
     plt.subplot(2,2,1)
     plt.imshow(inputs.imgOrig,cmap='gray')
 
@@ -249,8 +248,6 @@ def docalc(imgOrig,
     plt.imshow(result.corrlobe)
 
     plt.subplot(2,2,2)
-    
-    
     DisplayHits(inputs.imgOrig,results.threshed)                 
 
     

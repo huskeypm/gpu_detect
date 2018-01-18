@@ -2,6 +2,8 @@ import matplotlib.pylab as plt
 import numpy as np 
 import cv2
 
+import imutils
+
 root = "myoimages/"
 
 def myplot(img,fileName=None,clim=None):
@@ -478,6 +480,22 @@ def embedSignal(img,mf,loc=None,scale=0.5):
     imgEmb[loc[0]:(loc[0]+dimr[0]),loc[1]:(loc[1]+dimr[1])] += mfs 
     #imshow(imgEmb)
     return imgEmb
+
+def padWithZeros(array, padwidth, iaxis, kwargs):
+    array[:padwidth[0]] = 0
+    array[-padwidth[1]:]= 0
+    return array
+
+
+def PadRotate(myFilter1,val):
+  dims = np.shape(myFilter1)
+  diff = np.min(dims)
+  paddedFilter = np.lib.pad(myFilter1,diff,padWithZeros)
+  rotatedFilter = imutils.rotate(paddedFilter,-val)
+  rF = np.copy(rotatedFilter)
+
+  return rF
+
 
 #
 # Message printed when program run without arguments 

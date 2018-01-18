@@ -54,6 +54,7 @@ class DataSet:
     self.filter1PositiveChannel = filter1PositiveChannel
     self.filter1Thresh=filter1Thresh #h1000.
 
+    ## Plan to make this optional
     self.filter2TestName =filter2TestName #  root + 'clahe_Best.jpg'
     self.filter2TestRegion =filter2TestRegion #  [250,350,50,150]
     self.filter2Label =filter2Label #  root+'fusedCellTEM.png'
@@ -121,11 +122,58 @@ def SetupTests(dataSet):
 
   filter2Filter = cv2.imread(dataSet.filter2Name)
   dataSet.filter2Data   = cv2.cvtColor(filter2Filter, cv2.COLOR_BGR2GRAY)
+
 ##
 ## This function essentially measures overlap between detected regions and hand-annotated regions
-## Positive hits are generated when correctly detected/annotated regions are aligned
+## Rules:
+## - Hits that do    align with 'truthMarked' are scored   favorably (True positives)
+## - Hits that don't align with 'truthMarked' are scored unfavorably (False positives) 
 ##
-def ScoreOverlap(
+def ScoreOverlap_SingleFilter(
+          hits,
+          truthMarked,                
+          mode="default", # negative hits are assessed by 'negativeHits' within positive Hits region
+                          # negative hits are penalized throughout entire image 
+          display=True):
+    # debug
+    #truthMarked = np.zeros_like(truthMarked); truthMarked[0:20,:]=1.
+    #display=True
+
+    # positive hits 
+    masked = np.array(hits > 0, dtype=np.float)
+    positiveScoreOverlapImg = truthMarked*masked
+    falseMarked = (1-truthMarked) # complement of truth region
+    negativeScoreOverlapImg = falseMarked*masked  
+
+    positiveScoreOverlap = np.sum(positiveScoreOverlapImg)/np.sum(truthMarked)
+    negativeScoreOverlap = np.sum(negativeScoreOverlapImg)/np.sum(falseMarked)
+    
+    if display:
+      plt.figure()    
+      plt.subplot(2,2,1)
+      plt.title("All hits")
+      plt.imshow(masked)
+      plt.subplot(2,2,2)
+      plt.title("Truth only")
+      plt.imshow(truthMarked)
+      plt.subplot(2,2,3)
+      plt.title("True positive")
+      plt.imshow(positiveScoreOverlapImg)      
+      plt.subplot(2,2,4)
+      plt.title("False positive")
+      plt.imshow(negativeScoreOverlapImg)            
+      plt.gcf().savefig("Test.png")
+      plt.close()
+    
+    return positiveScoreOverlap, negativeScoreOverlap
+
+##
+## This function essentially measures overlap between detected regions and hand-annotated regions
+## Rules:
+## - Positive hits that align with 'truthMarked' are scored   favorably (True positives)
+## - Negative hits that align with 'truthMarked' are scored unfavorably (False positives) 
+##
+def ScoreOverlap_CompetingFilters(
           positiveHits,
           negativeHits,
           #positiveTest,               
@@ -177,12 +225,47 @@ def ScoreOverlap(
 
     return positiveScoreOverlap, negativeScoreOverlap
 
+##
+## Tests a single filter 
+##     
+def TestParams_Single(
+    dataSet,
+    iters = [0,10,20,30,40,50,60,70,80,90],
+    display=False):
 
+    # test filter across all angles 
+    filter1_filter1Test, dummy = bD.TestFilters(
+      dataSet.filter1TestName, # testData
+      dataSet.filter1Name,                # fusedfilter Name
+      dataSet.filter2Name,              # bulkFilter name
+      testData = dataSet.filter1TestData, 
+      #subsection=dataSet.filter1TestRegion, #[200,400,200,500],   # subsection of testData
+      filter1Thresh = dataSet.filter1Thresh,
+      filter2Thresh = dataSet.filter2Thresh,
+      sigma_n = dataSet.sigma_n,
+      #iters = [optimalAngleFused],
+      iters=iters,
+      useFilterInv=dataSet.useFilterInv,
+      penaltyscale=dataSet.penaltyscale,
+      colorHitsOutName="filter1Marked_%f.png"%(dataSet.filter1Thresh),
+      display=display,
+      single=True,
+      filterType = "Pore"
+    )        
+     
+    # assess score for ROC  
+    filter1PS, filter1NS= ScoreOverlap_SingleFilter(
+        filter1_filter1Test.stackedHits,
+        dataSet.filter1PositiveData,
+        display=display)    
+        
+    print dataSet.filter1Thresh,filter1PS,filter1NS    
+    return filter1PS, filter1NS    
 ## 
 ##  Returns true positive/false positive rates for two filters, given respective true positive 
 ##  annotated data 
 ## 
-def TestParams(
+def TestParams_Simultaneous(
     dataSet,
     iters = [0,10,20,30,40,50,60,70,80,90],
     display=False):
@@ -336,13 +419,14 @@ def AnalyzePerformanceData(dfOrig,tag='filter1',label=None,normalize=False,roc=T
 
 
 ##
-## Iterates over parameter compbinations to find optimal 
+## Iterates over parameter compbinations for TWO filters (simultaneously) to find optimal 
 ## ROC data 
 ## 
 ## dataSet - a dataset object specific to case you're optimizing (see definition) 
 ## 
+## 
 import pandas as pd
-def Assess(
+def Assess_Simultaneous(
   dataSet,
   filter1Threshes = np.linspace(800,1100,10), 
   filter2Threshes = np.linspace(800,1100,10), 
@@ -368,7 +452,7 @@ def Assess(
         dataSet.useFilterInv = useFilterInv
 
         # run test 
-        filter1PS,filter2NS,filter2PS,filter1NS = TestParams(
+        filter1PS,filter2NS,filter2PS,filter1NS = TestParams_Simultaneous(
           dataSet,
           display=display)
 
@@ -391,7 +475,63 @@ def Assess(
   
   return df,hdf5Name     
 
+##
+## Test thresholds for a single filter 
+## 
+def Assess_Single(
+  dataSet,
+  filter1Threshes = np.linspace(800,1100,10), 
+  hdf5Name = "optimizer.h5",
+  display=False
+  ):
+  
+  # create blank dataframe
+  df = pd.DataFrame(columns = 
+  ['filter1Thresh','filter1PS','filter1NS'])
+  
+  # iterate of thresholds
+  for i,filter1Thresh in enumerate(filter1Threshes):
+        # set params 
+        dataSet.filter1Thresh=filter1Thresh
+        # run test 
+        filter1PS,filter1NS = TestParams_Single(
+          dataSet,
+          display=display)
 
+        # store outputs 
+        raw_data =  {\
+         'filter1Thresh': dataSet.filter1Thresh,
+         'filter1PS': filter1PS,
+         'filter1NS': filter1NS}
+        #print raw_data
+        dfi = pd.DataFrame(raw_data,index=[0])#columns = ['fusedThresh','bulkThresh','fusedPS','bulkNS','bulkPS','fusedNS'])
+        df=df.append(dfi)
+
+  # store in hdf5 file
+  print "Printing " , hdf5Name 
+  df.to_hdf(hdf5Name,'table', append=False)
+  
+  return df,hdf5Name     
+
+
+def GenFigROC_TruePos_FalsePos(
+  dataSet,
+  filter1Label = "fused",
+  f1ts = np.linspace(0.05,0.50,10),
+  hdf5Name ="single.hdf5",
+  loadOnly=False
+  ):
+  ##
+  ## perform trials using parameter ranges 
+  ##
+  if loadOnly:
+    print "Reading ", hdf5Name 
+  else:
+    Assess_Single(
+        dataSet,
+        filter1Threshes = f1ts,
+        hdf5Name = hdf5Name
+      )
 ##
 ## Generates ROC data 
 ##
@@ -406,14 +546,14 @@ def GenFigROC(
   penaltyscales = [1.2],# tried optimizing, but performance seemed to decline quickly far from 1.2 nspace(1.0,1.5,6)  
   hdf5Name = "optimizeinvscale.h5"
   ):
-
+  raise RuntimeError("Rename to suggest we're optimizing two filters simultaneously")
   ##
   ## perform trials using parameter ranges 
   ##
   if loadOnly:
     print "Reading ", hdf5Name 
   else:
-    Assess(
+    Assess_Simultaneous(
         dataSet,
         filter1Threshes = f1ts,
         filter2Threshes = f2ts,

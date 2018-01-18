@@ -69,7 +69,7 @@ def lobeDetect(
     results.corrlobe = corrlobe
     results.snr = snr
     results.threshed = threshed
- 
+
     return results
 
 
@@ -140,7 +140,6 @@ def FilterSingle(
     #raise RuntimeError("need to define mode") 
     print "Patiently ignoring you until this is implemented" 
     results = empty()
-
   return results
 
 

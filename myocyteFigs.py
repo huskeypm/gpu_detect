@@ -272,32 +272,52 @@ def testMF(
 ##
 import optimizer
 def Myocyte():
-  root = "myoimages/"
-  filter1TestName = root + 'MI_D_73_annotation.png'
-  filter1PositiveTest = root+"MI_D_73_annotation_channels.png"
+    # where to look for images
+    root = "myoimages/"
+    # name of data used for testing algorithm 
+    filter1TestName = root + 'MI_D_73_annotation.png'
+    # version of filter1TestName marked 'white' where you expect to get hits for filter1
+    # or by marking 'positive' channel 
+    filter1PositiveTest = root+"MI_D_73_annotation_channels.png"
 
-  dataSet = optimizer.DataSet(
-    root = root,
-    filter1TestName = filter1TestName,
-    filter1TestRegion = None,
-    filter1PositiveTest = filter1PositiveTest,
-    filter1PositiveChannel= 0,  # blue, WT 
-    filter1Label = "TT",
-    filter1Name = root+'WTFilter.png',          
-    filter1Thresh=0.06, 
-
-    filter2TestName = filter1TestName,
-    filter2TestRegion = None,
-    filter2PositiveTest = filter1PositiveTest,
-    filter2PositiveChannel= 1,  # green, longi
-    filter2Label = "LT",
-    filter2Name = root+'LongFilter.png',        
-    filter2Thresh=0.38 
+    dataSet = optimizer.DataSet(
+        root = root,
+        filter1TestName = filter1TestName,
+        filter1TestRegion = None,
+        filter1PositiveTest = filter1PositiveTest,
+        filter1PositiveChannel= 0,  # blue, WT 
+        filter1Label = "TT",
+        filter1Name = root+'WTFilter.png',          
+        filter1Thresh=0.06, 
+        
+        filter2TestName = filter1TestName,
+        filter2TestRegion = None,
+        filter2PositiveTest = filter1PositiveTest,
+        filter2PositiveChannel= 1,  # green, longi
+        filter2Label = "LT",
+        filter2Name = root+'LongFilter.png',        
+        filter2Thresh=0.38 
     )
 
-  return dataSet
+    return dataSet
+
 
 def rocData(): 
+  dataSet = Myocyte() 
+  optimizer.SetupTests(dataSet)
+
+
+   
+  #pass in data like you are doing in your other tests 
+  #threshold? 
+  optimizer.GenFigROC_TruePos_FalsePos(
+        dataSet,
+        filter1Label = "testing",
+        #f1ts = np.linspace(0.5,30,2),
+        f1ts = np.linspace(30,50,2),
+      )
+
+def rocDataOLD(): 
   dataSet = Myocyte() 
   optimizer.SetupTests(dataSet)
 

@@ -28,7 +28,7 @@ def DetectFilter(dataSet,mf,threshold,iters,display=False,sigma_n=1.,
   result.mf= mf
 
   result.stackedDict = dict()
-
+  
   if filterType == "Pore":
     # do correlations across all iter
     result.correlated = painter.correlateThresher(
@@ -238,8 +238,12 @@ def TestFilters(testDataName,
                 filterDict=None, thresholdDict=None,
                 doCLAHE=True,saveColoredFig=True,
                 gamma=3.,
+                single=False,
                 returnAngles=True):       
 
+    if single:
+        print "PKH: need to clean this up upon merging branches"
+        
     print "DC: do away with the filterType Pore distinction here"
     print "DC: can keep the case-specific coloring for now"
     if filterType == "Pore":
@@ -273,12 +277,14 @@ def TestFilters(testDataName,
                                      filterMode="filter1",label=label,
                                      penaltyscale=penaltyscale,
                                      useFilterInv=useFilterInv)
-
-      filter2PoreResult = DetectFilter( testData,filter2Data  ,filter2Thresh,
+      if single is False: 
+        filter2PoreResult = DetectFilter( testData,filter2Data  ,filter2Thresh,
                                      iters,display=display,sigma_n=sigma_n,
                                      filterMode="filter2",label=label,
                                      penaltyscale=penaltyscale,
                                      useFilterInv=useFilterInv)
+      else: 
+        filter2PoreResult = None                             
 
       print "DC: color channels by dictionary results"
       # colorHits(asdfsdf, red=filter1output, green=filter2output)
@@ -289,8 +295,14 @@ def TestFilters(testDataName,
 
       ## display results 
       if colorHitsOutName!=None: 
-        colorHits(testData,
+        if single is False:   
+          colorHits(testData,
                 red=filter2PoreResult.stackedHits,
+                green=filter1PoreResult.stackedHits,
+                label=label,
+                outName=colorHitsOutName)                       
+        else:        
+          colorHits(testData,
                 green=filter1PoreResult.stackedHits,
                 label=label,
                 outName=colorHitsOutName)                       

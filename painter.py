@@ -73,7 +73,6 @@ def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
                       doCLAHE=True):
     # Store all 'hits' at each angle 
     correlated = []
-
     # Ryan ?? equalized image?
     # Dylan - Adding in option to turn off CLAHE
     # TODO - this should be done in preprocessing, not here
@@ -85,7 +84,7 @@ def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
       adapt99 = myImg
 
     filterRef = util.renorm(np.array(myFilter1,dtype=float),scale=1.)
-
+    
     # TODO - here is the place to stick in the GPU shizzle 
     for i, val in enumerate(iters):
       result = empty()
@@ -103,6 +102,7 @@ def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
    
       # matched filtering 
       results = dps.FilterSingle(inputs,mode="simple")      
+      
       yP = results.corr ; print "REMOVE ME" 
       #yP = mF.matchedFilter(tN,rFN,demean=False,parsevals=True)
 
@@ -163,7 +163,7 @@ def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
         plt.imshow(rFN,cmap='gray')
         plt.subplot(1,2,2)
         plt.title("Correlation plane") 
-        plt.imshow(result.corr)                
+        plt.imshow(results.corr)                
         plt.colorbar()
         plt.tight_layout()
         fileName = label+"_"+tag+'_{}.png'.format(val)
@@ -172,13 +172,13 @@ def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
      
 
       #  
-      result.snr = CalcSNR(result.corr,sigma_n) 
+      result.snr = CalcSNR(results.corr,sigma_n) 
       # 
-      result.max = np.max(result.corr)
+      result.max = np.max(results.corr)
 
       #result.hit = hit
       #result.hitLoc = hitLoc
-      correlated.append(result) 
+      correlated.append(results) 
     
     return correlated
 

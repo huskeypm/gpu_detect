@@ -109,7 +109,6 @@ def simpleDetect(
   ## get correlation plane w filter 
   results = empty()
   results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=True) 
-
   ## had an snr criterion somewhere
   print "PKH: where's the SNR criterion?" 
 
@@ -125,7 +124,7 @@ def FilterSingle(
   paramDict = dict(),# pass in parameters through here
   mode = None # ['logMode','dylanmode','lobemode']
   ):
-
+  
   if mode=="lobemode":
     results = lobeDetect(inputs,paramDict)
   elif mode=="dcmode": 
@@ -136,6 +135,11 @@ def FilterSingle(
     #raise RuntimeError("need to define mode") 
     print "Patiently ignoring you until this is implemented" 
     results = empty()
+  #raise RuntimeError("HSDFSF")
+  
+  #import matplotlib.pylab as plt
+  #plt.imshow(results.corr)
+  #plt.gcf().savefig("x.png")
 
   return results
 

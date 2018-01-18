@@ -52,29 +52,29 @@ def TestBulk():
   Extrapolate(testCase,tag=testCase.label)
   
   
-def DoTest(testCase,
-  fusedThresh=0.2,
-  bulkThresh = 0.46,
-  display=False
-  ):
-  raise RuntimeError("delete me") 
-  fusedPoreResult, bulkPoreResult = bD.TestFilters(
-    testCase.name, # testData
-    fuzedData,                       # fusedfilter Name
-    bulkData,                      # bulkFilter name
-    subsection=testCase.subsection, #[200,400,200,500],   # subsection of testData
-    fusedThresh = fusedThresh,
-    bulkThresh = bulkThresh,
-    label = testCase.label,
-    sigma_n = sigma_n,
-    iters = iters, 
-    useFilterInv=True,
-    scale=scale,
-    display=display,  # to gen images for final copy 
-    colorHitsOutName=testCase.outName      
-   )        
-  testCase.fusedPoreResult = fusedPoreResult
-  testCase.bulkPoreResult = bulkPoreResult
+#def DoTest(testCase,
+#  fusedThresh=0.2,
+#  bulkThresh = 0.46,
+#  display=False
+#  ):
+#  raise RuntimeError("delete me") 
+#  fusedPoreResult, bulkPoreResult = bD.TestFilters(
+#    testCase.name, # testData
+#    fuzedData,                       # fusedfilter Name
+#    bulkData,                      # bulkFilter name
+#    subsection=testCase.subsection, #[200,400,200,500],   # subsection of testData
+#    fusedThresh = fusedThresh,
+#    bulkThresh = bulkThresh,
+#    label = testCase.label,
+#    sigma_n = sigma_n,
+#    iters = iters, 
+#    useFilterInv=True,
+#    scale=scale,
+#    display=display,  # to gen images for final copy 
+#    colorHitsOutName=testCase.outName      
+#   )        
+#  testCase.fusedPoreResult = fusedPoreResult
+#  testCase.bulkPoreResult = bulkPoreResult
 
 
 def GenFigN():
@@ -263,6 +263,7 @@ if __name__ == "__main__":
       quit()
     if(arg=="-rocfigs"):     
       dataSet = Silica()
+      optimizer.SetupTests(dataSet) 
       #optimizer.GenFigROC(loadOnly=True)
       optimizer.GenFigROC(dataSet,loadOnly=False) 
       quit()

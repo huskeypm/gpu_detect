@@ -4,3 +4,6 @@ python myocyteFigs.py -validate
 python tissue.py -validate
 
 
+python optimizer.py -optimizeLight
+
+

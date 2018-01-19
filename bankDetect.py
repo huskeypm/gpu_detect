@@ -272,6 +272,7 @@ def TestFilters(testDataName,
 
       ## perform detection 
       print "DC: this part can be replaced with a dictionary of filters" 
+      print iters
       filter1PoreResult = DetectFilter(testData,filter1Data  ,filter1Thresh,
                                      iters,display=display,sigma_n=sigma_n,
                                      filterMode="filter1",label=label,

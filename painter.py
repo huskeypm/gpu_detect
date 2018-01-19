@@ -25,6 +25,7 @@ def PadRotate(myFilter1,val):
   dims = np.shape(myFilter1)
   diff = np.min(dims)
   paddedFilter = np.lib.pad(myFilter1,diff,padWithZeros)
+  print val
   rotatedFilter = imutils.rotate(paddedFilter,-val)
   rF = np.copy(rotatedFilter)
 

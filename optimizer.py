@@ -123,6 +123,13 @@ def SetupTests(dataSet):
   filter2Filter = cv2.imread(dataSet.filter2Name)
   dataSet.filter2Data   = cv2.cvtColor(filter2Filter, cv2.COLOR_BGR2GRAY)
 
+def ParamDict():
+  print "WILL MAKE INTO CLASS LATER"
+  paramDict={
+    'snrThresh':1.,
+  }
+  return paramDict
+
 ##
 ## This function essentially measures overlap between detected regions and hand-annotated regions
 ## Rules:

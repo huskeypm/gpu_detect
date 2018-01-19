@@ -331,6 +331,8 @@ def rocData():
         f1ts = np.linspace(10,20,3),
         display=True
       )
+
+
 def rocDataOLD(): 
   dataSet = Myocyte() 
   optimizer.SetupTests(dataSet)

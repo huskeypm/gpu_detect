@@ -54,12 +54,14 @@ python myocyteFigs.py -roc
 ## PNP project
 <code>
 python silicaFigs.py -rocfigs 
+-- under development, new to reoptimize
 </code>
 
+## Misc. ROC? 
 To generate roc data:
 <code>
+python optimizer.py -optimize
 python figs.py -rocfigs # generate roc figures (after running optimizer.py)
-python optimer.py -optimize3
 python figs.py -paperfigs # generate figures for paper
 -- May be broken, but see sparkdetection repo for working version 
 </code>

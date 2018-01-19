@@ -127,7 +127,12 @@ def ParamDict():
   print "WILL MAKE INTO CLASS LATER"
   paramDict={
     'snrThresh':1.,
-  }
+    'penaltyscale': 1.2,
+    'useFilterInv':True,   
+    'sigma_n': 1. ,
+    'filterMode': "simple"   ,
+    'doCLAHE':  True   
+        }  
   return paramDict
 
 ##
@@ -237,26 +242,24 @@ def ScoreOverlap_CompetingFilters(
 ##     
 def TestParams_Single(
     dataSet,
+    paramDict,
     iters = [0,10,20,30,40,50,60,70,80,90],
     display=False):
     # test filter across all angles 
     filter1_filter1Test, dummy = bD.TestFilters(
-      dataSet.filter1TestName, # testData
-      dataSet.filter1Name,                # fusedfilter Name
-      dataSet.filter2Name,              # bulkFilter name
       testData = dataSet.filter1TestData, 
+      filter1Data = dataSet.filter1Data,
+      filter2Data = dataSet.filter2Data,
       #subsection=dataSet.filter1TestRegion, #[200,400,200,500],   # subsection of testData
       filter1Thresh = dataSet.filter1Thresh,
       filter2Thresh = dataSet.filter2Thresh,
-      sigma_n = dataSet.sigma_n,
       #iters = [optimalAngleFused],
       iters=iters,
-      useFilterInv=dataSet.useFilterInv,
-      penaltyscale=dataSet.penaltyscale,
       colorHitsOutName="filter1Marked_%f.png"%(dataSet.filter1Thresh),
       display=display,
       single=True,
-      filterType = "Pore"
+      
+      paramDict = paramDict    
     )        
      
     # assess score for ROC  
@@ -273,6 +276,7 @@ def TestParams_Single(
 ## 
 def TestParams_Simultaneous(
     dataSet,
+    paramDict,
     iters = [0,10,20,30,40,50,60,70,80,90],
     display=False):
    
@@ -281,20 +285,18 @@ def TestParams_Simultaneous(
     ## Test both filters on filter1 test data 
     optimalAngleFused = 30
     filter1_filter1Test, filter2_filter1Test = bD.TestFilters(
-      dataSet.filter1TestName, # testData
-      dataSet.filter1Name,                # fusedfilter Name
-      dataSet.filter2Name,              # bulkFilter name
       testData = dataSet.filter1TestData, 
+      filter1Data = dataSet.filter1Data,
+      filter2Data = dataSet.filter2Data,
       #subsection=dataSet.filter1TestRegion, #[200,400,200,500],   # subsection of testData
       filter1Thresh = dataSet.filter1Thresh,
       filter2Thresh = dataSet.filter2Thresh,
-      sigma_n = dataSet.sigma_n,
       #iters = [optimalAngleFused],
       iters=iters,
-      useFilterInv=dataSet.useFilterInv,
-      penaltyscale=dataSet.penaltyscale,
       colorHitsOutName="filter1Marked_%f_%f.png"%(dataSet.filter2Thresh,dataSet.filter1Thresh),
-      display=display
+      display=display,
+
+      paramDict = paramDict
     )        
 
     ### Filter2 (was bulkPore) 
@@ -305,19 +307,16 @@ def TestParams_Simultaneous(
     ## Test both filters on filter2 test data 
     optimalAngleBulk = 5.
     filter1_filter2Test, filter2_filter2Test = bD.TestFilters(
-      dataSet.filter2TestName, # testData
-      dataSet.filter1Name,                # fusedfilter Name
-      dataSet.filter2Name,              # bulkFilter name
       testData = dataSet.filter2TestData, 
-      #subsection=dataSet.filter2TestRegion, #[200,400,200,500],   # subsection of testData
+      filter1Data = dataSet.filter1Data,
+      filter2Data = dataSet.filter2Data,
       filter1Thresh = dataSet.filter1Thresh,
       filter2Thresh = dataSet.filter2Thresh,
-      sigma_n = dataSet.sigma_n,
       #iters = [optimalAngleFused],
-      useFilterInv=dataSet.useFilterInv,
-      penaltyscale=dataSet.penaltyscale,
       colorHitsOutName="filter2Marked_%f_%f.png"%(dataSet.filter2Thresh,dataSet.filter1Thresh),
-      display=display
+      display=display,
+
+      paramDict = paramDict
      )        
     
     # This approach assess the number of hits of filter A overlapping with regions marked as 'A' in the test data
@@ -335,14 +334,14 @@ def TestParams_Simultaneous(
     # This approach assess filter A hits in marked regions of A, penalizes filter A hits in marked regions 
     # of test set B  
     if 1: 
-      filter1PS, filter1NS= ScoreOverlap(filter1_filter1Test.stackedHits,
+      filter1PS, filter1NS= ScoreOverlap_CompetingFilters(filter1_filter1Test.stackedHits,
 			   filter1_filter2Test.stackedHits,
                            dataSet.filter1PositiveData,
                            #negativeTest="testimages/bulkMarked.png", 
                            mode="nohits",
                            display=display)
 
-      filter2PS, filter2NS = ScoreOverlap(filter2_filter2Test.stackedHits,			
+      filter2PS, filter2NS = ScoreOverlap_CompetingFilters(filter2_filter2Test.stackedHits,			
 			    filter2_filter1Test.stackedHits,
                             dataSet.filter2PositiveData,
                             #negativeTest="testimages/fusedMarked.png",
@@ -438,12 +437,10 @@ def AnalyzePerformanceData(dfOrig,tag='filter1',label=None,normalize=False,roc=T
 import pandas as pd
 def Assess_Simultaneous(
   dataSet,
+  paramDict,
   filter1Threshes = np.linspace(800,1100,10), 
   filter2Threshes = np.linspace(800,1100,10), 
-  penaltyscales=[1.2],  
   hdf5Name = "optimizer.h5",
-  sigma_n = 1.,
-  useFilterInv=False,
   display=False
   ):
   
@@ -453,24 +450,25 @@ def Assess_Simultaneous(
   # iterate of thresholds
   for i,filter1Thresh in enumerate(filter1Threshes):
     for j,filter2Thresh in enumerate(filter2Threshes):
-      for k,penaltyscale      in enumerate(penaltyscales):       
+      #for k,penaltyscale      in enumerate(penaltyscales):       
         # set params 
         dataSet.filter1Thresh=filter1Thresh
         dataSet.filter2Thresh=filter2Thresh
-        dataSet.sigma_n = sigma_n
-        dataSet.penaltyscale = penaltyscale 
-        dataSet.useFilterInv = useFilterInv
+#        dataSet.sigma_n = paramDict['sigma_n']
+#        dataSet.penaltyscale = paramDict['penaltyscale'] 
+#        dataSet.useFilterInv = paramDict['useFilterInv']
 
         # run test 
         filter1PS,filter2NS,filter2PS,filter1NS = TestParams_Simultaneous(
           dataSet,
+          paramDict,
           display=display)
 
         # store outputs 
         raw_data =  {\
          'filter1Thresh': dataSet.filter1Thresh,
          'filter2Thresh': dataSet.filter2Thresh,
-         'penaltyscale': dataSet.penaltyscale,                
+         #'penaltyscale': dataSet.penaltyscale,                
          'filter1PS': filter1PS,
          'filter2NS': filter2NS,
          'filter2PS': filter2PS,
@@ -490,8 +488,9 @@ def Assess_Simultaneous(
 ## 
 def Assess_Single(
   dataSet,
+  paramDict,
   filter1Threshes = np.linspace(800,1100,10), 
-  hdf5Name = "optimizer.h5",
+  hdf5Name = "optimizer_single.h5",
   display=False
   ):
   
@@ -506,6 +505,7 @@ def Assess_Single(
         # run test 
         filter1PS,filter1NS = TestParams_Single(
           dataSet,
+          paramDict,
           display=display)
 
         # store outputs 
@@ -526,6 +526,7 @@ def Assess_Single(
 
 def GenFigROC_TruePos_FalsePos(
   dataSet,
+  paramDict,
   filter1Label = "fused",
   f1ts = np.linspace(0.05,0.50,10),
   hdf5Name ="single.hdf5",
@@ -541,6 +542,7 @@ def GenFigROC_TruePos_FalsePos(
   else:
     Assess_Single(
         dataSet,
+        paramDict,
         filter1Threshes = f1ts,
         hdf5Name = hdf5Name,
         display=display
@@ -558,18 +560,16 @@ def GenFigROC_TruePos_FalsePos(
 ##
 ## Generates ROC data 
 ##
-def GenFigROC(
+def GenFigROC_CompetingFilters(
   dataSet,
+  paramDict,
   loadOnly=False,
-  useFilterInv=True,
   filter1Label = "fused",
   filter2Label = "bulk",
   f1ts = np.linspace(0.05,0.50,10),
   f2ts = np.linspace(0.05,0.30,10),
-  penaltyscales = [1.2],# tried optimizing, but performance seemed to decline quickly far from 1.2 nspace(1.0,1.5,6)  
   hdf5Name = "optimizeinvscale.h5"
   ):
-  raise RuntimeError("Rename to suggest we're optimizing two filters simultaneously")
   ##
   ## perform trials using parameter ranges 
   ##
@@ -578,11 +578,9 @@ def GenFigROC(
   else:
     Assess_Simultaneous(
         dataSet,
+        paramDict,
         filter1Threshes = f1ts,
         filter2Threshes = f2ts,
-        penaltyscales = penaltyscales,
-        sigma_n = 1.,
-        useFilterInv=useFilterInv,
         hdf5Name = hdf5Name,
         display=False
       )
@@ -652,33 +650,29 @@ if __name__ == "__main__":
 
   # Loops over each argument in the command line 
   for i,arg in enumerate(sys.argv):
-    if(arg=="-optimize3"):
+    if(arg=="-optimize"):
       dataSet = DataSet()
       SetupTests(dataSet) 
-    # coarse/fine
-      #ft = np.concatenate([np.linspace(0.5,0.7,7),np.linspace(0.7,0.95,15)   ])
-      #bt = np.concatenate([np.linspace(0.4,0.55,7),np.linspace(0.55,0.65,15)   ])
-      f1ts = np.linspace(0.05,0.50,10)  
-      f2ts = np.linspace(0.05,0.30,10) 
-      penaltyscales = [1.2]  # tried optimizing, but performance seemed to decline quickly far from 1.2 nspace(1.0,1.5,6)  
-      Assess(
+      paramDict=ParamDict()
+      GenFigROC_CompetingFilters(
         dataSet,
-        filter1Threshes = ft,
-        filter2Threshes = bt,
-        hdf5Name = "optimizeinvscale.h5",
-        display=False
-      )
+        paramDict,
+        f1ts = np.linspace(0.05,0.50,10),   
+        f2ts = np.linspace(0.05,0.30,10),   
+      ) 
       quit()
     if(arg=="-optimizeLight"):
       dataSet = DataSet()
       SetupTests(dataSet) 
-      GenFigROC(
+      paramDict=ParamDict()
+      GenFigROC_CompetingFilters(
         dataSet,
+        paramDict,
         f1ts = np.linspace(0.05,0.50,3),   
         f2ts = np.linspace(0.05,0.30,3),   
-        penaltyscales = [1.2],
-        useFilterInv=True,   
       ) 
+      # just checking that all still runs 
+      print "PASS"
       quit()
   
 

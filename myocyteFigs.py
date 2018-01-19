@@ -311,9 +311,11 @@ def rocData():
   dataSet.filter1Label = "TT"
   dataSet.filter1Name = root+'WTFilter.png'
   optimizer.SetupTests(dataSet)
-
+  paramDict = optimizer.ParamDict()
+  
   optimizer.GenFigROC_TruePos_FalsePos(
         dataSet,
+        paramDict,
         filter1Label = dataSet.filter1Label,
         f1ts = np.linspace(30,50,5),
         #display=True
@@ -324,9 +326,11 @@ def rocData():
   dataSet.filter1Label = "LT"
   dataSet.filter1Name = root+'LongFilter.png'
   optimizer.SetupTests(dataSet)
+  paramDict = optimizer.ParamDict()  
   
   optimizer.GenFigROC_TruePos_FalsePos(
         dataSet,
+        paramDict,
         filter1Label = dataSet.filter1Label,
         f1ts = np.linspace(10,20,3),
         display=True

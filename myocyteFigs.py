@@ -438,6 +438,12 @@ def minorValidate(testImage="./myoimages/unittest.png",
   #  print wtContent, ltContent, lossContent
   print "PASSED!"
 
+def Test1():
+  raise RuntimeError("Follow rocData for logic; this will fail") 
+  filter1PS,filter2NS,filter2PS,filter1NS = optimizer.TestParams_Single(
+    dataSet,
+    paramDict,
+    display=False)  
 
 
 #

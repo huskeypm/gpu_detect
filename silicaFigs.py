@@ -21,7 +21,6 @@ iters = [5,30]
 iters = np.linspace(0,90,10)
 
 def GenFig3(): 
-  print "WARNING: these are defined here, but I don't think they should be" 
   TestFused()
   TestBulk()
 
@@ -33,12 +32,7 @@ def TestFused():
   testCase.name = rawData
   testCase.subsection=[340,440,400,500]
   testCase.outName = "fusedMarkedBest.png"
-  #daImg = cv2.imread(testCase.name)
-  #daImg = cv2.cvtColor(daImg, cv2.COLOR_BGR2GRAY)
-  #raw = daImg[testCase.subsection[0]:testCase.subsection[1],
-  #            testCase.subsection[2]:testCase.subsection[3]]
-  #imshow(cut)
-  DoTest(testCase,fusedThresh=fusedThresh,bulkThresh=bulkThresh,display=True)
+  DoTest(testCase,fusedThresh=fusedThresh,bulkThresh=bulkThresh,figLabel=testCase.label,display=True)
   Extrapolate(testCase,tag=testCase.label)
 
 ## fused Pore 
@@ -48,33 +42,56 @@ def TestBulk():
   testCase.name = rawData
   testCase.subsection=[250,350,50,150] 
   testCase.outName="bulkMarkedBest.png"
-  DoTest(testCase,fusedThresh=fusedThresh,bulkThresh=bulkThresh,display=True)
+  DoTest(testCase,fusedThresh=fusedThresh,bulkThresh=bulkThresh,figLabel=testCase.label,display=True)
   Extrapolate(testCase,tag=testCase.label)
   
   
+##
+## Perform tests of both filters on 'subregion' of EM data (called by TestFused/TestBulk functions)
+##
 def DoTest(testCase,
   fusedThresh=0.2,
   bulkThresh = 0.46,
+  figLabel = "test", # figure prefix
   display=False
   ):
-  raise RuntimeError("Update to run with TestBulk/TestFused funcs above") 
-  fusedPoreResult, bulkPoreResult = bD.TestFilters(
-    testCase.name, # testData
-    fuzedData,                       # fusedfilter Name
-    bulkData,                      # bulkFilter name
-    subsection=testCase.subsection, #[200,400,200,500],   # subsection of testData
-    fusedThresh = fusedThresh,
-    bulkThresh = bulkThresh,
-    label = testCase.label,
-    sigma_n = sigma_n,
-    iters = iters, 
-    useFilterInv=True,
-    scale=scale,
-    display=display,  # to gen images for final copy 
-    colorHitsOutName=testCase.outName      
-   )        
-  testCase.fusedPoreResult = fusedPoreResult
-  testCase.bulkPoreResult = bulkPoreResult
+  # load img for testing 
+  daImg = cv2.imread(testCase.name)
+  daImg = cv2.cvtColor(daImg, cv2.COLOR_BGR2GRAY)
+  testData= daImg[testCase.subsection[0]:testCase.subsection[1],
+              testCase.subsection[2]:testCase.subsection[3]]
+
+
+  # load in filter stuff 
+  dataSet = Silica()
+  dataSet.filter1Thresh = fusedThresh 
+  dataSet.filter2Thresh = bulkThresh  
+  optimizer.SetupTests(dataSet) 
+  paramDict={
+        'penaltyscale': 1.2,
+        'useFilterInv':True,  
+        'sigma_n': 1.,
+        'filterMode': "simple"   ,
+        'doCLAHE':  True
+        }
+
+  filter1_filter1Test, filter2_filter1Test = bD.TestFilters(
+      testData = testData,
+      filter1Data = dataSet.filter1Data,
+      filter2Data = dataSet.filter2Data,
+      filter1Thresh = dataSet.filter1Thresh,
+      filter2Thresh = dataSet.filter2Thresh,
+      #iters = [optimalAngleFused],
+      iters=iters,
+      colorHitsOutName="%s_%f_%f.png"%(figLabel,dataSet.filter2Thresh,dataSet.filter1Thresh),
+      display=display,
+
+      paramDict = paramDict
+    )
+
+  testCase.testData = testData
+  testCase.fusedPoreResult = filter1_filter1Test
+  testCase.bulkPoreResult = filter2_filter1Test
 
 
 def GenFigN():
@@ -96,12 +113,10 @@ def Extrapolate(
   fusedPerm= 10**(-6.21),
   tag = None
   ):
-  daImg = cv2.imread(testCase.name)
-  daImg = cv2.cvtColor(daImg, cv2.COLOR_BGR2GRAY)
-  raw = daImg[testCase.subsection[0]:testCase.subsection[1],
-              testCase.subsection[2]:testCase.subsection[3]]
-    
-    
+
+
+  # load data 
+  raw = testCase.testData
   fusedPoreResult = testCase.fusedPoreResult
   bulkPoreResult = testCase.bulkPoreResult
   fusedPoreResult.labeled = painter.doLabel(fusedPoreResult)
@@ -283,6 +298,7 @@ if __name__ == "__main__":
   for i,arg in enumerate(sys.argv):
     # calls 'doit' with the next argument following the argument '-validation'
     if(arg=="-paperfigs"):     
+      # tests fused/bulk filters on fused-pore/bulk-pore-rich regions separately 
       GenFig3()
       quit()
     if(arg=="-rocfigs"):

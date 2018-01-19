@@ -17,29 +17,36 @@ import matplotlib.pylab as plt
 ## For a single matched filter, this function iterates over passed-in angles 
 ## and reports highest correlation output for each iteration 
 ## 
-def DetectFilter(dataSet,mf,threshold,iters,display=False,sigma_n=1.,
-                 label=None,filterMode=None,useFilterInv=False,penaltyscale=1.,
-                 doCLAHE=True,filterType="Pore",returnAngles=True):
+def DetectFilter(
+  inputs,  # basically contains test data and matched filter 
+  paramDict,  # parameter dictionary  
+  iters,   # rotations over which mf will be tested
+  display=False,
+  label=None,
+  filterMode=None,
+  filterType="Pore",
+  returnAngles=True,
+):
+
+  if inputs is None:
+    raise RuntimeError("PLACEHOLDER TO REMIND ONE TO USE INPUT/PARAMDICT OBJECTS")
 
   # store
   result = empty()
-  # difference for TT routines these are now dictionaries
-  result.threshold = threshold
-  result.mf= mf
 
   result.stackedDict = dict()
-  
+
+
   if filterType == "Pore":
     # do correlations across all iter
     result.correlated = painter.correlateThresher(
-       dataSet,result.mf, threshold = result.threshold, iters=iters,
+       inputs,
+       paramDict,
+       iters=iters,
        printer=display,
-       sigma_n=sigma_n,
-       penaltyscale=penaltyscale,
        filterMode=filterMode,
-       useFilterInv=useFilterInv,
        label=label,
-       doCLAHE=doCLAHE)
+       )
 
     # record snr 
     #snrs = [] 
@@ -51,7 +58,7 @@ def DetectFilter(dataSet,mf,threshold,iters,display=False,sigma_n=1.,
   
     # stack hits to form 'total field' of hits
     result.stackedHits= painter.StackHits(
-      result.correlated,result.threshold,iters,doKMeans=False, display=False)#,display=display)
+      result.correlated,paramDict,iters, display=False)#,display=display)
     
   elif filterType == "TT":
     print "WARNING: Need to consolidate this with filterType=Pore"
@@ -220,96 +227,69 @@ def colorHitsTT(rawOrig,LongStacked,WTStacked,iters,outName=None,label='',plotMe
 
 # main engine 
 # TODO remove scale/pass into filter itself
-def TestFilters(testDataName,
-                filter1FilterName,filter2FilterName,
-                testData = None, # can pass in (ultimately preferred) or if none, will read in based on dataName 
-                filter1Data=None,
-                filter2Data=None,
-                filter1Thresh=60,filter2Thresh=50,
-                subsection=None,
-                display=False,
-                colorHitsOutName=None,
-                sigma_n = 1., 
-                iters = [0,10,20,30,40,50,60,70,80,90], 
-                penaltyscale=1.0,      
-                useFilterInv=False,
-                label="test",
-                filterType="Pore",
-                filterDict=None, thresholdDict=None,
-                doCLAHE=True,saveColoredFig=True,
-                gamma=3.,
-                single=False,
-                returnAngles=True):       
+# tests filters1 and filters2 against a test data set
+def TestFilters(
+    testData, # data against which filters 1 and 2 are applied
+    filter1Data, # matched filter 1
+    filter2Data, # matched filter 2
+    filter1Thresh=60,filter2Thresh=50,
+    iters = [0,10,20,30,40,50,60,70,80,90], 
+            
+    display=False,
+    colorHitsOutName=None,
+    label="test",
+    filterType="Pore",
+    filterDict=None, thresholdDict=None,
+    saveColoredFig=True,
+    returnAngles=True,
+    single = False,
+######
+    paramDict=None   # PUT ALL PARAMETERS HERE COMMON TO ALL FILTERS
+):       
 
-    if single:
-        print "PKH: need to clean this up upon merging branches"
-        
-    print "DC: do away with the filterType Pore distinction here"
-    print "DC: can keep the case-specific coloring for now"
+    #raise RuntimeError("Require Dataset object, as done for tissue validation") 
+    params=paramDict
     if filterType == "Pore":
-      if testData is None: 
-        # load data against which filters are tested
-        testData = cv2.imread(testDataName)
-        testData = cv2.cvtColor(testData, cv2.COLOR_BGR2GRAY)
-    
-        if isinstance(subsection, (list, tuple, np.ndarray)): 
-          testData = testData[subsection[0]:subsection[1],subsection[2]:subsection[3]]
-        print "WARNING: should really use the SetupTests function, as we'll retire this later" 
-
-      ## should offloat elsewhere
-      if filter1Data is None:
-        print "WARNING: should really use the SetupTests function, as we'll retire this later" 
-        # load fused filter
-        filter1Filter = cv2.imread(filter1FilterName)
-        filter1Data   = cv2.cvtColor(filter1Filter, cv2.COLOR_BGR2GRAY)
-
-      if filter2Data is None:
-        print "WARNING: should really use the SetupTests function, as we'll retire this later" 
-        # load bulk filter 
-        filter2Filter = cv2.imread(filter2FilterName)
-        filter2Data   = cv2.cvtColor(filter2Filter, cv2.COLOR_BGR2GRAY)
-
-
       ## perform detection 
-      print "DC: this part can be replaced with a dictionary of filters" 
-      print iters
-      filter1PoreResult = DetectFilter(testData,filter1Data  ,filter1Thresh,
-                                     iters,display=display,sigma_n=sigma_n,
-                                     filterMode="filter1",label=label,
-                                     penaltyscale=penaltyscale,
-                                     useFilterInv=useFilterInv)
-      if single is False: 
-        filter2PoreResult = DetectFilter( testData,filter2Data  ,filter2Thresh,
-                                     iters,display=display,sigma_n=sigma_n,
-                                     filterMode="filter2",label=label,
-                                     penaltyscale=penaltyscale,
-                                     useFilterInv=useFilterInv)
-      else: 
-        filter2PoreResult = None                             
+      inputs = empty()
+      inputs.imgOrig = testData
 
-      print "DC: color channels by dictionary results"
+      
+      daColors =dict()
+      ### filter 1 
+      inputs.mfOrig = filter1Data
+      params['snrThresh'] = filter1Thresh
+      filter1Result = DetectFilter(inputs,params,iters,
+                                       display=display,filterMode="filter1",label=label)
+      daColors['green']= filter1Result.stackedHits
+      
+      ### filter 2 
+      if single is False:
+        inputs.mfOrig = filter2Data
+        params['snrThresh'] = filter2Thresh
+        filter2Result = DetectFilter(inputs,params,iters,
+                                       display=display,filterMode="filter2",label=label)
+        daColors['red']= filter2Result.stackedHits
+      else:
+        filter2Result = None
+        daColors['red'] =None
+        
       # colorHits(asdfsdf, red=filter1output, green=filter2output)
       reportAngle = False
       if reportAngle:
         1
         # colorMyANgles(data,filterOutput)
 
-      ## display results
-      if display: 
-       if colorHitsOutName!=None: 
-        if single is False:   
-          colorHits(testData,
-                red=filter2PoreResult.stackedHits,
-                green=filter1PoreResult.stackedHits,
-                label=label,
-                outName=colorHitsOutName)                       
-        else:        
-          colorHits(testData,
-                green=filter1PoreResult.stackedHits,
+      ## display results 
+      if colorHitsOutName!=None: 
+        colorHits(testData,
+                red=daColors['red'],
+                green=daColors['green'],
                 label=label,
                 outName=colorHitsOutName)                       
 
-      return filter1PoreResult, filter2PoreResult 
+      # DC this could be generalized into a dictionary to add more filter; might make ROC difficult though 
+      return filter1Result, filter2Result 
 
     elif filterType == "TT":
       # moving dictionary abstraction up a lvl from DetectFilters to TestFilters
@@ -320,9 +300,11 @@ def TestFilters(testDataName,
       #                                         doCLAHE=doCLAHE,returnAngles=returnAngles)
 
 
+      print "DC: merge up the case-specific coloring for now"
 
       # utilizing runner functions to produce stacked images
       print "DC: this is wehre you'll want to iterature over WT, Longi and loss" 
+      raise RuntimeError("Exiting here, since DetectFilter inputs different now")
       resultContainer = DetectFilter(testDataName,
                                      filterDict,thresholdDict,
                                      iters,display=display,sigma_n=sigma_n,
@@ -355,26 +337,6 @@ def TestFilters(testDataName,
       raise RuntimeError, "Filtering type not understood"
 
 
-def TestTrueData():
-  root 							= "/net/share/shared/papers/nanoporous/images/"
-  img1 = '/home/AD/srbl226/spark/sparkdetection/roc/clahe_Best.jpg'
-  img2 = root+"full.png"
-  dummy = TestFilters(
-    img1, # testData
-    root+'fusedBase.png',         # fusedfilter Name
-    root+'bulkCellTEM.png',        # bulkFilter name
-    #subsection=[200,400,200,500],   # subsection of testData
-    subsection=[200,400,200,500],   # subsection of testData
-    fusedThresh = 6.,  
-    bulkThresh = 6., 
-    colorHitsoutName = "filters_on_pristine.png",
-    display=False   
-  )  
-  
-  
-  
-  
-  
   
   
 #
@@ -396,35 +358,5 @@ Notes:
 """
   return msg
 
-#
-# MAIN routine executed when launching this script from command line 
-#
-if __name__ == "__main__":
-  import sys
-  msg = helpmsg()
-  remap = "none"
-
-  if len(sys.argv) < 2:
-      raise RuntimeError(msg)
-
-  #fileIn= sys.argv[1]
-  #if(len(sys.argv)==3):
-  #  1
-  #  #print "arg"
-
-  # Loops over each argument in the command line 
-  for i,arg in enumerate(sys.argv):
-    # calls 'doit' with the next argument following the argument '-validation'
-    if(arg=="-validation"):
-      #arg1=sys.argv[i+1] 
-      TestTrueData() 
-      quit()
-
-
-
-
-
-
-  raise RuntimeError("Arguments not understood")
 
 

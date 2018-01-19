@@ -11,234 +11,163 @@ import imutils
 from imtools import *
 from matplotlib import cm
 
-def padWithZeros(array, padwidth, iaxis, kwargs):
-    array[:padwidth[0]] = 0
-    array[-padwidth[1]:]= 0
-    return array
+#def padWithZeros(array, padwidth, iaxis, kwargs):
+#    array[:padwidth[0]] = 0
+#    array[-padwidth[1]:]= 0
+#    return array
 
 
 
 class empty:pass
 
 
-def PadRotate(myFilter1,val):
-  dims = np.shape(myFilter1)
-  diff = np.min(dims)
-  paddedFilter = np.lib.pad(myFilter1,diff,padWithZeros)
-  rotatedFilter = imutils.rotate(paddedFilter,-val)
-  rF = np.copy(rotatedFilter)
+#def PadRotate(myFilter1,val):
+#  dims = np.shape(myFilter1)
+#  diff = np.min(dims)
+#  paddedFilter = np.lib.pad(myFilter1,diff,padWithZeros)
+#  rotatedFilter = imutils.rotate(paddedFilter,-val)
+#  rF = np.copy(rotatedFilter)
 
-  return rF
-
-# TODO phase this out 
-def CalcInvFilter(filterRef,tN,val,yP,penaltyscale,sigma_n): 
-      s=1.  
-      fInv = np.max(filterRef)- s*filterRef
-      rFi = PadRotate(fInv,val)
-      rFiN = util.renorm(np.array(rFi,dtype=float),scale=1.)
-      yInv  = mF.matchedFilter(tN,rFiN,demean=False,parsevals=True)   
-      
-      # spot check results
-      #hit = np.max(yP) 
-      #hitLoc = np.argmax(yP) 
-      #hitLoc =np.unravel_index(hitLoc,np.shape(yP))
-
-      ## rescale by penalty 
-      # part of the problem earlier was that the 'weak' responses of the 
-      # inverse filter would amplify the response, since they were < 1.0. 
-      yPN =  util.renorm(yP,scale=1.)
-      yInvN =  util.renorm(yInv,scale=1.)
-
-      yPN = np.exp(yPN)
-      yInvS = sigma_n*penaltyscale*np.exp(yInvN)
-      scaled = np.log(yPN/(yInvS))
-    
-      return scaled 
-
-      # store data 
-      #if useFilterInv:
-      #  result.corr = scaled    
-      #else:
-      #  result.corr = yP 
+#  return rF
 
 
-# Need to be careful when cropping image
+
+
 import detection_protocols as dps
-def correlateThresher(myImg, myFilter1,  #cropper=[25,125,25,125],
-                      iters = [0,30,60,90],  
-                      printer = True, filterMode=None,label=None,
-                      useFilterInv=False,
-                      penaltyscale = 1.2,  # for rescaling penalty filter 
-                      sigma_n=1.,threshold=None,
-                      doCLAHE=True):
-    # Store all 'hits' at each angle 
-    correlated = []
+##
+## Performs matched filtering over desired angles
+##
+def correlateThresher(
+        inputs,
+        params,
+        iters = [0,30,60,90],  
+        printer = True, 
+        filterMode=None,
+        label=None,
+        ):
+
     # Ryan ?? equalized image?
     # Dylan - Adding in option to turn off CLAHE
     # TODO - this should be done in preprocessing, not here
-    if doCLAHE:
+    #print "PKH: turn into separate proproccessing routine"
+    img = inputs.imgOrig
+    if params['doCLAHE']:
       clahe99 = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(16,16))
-      cl1 = clahe99.apply(myImg)
-      adapt99 = cl1
-    else:
-      adapt99 = myImg
+      img = clahe99.apply(inputs.imgOrig)
 
-    filterRef = util.renorm(np.array(myFilter1,dtype=float),scale=1.)
+    filterRef = util.renorm(np.array(inputs.mfOrig,dtype=float),scale=1.)
     
-    # TODO - here is the place to stick in the GPU shizzle 
-    for i, val in enumerate(iters):
+    ##
+    ## Iterate over all filter rotations desired 
+    ## TODO - here is the place to stick in the GPU shizzle 
+    ## 
+    # Store all 'hits' at each angle 
+    correlated = []
+
+    inputs.img = util.renorm(np.array(img,dtype=float),scale=1.)
+    for i, angle in enumerate(iters):
       result = empty()
       # copy of original image 
-      tN = util.renorm(np.array(adapt99,dtype=float),scale=1.)
 
-      print "PKH: todo"
-      inputs = empty() 
-      inputs.img = tN
-      
-      ## 'positive' filter 
       # pad/rotate 
-      rFN = PadRotate(filterRef,val)  
+      params['angle'] = angle
+      rFN = util.PadRotate(filterRef,angle)  
       inputs.mf = rFN  
+      
    
       # matched filtering 
-      results = dps.FilterSingle(inputs,mode="simple")      
+      result = dps.FilterSingle(inputs,params)      
+
+      # store
+      result.rFN = np.copy(rFN)
+      correlated.append(result) 
       
-      yP = results.corr ; print "REMOVE ME" 
-      #yP = mF.matchedFilter(tN,rFN,demean=False,parsevals=True)
+      
 
-      #result.corr = yP
+    ##
+    ## write
+    ##
+    if label!=None and printer:
+       for i, angle in enumerate(iters):
+        tag = filterMode 
+        daTitle = "rot %4.1f "%angle # + "hit %4.1f "%hit 
 
-
-      ## negative filter 
-      if useFilterInv:
-        result.corr = CalcInvFilter(filterRef,tN,val,yP,penaltyscale,sigma_n)
-
-      tag = filterMode 
-      #if filterMode=="fused":
-      #  tag = tag"fused"
-      ###else: 
-      #  tag = "bulk"
-
-      #print "MOVE this shit elsewhere" 
-      #daTitle = "rot %f "%val + "hit %f "%hit + str(hitLoc)
-      daTitle = "rot %4.1f "%val # + "hit %4.1f "%hit 
-      #print daTitle
-      if printer:   
-        plt.figure(figsize=(16,5))
-        plt.subplot(1,5,1)
-        plt.imshow(adapt99,cmap='gray')          
-        plt.subplot(1,5,2)
-        plt.title(daTitle)
-        testImg = np.zeros_like(adapt99)
-        dim = np.shape(rFN)
-        testImg[0:dim[0],0:dim[1]] = 255*rFN
-        #testImg[0:dim[0],0:dim[1]] = rFiN
-        plt.imshow(testImg,cmap="gray")
-        #plt.imshow(rFi,cmap="gray")   
-        
-        plt.subplot(1,5,3)
-        #plt.imshow(yPN)   
-        #plt.title("corr output") 
-        #plt.colorbar()
-
-        #if threshold!=None:
-        #  plt.subplot(1,5,4)
-        #  #plt.imshow(yP>threshold)   
-        #  plt.title("Filter inv")
-        #  plt.imshow(yInvN)                  
-        #  plt.colorbar()
-        #  plt.subplot(1,5,5)
-        #  plt.title("filter/inv") 
-        #  plt.imshow(scaled)                
-        #  plt.colorbar()
-        plt.tight_layout()
-        fileName = label+"_"+tag+'_{}_full.png'.format(val)
-        plt.gcf().savefig(fileName,dpi=300)
-
-      # write
-      if label!=None and printer:
+        result = correlated[i]   
         plt.figure()
         plt.subplot(1,2,1)
         plt.title("Rotated filter") 
-        plt.imshow(rFN,cmap='gray')
+        plt.imshow(result.rFN,cmap='gray')
         plt.subplot(1,2,2)
         plt.title("Correlation plane") 
-        plt.imshow(results.corr)                
+        plt.imshow(result.corr)                
         plt.colorbar()
         plt.tight_layout()
-        fileName = label+"_"+tag+'_{}.png'.format(val)
+        fileName = label+"_"+tag+'_{}.png'.format(angle)
         plt.gcf().savefig(fileName,dpi=300)
         plt.close()
      
+      
 
-      #  
-      result.snr = CalcSNR(results.corr,sigma_n) 
-      # 
-      result.max = np.max(results.corr)
-
-      #result.hit = hit
-      #result.hitLoc = hitLoc
-      correlated.append(results) 
-    
-    return correlated
+    return correlated  # a list of objects that contain SNR, etc 
 
 def CalcSNR(signalResponse,sigma_n=1):
   return signalResponse/sigma_n
 
 import util 
 import util2
-def StackHits(correlated,threshold,iters,
-              display=False,rescaleCorr=False,doKMeans=True,
-              filterType="Pore",returnAngles=False):
+##
+## Collects all hits above some criterion for a given angle and 'stacks' them
+## into a single image
+##
+def StackHits(correlated,  # an array of 'correlation planes'
+              paramDict, # threshold,
+              iters,
+              display=False,
+              rescaleCorr=False,
+              doKMeans=False, #True,
+              filterType="Pore",
+              returnAngles=False):
+     # TODO
+    if rescaleCorr:
+      raise RuntimeError("Why is this needed? IGNORING")
+      
     # Function that iterates through correlations at varying rotations of a single filter,
     # constructs a mask consisting of 'NaNs' and returns a list of these masked correlations
 
-    print "DC: make into ditionary?" 
-    maskList = []
-    WTlist = []
-    Longlist = []
-    Losslist = []
 
+    ##
+    ##
+    ##
+    maskList = []
     daMax = -1e9
     for i, iteration in enumerate(iters):
         #print i, iteration
         if filterType == "Pore":
-          #print "iter", iteration
-          #maskList.append(makeMask(threshold,'fusedCorrelated_Not_rotated_back{}.png'.format(iteration)))
-
-          # RYAN
-          #maskList.append((util2.rotater(util2.makeMask(threshold,imgName='fusedCorrelated_{}.png'.format(iteration)),iteration)))
-          #imgName='fusedCorrelated_{}.png'.format(iteration)
-          #daMask = util2.makeMask(threshold,imgName=imgName)
-
-          # Ryan - I don't think this renormalization is appropriate
-          # as it will artificially inflate 'bad' correlation hits
-          corr_i = correlated[i].corr           
-          daMax = np.max([daMax, np.max(corr_i)]) 
-          if rescaleCorr:
-             img =  util.renorm(corr_i)
-          else: 
-             img=corr_i
-          #print img
-
           # routine for identifying 'unique' hits
-          #performed on 'yP' images 
-          daMask = util2.makeMask(threshold,img = img,doKMeans=doKMeans)
-          if display:
-            plt.figure()
-            plt.subplot(1,2,1)
-            plt.imshow(img)            
-            plt.subplot(1,2,2)
-            plt.imshow(daMask)
-            plt.close()
+          daMask = util2.makeMask(paramDict['snrThresh'],img = correlated[i].snr,
+                                  doKMeans=doKMeans)
 
           # i don't think this should be rotated 
           #maskList.append((util2.rotater(daMask,iteration)))
           maskList.append(daMask)
-      #print maskList
 
-        elif filterType == "TT":
-          print "DCL Merge me with oth er filter type" 
+      #print maskList
+    if filterType == "Pore":  
+      stacked  = np.sum(maskList, axis =0)
+      return stacked 
+  
+    ##
+    ##
+    ##
+    
+        #print "REMOVE ME" 
+    #WTlist = []
+    #Longlist = []
+    #Losslist = []
+    print "DCL Merge me with oth er filter type" 
+    for i, iteration in enumerate(iters):
+        if filterType == "TT":
+          
           masks = empty()
           corr_i = correlated[i].corr 
           #corr_i_WT = correlated[i].WT
@@ -282,13 +211,9 @@ def StackHits(correlated,threshold,iters,
     # Return
     # DC: Need to consolidate 
     #
-    print "PKH: Need to conslidate" 
-    if filterType == "Pore":
-      myList  = np.sum(maskList, axis =0)
-      print "max output", daMax   
-      return myList 
 
-    elif filterType == "TT":
+
+    if filterType == "TT":
       #stacked = empty()
       # creating a class that also contains the angle with which the most intense hit was located
 
@@ -327,10 +252,6 @@ def StackHits(correlated,threshold,iters,
         stackedAngles = None
       return stacked, stackedAngles
    
-    if display and filterType == "Pore": 
-      plt.figure()
-      plt.imshow(myList)
-      plt.close()
 
 
 

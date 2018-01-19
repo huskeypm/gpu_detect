@@ -441,10 +441,19 @@ def minorValidate(testImage="./myoimages/unittest.png",
   print "PASSED!"
 
 def Test1():
-  raise RuntimeError("Follow rocData for logic; this will fail") 
-  filter1PS,filter2NS,filter2PS,filter1NS = optimizer.TestParams_Single(
+  dataSet = Myocyte() 
+
+  ## Testing TT first 
+  dataSet.filter1PositiveChannel=0
+  dataSet.filter1Label = "TT"
+  dataSet.filter1Name = root+'WTFilter.png'
+  optimizer.SetupTests(dataSet)
+
+  paramDict = optimizer.ParamDict()
+
+  filter1PS,filter1NS = optimizer.TestParams_Single(
     dataSet,
-    paramDict,
+    #paramDict, # PKH needs to implement
     display=False)  
 
 
@@ -531,6 +540,10 @@ if __name__ == "__main__":
         gamma=np.float(sys.argv[i+6]),
 	tag = tag,
 	writeImage = True)            
+      quit()
+    if(arg=="-test1"):
+      Test1()             
+      print "WILL PHASE OUT SOON...." 
       quit()
     if(arg=="-minorValidate"):
       minorValidate()

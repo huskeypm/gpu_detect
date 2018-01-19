@@ -216,6 +216,7 @@ def docalc(imgOrig,
     inputs.img = img
     inputs.mf  = mf  
     inputs.lobemf = lobemf
+    paramDict = optimizer.ParamDict()
     paramDict = {
       'smoothScale':smoothScale,
       'snrThresh':snrThresh,    

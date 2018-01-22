@@ -60,43 +60,17 @@ def DetectFilter(
     result.stackedHits= painter.StackHits(
       result.correlated,paramDict,iters, display=False)#,display=display)
     
-  elif filterType == "TT":
-    print "WARNING: Need to consolidate this with filterType=Pore"
+    return result
+
+    # rest is garbage to be deleted
     result.correlated = painter.correlateThresherTT(
        dataSet,result.mf, 
        thresholdDict=result.threshold,iters=iters,doCLAHE=doCLAHE)
 
-    # stack filter hits
-    print "REPLCE ME" 
-    for i,iteration in enumerate(iters):
-      result.correlated[i].corr = result.correlated[i].WT
-    daThresh = threshold['WT']
     result.stackedHits                      = painter.StackHits(result.correlated,
-    #result.stackedHits,result.stackedAngles = painter.StackHits(result.correlated,
                                                                 daThresh,iters,display=display,
                                                                 doKMeans=False,
                                                                 filterType="TT",returnAngles=returnAngles)
-    result.stackedDict["WT"] = result.stackedHits
-    result.stackedHits = empty()
-    result.stackedHits.WT = result.stackedDict["WT"]
-    print "FDIX ME" 
-    result.stackedHits.Long = result.stackedDict["WT"]
-    result.stackedHits.Loss = result.stackedDict["WT"]
-
-    result.stackedAngles = empty()
-    result.stackedAngles.WT = result.stackedDict["WT"]
-    result.stackedAngles.Long= result.stackedDict["WT"]
-    result.stackedAngles.Loss=result.stackedDict["WT"]
-    #result.stackedHits,result.stackedAngles = painter.StackHits(result.correlated,
-    #                                                            threshold,iters,display=display,
-    #                                                            doKMeans=False,
-    #                                                            filterType="TT",returnAngles=returnAngles)
-    #result.stackedHits,result.stackedAngles = painter.StackHits(result.correlated,
-    #                                                            threshold,iters,display=display,
-    #                                                            doKMeans=False,
-    #                                                            filterType="TT",returnAngles=returnAngles)
-    #print result.stackedHits.WT
-    #quit() 
   
   return result
 
@@ -305,11 +279,11 @@ def TestFilters(
       # utilizing runner functions to produce stacked images
       print "DC: this is wehre you'll want to iterature over WT, Longi and loss" 
       raise RuntimeError("Exiting here, since DetectFilter inputs different now")
-      resultContainer = DetectFilter(testDataName,
-                                     filterDict,thresholdDict,
-                                     iters,display=display,sigma_n=sigma_n,
-                                     filterType="TT",
-                                     doCLAHE=doCLAHE,returnAngles=returnAngles)
+      
+      paramsDict = {'doCLAHE':False}
+      print "Currently not returning angles to reduce computational load. Be sure to change"
+      resultContainer = DetectFilter(inputs, paramDict, iters, returnAngles=False)
+
 
       if colorHitsOutName != None and saveColoredFig:
         # need to update once I have working code 

@@ -311,14 +311,8 @@ def rocData():
   dataSet.filter1Label = "TT"
   dataSet.filter1Name = root+'WTFilter.png'
   optimizer.SetupTests(dataSet)
-  paramDict = optimizer.ParamDict()
-  paramDict['useFilterInv'] = False
-  paramDict['filterMode'] = 'punishmentFilter'
-  paramDict['doCLAHE'] = False
-  print "NOTE: Be sure to update these parameters once optimized"
+  paramDict = optimizer.ParamDict(typeDict='WT')
   paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
-  paramDict['gamma'] = 3.
-  #paramDict['snrThresh'] = 1.0#0.06
   paramDict['mfPunishment'] = util.ReadImg(root+"WTPunishmentFilter.png",renorm=True)
 
   
@@ -326,7 +320,7 @@ def rocData():
         dataSet,
         paramDict,
         filter1Label = dataSet.filter1Label,
-        f1ts = np.linspace(30,50,5),
+        f1ts = np.linspace(3,15,12),
         #display=True
       )
 
@@ -335,7 +329,7 @@ def rocData():
   dataSet.filter1Label = "LT"
   dataSet.filter1Name = root+'LongFilter.png'
   optimizer.SetupTests(dataSet)
-  paramDict = optimizer.ParamDict()  
+  paramDict = optimizer.ParamDict(typeDict='LT')  
   
   optimizer.GenFigROC_TruePos_FalsePos(
         dataSet,
@@ -424,7 +418,8 @@ def minorValidate(testImage="./myoimages/unittest.png",
   # A minor validation function to serve as small tests between commits
 
   ## setup parameters
-  paramDict = optimizer.ParamDict()
+  paramDict = optimizer.ParamDict(typeDict='WT')
+  #paramDict['covarianceMatrix'] = np.ones_like()
   
   ## run algorithm
   results = testMF(testImage=testImage, ImgTwoSarcSize=ImgTwoSarcSize,iters=iters)

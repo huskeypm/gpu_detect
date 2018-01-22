@@ -272,13 +272,6 @@ def TestFilters(
 
     elif filterType == "TT":
       print "filterType=TT is deprecated"
-      # moving dictionary abstraction up a lvl from DetectFilters to TestFilters
-      #resultsDict = {}
-      #for filterName,filterArray in filterDict.iteritems():
-      #  resultsDict[filterName] = DetectFilter(testDataName,filterArray,thresholdDict[filterName],
-      #                                         iters,display=display,sigma_n=sigma_n,filterType="TT",
-      #                                         doCLAHE=doCLAHE,returnAngles=returnAngles)
-
 
       print "DC: merge up the case-specific coloring for now"
 

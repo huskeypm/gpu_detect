@@ -143,9 +143,12 @@ def ParamDict(typeDict='silica'):
     paramDict['filterMode'] = 'punishmentFilter'
     paramDict['doCLAHE'] = False
     print "Be sure to update ParamDict constructor once params are optimized"
-    #paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
     paramDict['gamma'] = 3.
     paramDict['mfPunishment'] = util.ReadImg("./myoimages/WTPunishmentFilter.png",renorm=True)
+  elif typeDict=='LT':
+    paramDict['useFilterInv'] = False
+    paramDict['filterMode'] = 'simple'
+    paramDict['doCLAHE'] = False
 
   return paramDict
 

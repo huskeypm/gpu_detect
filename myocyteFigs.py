@@ -457,6 +457,11 @@ def Test1():
   paramDict['useFilterInv'] = False
   paramDict['filterMode'] = 'dcmode'
   paramDict['doCLAHE'] = False
+  print "NOTE: Be sure to update these parameters once optimized"
+  paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
+  paramDict['gamma'] = 3.
+  paramDict['snrThresh'] = 1.0#0.06
+  paramDict['mfPunishment'] = util.ReadImg(root+"WTPunishmentFilter.png",renorm=True)
 
   filter1PS,filter1NS = optimizer.TestParams_Single(
     dataSet,

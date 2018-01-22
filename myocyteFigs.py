@@ -267,6 +267,9 @@ def testMF(
 
   return results 
 
+# function that uses updated (refactored) routines
+def testMFnew():
+
 ##
 ## Defines dataset for myocyte (MI) 
 ##
@@ -551,6 +554,9 @@ if __name__ == "__main__":
       quit()
     if(arg=="-minorValidate"):
       minorValidate()
+      quit()
+    if(arg=="-test1"):
+      Test1()
       quit()
 
 

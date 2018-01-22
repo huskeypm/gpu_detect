@@ -46,8 +46,6 @@ def correlateThresher(
         label=None,
         ):
 
-    # Ryan ?? equalized image?
-    # Dylan - Adding in option to turn off CLAHE
     # TODO - this should be done in preprocessing, not here
     #print "PKH: turn into separate proproccessing routine"
     img = inputs.imgOrig

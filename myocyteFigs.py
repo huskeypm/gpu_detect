@@ -267,9 +267,6 @@ def testMF(
 
   return results 
 
-# function that uses updated (refactored) routines
-def testMFnew():
-
 ##
 ## Defines dataset for myocyte (MI) 
 ##
@@ -457,11 +454,15 @@ def Test1():
   optimizer.SetupTests(dataSet)
 
   paramDict = optimizer.ParamDict()
+  paramDict['useFilterInv'] = False
+  paramDict['filterMode'] = 'dcmode'
+  paramDict['doCLAHE'] = False
 
   filter1PS,filter1NS = optimizer.TestParams_Single(
     dataSet,
-    #paramDict, # PKH needs to implement
+    paramDict,
     display=False)  
+    #display=True)  
 
 
 #

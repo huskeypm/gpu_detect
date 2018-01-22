@@ -57,20 +57,25 @@ def DetectFilter(
     #result.iters = iters 
   
     # stack hits to form 'total field' of hits
+    #print type(result.correlated)
+    #print len(result.correlated)
+    #print type(result.correlated[0])
+    #print result.correlated[0]
     result.stackedHits= painter.StackHits(
       result.correlated,paramDict,iters, display=False)#,display=display)
     
     return result
 
     # rest is garbage to be deleted
-    result.correlated = painter.correlateThresherTT(
-       dataSet,result.mf, 
-       thresholdDict=result.threshold,iters=iters,doCLAHE=doCLAHE)
 
-    result.stackedHits                      = painter.StackHits(result.correlated,
-                                                                daThresh,iters,display=display,
-                                                                doKMeans=False,
-                                                                filterType="TT",returnAngles=returnAngles)
+    #result.correlated = painter.correlateThresherTT(
+    #   dataSet,result.mf, 
+    #   thresholdDict=result.threshold,iters=iters,doCLAHE=doCLAHE)
+
+    #result.stackedHits                      = painter.StackHits(result.correlated,
+    #                                                            daThresh,iters,display=display,
+    #                                                            doKMeans=False,
+    #                                                            filterType="TT",returnAngles=returnAngles)
   
   return result
 

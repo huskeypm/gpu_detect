@@ -128,7 +128,7 @@ def SetupTests(dataSet):
   dataSet.filter2Data   = cv2.cvtColor(filter2Filter, cv2.COLOR_BGR2GRAY)
   dataSet.filter2Data = util.renorm(np.array(dataSet.filter2Data,dtype=float),scale=1.)
 
-def ParamDict():
+def ParamDict(typeDict='silica'):
   print "WILL MAKE INTO CLASS LATER"
   paramDict={
     'snrThresh':1.,
@@ -138,6 +138,15 @@ def ParamDict():
     'filterMode': "simple"   ,
     'doCLAHE':  True   
         }  
+  if typeDict=='WT':
+    paramDict['useFilterInv'] = False
+    paramDict['filterMode'] = 'punishmentFilter'
+    paramDict['doCLAHE'] = False
+    print "Be sure to update ParamDict constructor once params are optimized"
+    #paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
+    paramDict['gamma'] = 3.
+    paramDict['mfPunishment'] = util.ReadImg("./myoimages/WTPunishmentFilter.png",renorm=True)
+
   return paramDict
 
 ##

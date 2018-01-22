@@ -206,7 +206,7 @@ def FilterSingle(
   mode = paramDict['filterMode']  
   if mode=="lobemode":
     results = lobeDetect(inputs,paramDict)
-  elif mode=="dcmode": 
+  elif mode=="punishmentFilter": 
     # for the WT SNR. Uses WT filter and WT punishment filter
     results = punishmentFilter(inputs,paramDict)
   elif mode=="simple":

@@ -3,6 +3,7 @@ python silicaFigs.py -validate
 python myocyteFigs.py -roc                   
 echo "broke"; python myocyteFigs.py -minorValidate
 echo "broke"; python myocyteFigs.py -validate
+python myocyteFigs.py -scoretest
 python tissue.py -validate
 python optimizer.py -optimizeLight  # move these to silica figs
 

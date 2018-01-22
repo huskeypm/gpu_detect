@@ -312,6 +312,15 @@ def rocData():
   dataSet.filter1Name = root+'WTFilter.png'
   optimizer.SetupTests(dataSet)
   paramDict = optimizer.ParamDict()
+  paramDict['useFilterInv'] = False
+  paramDict['filterMode'] = 'punishmentFilter'
+  paramDict['doCLAHE'] = False
+  print "NOTE: Be sure to update these parameters once optimized"
+  paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
+  paramDict['gamma'] = 3.
+  #paramDict['snrThresh'] = 1.0#0.06
+  paramDict['mfPunishment'] = util.ReadImg(root+"WTPunishmentFilter.png",renorm=True)
+
   
   optimizer.GenFigROC_TruePos_FalsePos(
         dataSet,
@@ -413,6 +422,10 @@ def minorValidate(testImage="./myoimages/unittest.png",
                   iters=[-10,0,10]):
 
   # A minor validation function to serve as small tests between commits
+
+  ## setup parameters
+  paramDict = optimizer.ParamDict()
+  
   ## run algorithm
   results = testMF(testImage=testImage, ImgTwoSarcSize=ImgTwoSarcSize,iters=iters)
 
@@ -435,6 +448,9 @@ def minorValidate(testImage="./myoimages/unittest.png",
   # compare to previously tested output
   #print wtContent,ltContent,lossContent
   print "WARNING: Unit test is currently broken due to commited code but values are correct. Fix code immediately."
+  print "WT Content:",wtContent
+  print "Longitudinal Content", ltContent
+  print "Loss Content", lossContent
   val = 0; #5
   assert(abs(wtContent - val) < 1),"%f != %f"%(wtContent, val)       
   val = 568
@@ -444,7 +460,12 @@ def minorValidate(testImage="./myoimages/unittest.png",
   #  print wtContent, ltContent, lossContent
   print "PASSED!"
 
-def Test1():
+
+###
+### Function to test that the optimizer routines that assess positive and negative
+### filter scores are working correctly.
+###
+def scoreTest():
   dataSet = Myocyte() 
 
   ## Testing TT first 
@@ -452,17 +473,10 @@ def Test1():
   dataSet.filter1Label = "TT"
   dataSet.filter1Name = root+'WTFilter.png'
   optimizer.SetupTests(dataSet)
-  #dataSet.filter1Thresh = 1.5
+  dataSet.filter1Thresh = 5.5
 
-  paramDict = optimizer.ParamDict()
-  paramDict['useFilterInv'] = False
-  paramDict['filterMode'] = 'dcmode'
-  paramDict['doCLAHE'] = False
-  print "NOTE: Be sure to update these parameters once optimized"
+  paramDict = optimizer.ParamDict(typeDict='WT')
   paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
-  paramDict['gamma'] = 3.
-  #paramDict['snrThresh'] = 1.0#0.06
-  paramDict['mfPunishment'] = util.ReadImg(root+"WTPunishmentFilter.png",renorm=True)
 
   filter1PS,filter1NS = optimizer.TestParams_Single(
     dataSet,
@@ -470,6 +484,12 @@ def Test1():
     iters=[-20,-15,-10,-5,0,5,10,15,20],
     #display=False)  
     display=True)  
+
+  val = 0.926816518557
+  assert((filter1PS - val) < 1e-3), "Filter 1 Positive Score failed"
+  val = 0.342082872458
+  assert((filter1NS - val) < 1e-3), "Filter 1 Negative Score failed"
+  print "PASSED"
 
 
 #
@@ -556,22 +576,11 @@ if __name__ == "__main__":
 	tag = tag,
 	writeImage = True)            
       quit()
-    if(arg=="-test1"):
-      Test1()             
-      print "WILL PHASE OUT SOON...." 
+    if(arg=="-scoretest"):
+      scoreTest()             
       quit()
     if(arg=="-minorValidate"):
       minorValidate()
       quit()
-    if(arg=="-test1"):
-      Test1()
-      quit()
-
-
-
 
   raise RuntimeError("Arguments not understood")
-
-
-
-

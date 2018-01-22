@@ -127,6 +127,8 @@ def dcDetect(
     corr = mF.matchedFilter(img,mf,parsevals=False,demean=False)
 
     results = empty()
+
+    results.snr = np.ones_like(img)
     return results 
 
 #

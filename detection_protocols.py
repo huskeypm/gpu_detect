@@ -112,23 +112,44 @@ def CalcInvFilter(inputs,paramDict,corr):
 
 
 
-# This script determines detections by integrating the correlation response
-# over a small area, then dividing that by the response of a 'lobe' filter 
+# This script determines detections by correlating a filter with the image
+# and dividing this response by a covariance matrix and a weighted 'punishment
+# filter'
 # need to write this in paper, if it works 
-def dcDetect(
+def punishmentFilter(
   inputs,    # data sets, filters etc 
   paramDict  # dictionary of parameters needed for detection
   ):
     # get data 
     img = inputs.img # raw (preprocessed image) 
     mf  = inputs.mf  # raw (preprocessed image) 
+    try:
+      mfPunishment = paramDict['mfPunishment']
+    except:
+      raise RuntimeError("No punishment filter was found in inputs.mfPunishment")
+    try:
+      cM = paramDict['covarianceMatrix']
+    except:
+      raise RuntimeError("Covariance matrix was not specified in paramDict")
+    try:
+      gamma = paramDict['gamma']
+    except:
+      raise RuntimeError("Punishment filter weighting term (gamma) not found\
+                          within paramDict")
 
     ## get correlation plane w filter 
     corr = mF.matchedFilter(img,mf,parsevals=False,demean=False)
 
+    ## get correlation plane w punishment filter
+    corrPunishment = mF.matchedFilter(img,mfPunishment,parsevals=False,demean=False)
+
+    ## calculate snr
+    snr = corr / (cM + gamma * corrPunishment)
+
     results = empty()
 
-    results.snr = np.ones_like(img)
+    results.snr = snr
+
     return results 
 
 #
@@ -171,7 +192,8 @@ def FilterSingle(
   if mode=="lobemode":
     results = lobeDetect(inputs,paramDict)
   elif mode=="dcmode": 
-    results = dcDetect(inputs,paramDict)
+    # for the WT SNR. Uses WT filter and WT punishment filter
+    results = punishmentFilter(inputs,paramDict)
   elif mode=="simple":
     results = simpleDetect(inputs,paramDict)
   else: 

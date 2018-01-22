@@ -49,9 +49,14 @@ def correlateThresher(
     # TODO - this should be done in preprocessing, not here
     #print "PKH: turn into separate proproccessing routine"
     img = inputs.imgOrig
+    
     if params['doCLAHE']:
+      if img.dtype != 'uint8':
+        myImg = np.array((img * 255),dtype='uint8')
+      else:
+        myImg = img
       clahe99 = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(16,16))
-      img = clahe99.apply(inputs.imgOrig)
+      img = clahe99.apply(myImg)
 
     filterRef = util.renorm(np.array(inputs.mfOrig,dtype=float),scale=1.)
     

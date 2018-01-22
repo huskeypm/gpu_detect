@@ -301,6 +301,7 @@ def TestParams_Simultaneous(
     #dataSet.iters = [30], # focus on best angle for fused pore data
     ## Test both filters on filter1 test data 
     optimalAngleFused = 30
+    print np.max(dataSet.filter1TestData)
     filter1_filter1Test, filter2_filter1Test = bD.TestFilters(
       testData = dataSet.filter1TestData, 
       filter1Data = dataSet.filter1Data,

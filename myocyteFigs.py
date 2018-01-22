@@ -452,6 +452,7 @@ def Test1():
   dataSet.filter1Label = "TT"
   dataSet.filter1Name = root+'WTFilter.png'
   optimizer.SetupTests(dataSet)
+  #dataSet.filter1Thresh = 1.5
 
   paramDict = optimizer.ParamDict()
   paramDict['useFilterInv'] = False
@@ -460,14 +461,15 @@ def Test1():
   print "NOTE: Be sure to update these parameters once optimized"
   paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
   paramDict['gamma'] = 3.
-  paramDict['snrThresh'] = 1.0#0.06
+  #paramDict['snrThresh'] = 1.0#0.06
   paramDict['mfPunishment'] = util.ReadImg(root+"WTPunishmentFilter.png",renorm=True)
 
   filter1PS,filter1NS = optimizer.TestParams_Single(
     dataSet,
     paramDict,
-    display=False)  
-    #display=True)  
+    iters=[-20,-15,-10,-5,0,5,10,15,20],
+    #display=False)  
+    display=True)  
 
 
 #

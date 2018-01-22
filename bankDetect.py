@@ -271,6 +271,7 @@ def TestFilters(
       return filter1Result, filter2Result 
 
     elif filterType == "TT":
+      print "filterType=TT is deprecated"
       # moving dictionary abstraction up a lvl from DetectFilters to TestFilters
       #resultsDict = {}
       #for filterName,filterArray in filterDict.iteritems():

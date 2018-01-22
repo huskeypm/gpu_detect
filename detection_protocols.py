@@ -122,11 +122,22 @@ def punishmentFilter(
   ):
     # get data 
     img = inputs.img # raw (preprocessed image) 
+    import matplotlib.pylab as plt
+    #plt.figure()
+    #plt.title('Preprocessed Image')
+    #plt.imshow(img)
+    #plt.colorbar()
+    #plt.show()
     mf  = inputs.mf  # raw (preprocessed image) 
+    #plt.figure()
+    #plt.title('Matched filter')
+    #plt.imshow(mf)
+    #plt.colorbar()
+    #plt.show()
     try:
       mfPunishment = paramDict['mfPunishment']
     except:
-      raise RuntimeError("No punishment filter was found in inputs.mfPunishment")
+      raise RuntimeError("No punishment filter was found in paramDict['mfPunishment']")
     try:
       cM = paramDict['covarianceMatrix']
     except:
@@ -139,16 +150,20 @@ def punishmentFilter(
 
     ## get correlation plane w filter 
     corr = mF.matchedFilter(img,mf,parsevals=False,demean=False)
+    #print np.max(corr)
 
     ## get correlation plane w punishment filter
     corrPunishment = mF.matchedFilter(img,mfPunishment,parsevals=False,demean=False)
+    #print "corrPunishment Max:", np.max(corrPunishment)
 
     ## calculate snr
     snr = corr / (cM + gamma * corrPunishment)
+    #print "SNR Max:", np.max(snr)
 
     results = empty()
 
     results.snr = snr
+    results.corr = corr
 
     return results 
 

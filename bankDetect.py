@@ -37,46 +37,20 @@ def DetectFilter(
   result.stackedDict = dict()
 
 
-  if filterType == "Pore":
-    # do correlations across all iter
-    result.correlated = painter.correlateThresher(
-       inputs,
-       paramDict,
-       iters=iters,
-       printer=display,
-       filterMode=filterMode,
-       label=label,
-       )
+  # do correlations across all iter
+  result.correlated = painter.correlateThresher(
+     inputs,
+     paramDict,
+     iters=iters,
+     printer=display,
+     filterMode=filterMode,
+     label=label,
+     )
 
-    # record snr 
-    #snrs = [] 
-    #for i, resulti in enumerate(result.correlated):
-    #  maxSNR = np.max( resulti.snr) 
-    #  snrs.append( maxSNR )              
-    #result.snrs = np.array( snrs)
-    #result.iters = iters 
-  
-    # stack hits to form 'total field' of hits
-    #print type(result.correlated)
-    #print len(result.correlated)
-    #print type(result.correlated[0])
-    #print result.correlated[0]
-    result.stackedHits= painter.StackHits(
-      result.correlated,paramDict,iters, display=False)#,display=display)
+  # stack hits to form 'total field' of hits
+  result.stackedHits= painter.StackHits(
+    result.correlated,paramDict,iters, display=False)#,display=display)
     
-    return result
-
-    # rest is garbage to be deleted
-
-    #result.correlated = painter.correlateThresherTT(
-    #   dataSet,result.mf, 
-    #   thresholdDict=result.threshold,iters=iters,doCLAHE=doCLAHE)
-
-    #result.stackedHits                      = painter.StackHits(result.correlated,
-    #                                                            daThresh,iters,display=display,
-    #                                                            doKMeans=False,
-    #                                                            filterType="TT",returnAngles=returnAngles)
-  
   return result
 
 def GetHits(aboveThresholdPoints):

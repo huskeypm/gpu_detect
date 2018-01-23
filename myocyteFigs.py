@@ -314,7 +314,6 @@ def rocData():
   paramDict = optimizer.ParamDict(typeDict='WT')
   paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
   paramDict['mfPunishment'] = util.ReadImg(root+"WTPunishmentFilter.png",renorm=True)
-
   
   optimizer.GenFigROC_TruePos_FalsePos(
         dataSet,

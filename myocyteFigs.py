@@ -16,6 +16,7 @@ import cv2
 import matplotlib.pylab as plt
 import bankDetect as bD
 import util
+import optimizer
 class empty:pass
 
 root = "myoimages/"
@@ -66,11 +67,11 @@ def fig5():
   images = [DImage, MImage, PImage]
 
   # BE SURE TO UPDATE TESTMF WITH OPTIMIZED PARAMS
-  DResults = testMF(testImage=DImageName,ImgTwoSarcSize=DTwoSarcSize)
-  MResults = testMF(testImage=MImageName,ImgTwoSarcSize=MTwoSarcSize)
-  PResults = testMF(testImage=PImageName,ImgTwoSarcSize=PTwoSarcSize)
+  Dimg = testMF(testImage=DImageName,ImgTwoSarcSize=DTwoSarcSize)
+  Mimg = testMF(testImage=MImageName,ImgTwoSarcSize=MTwoSarcSize)
+  Pimg = testMF(testImage=PImageName,ImgTwoSarcSize=PTwoSarcSize)
 
-  results = [DResults, MResults, PResults]
+  results = [Dimg, Mimg, Pimg]
   keys = ['D', 'M', 'P']
   areas = {}
 
@@ -79,13 +80,21 @@ def fig5():
   lossResults = []
 
   # report responses for each case
-  for i,result in enumerate(results):
-    sH = result.stackedHits
-    dimensions = np.shape(sH.WT)
+  for i,img in enumerate(results):
+    dimensions = np.shape(img)
+    wtChannel = img[:,:,2].copy()
+    wtChannel[wtChannel == 255] = 1
+    wtChannel[wtChannel != 1] = 0
+    ltChannel = img[:,:,1].copy()
+    ltChannel[ltChannel == 255] = 1
+    ltChannel[ltChannel != 1] = 0
+    lossChannel = img[:,:,0].copy()
+    lossChannel[lossChannel == 255] = 0
+    lossChannel[lossChannel != 1] = 0
     area = float(dimensions[0] * dimensions[1])
-    ttContent = np.sum(sH.WT) / area
-    ltContent = np.sum(sH.Long) / area
-    lossContent = np.sum(sH.loss) / area
+    ttContent = np.sum(wtChannel) / area
+    ltContent = np.sum(ltChannel) / area
+    lossContent = np.sum(lossChannel) / area
     # construct array of areas and norm 
     newAreas = np.array([ttContent, ltContent, lossContent])
     normedAreas = newAreas / np.max(newAreas)
@@ -138,8 +147,8 @@ def fig5():
     axarr[i,0].axis('off')
     #axarr[i,0].set_title(keys[i]+" Raw")
     # applying masks to each
-    masked = ReadResizeApplyMask(results[i].coloredImg,imgNames[i],ImgTwoSarcSizes[i])
-    axarr[i,1].imshow(masked)
+    #masked = ReadResizeApplyMask(results[i],imgNames[i],ImgTwoSarcSizes[i])
+    axarr[i,1].imshow(results[i])
     axarr[i,1].axis('off')
     #axarr[i,1].set_title(keys[i]+" Marked")
   plt.tight_layout()
@@ -220,57 +229,123 @@ def testMF(
       lossFilterName=root+"LossFilter.png",
       wtPunishFilterName=root+"WTPunishmentFilter.png",
       testImage=root+"MI_D_73_annotation.png",
-      ttThresh=0.06 ,
-      ltThresh=0.38 ,
-      gamma=3.,
       ImgTwoSarcSize=None,
       tag = "default_",
       writeImage = False,
       iters=[-20,-15,-10,-5,0,5,10,15,20]):
+  print "RENAME ME TO SOMETHING INTUITIVE!!!!!!!!!!"
+  img = util.ReadImg(testImage,renorm=True)
 
   #results = empty()
-  results = Rs.giveStackedHits(testImage, 
-		   ttThresh, ltThresh, gamma, ImgTwoSarcSize=ImgTwoSarcSize,
-                   WTFilterName=ttFilterName,
-                   LongitudinalFilterName=ltFilterName,
-                   LossFilterName = lossFilterName,
-                   WTPunishFilterName=wtPunishFilterName,
-                   iters=iters
-                   )
-  stackedHits = results.stackedHits
+  #results = Rs.giveStackedHits(testImage, 
+  #                 ttThresh, ltThresh, gamma, ImgTwoSarcSize=ImgTwoSarcSize,
+  #                 WTFilterName=ttFilterName,
+  #                 LongitudinalFilterName=ltFilterName,
+  #                 LossFilterName = lossFilterName,
+  #                 WTPunishFilterName=wtPunishFilterName,
+  #                 iters=iters
+  #                 )
 
+  # WT filtering
+  WTparams = optimizer.ParamDict(typeDict='WT')
+  WTparams['covarianceMatrix'] = np.ones_like(img)
+  ttFilter = util.ReadImg(ttFilterName, renorm=True)
+  WTresults, _ = bD.TestFilters(testData = img,
+                           filter1Data = ttFilter,
+                           filter2Data = None, 
+                           filter1Thresh = WTparams['snrThresh'],
+                           iters = iters,
+                           single = True,
+                           paramDict = WTparams)
+  WTstackedHits = WTresults.stackedHits
+  #plt.figure()
+  #plt.imshow(WTstackedHits)
+  #plt.colorbar()
+  #plt.show()
+  #quit()
+
+  # LT filtering
+  LTparams = optimizer.ParamDict(typeDict='LT')
+  LTFilter = util.ReadImg(ltFilterName, renorm = True)
+  LTresults, _ = bD.TestFilters(testData = img,
+                           filter1Data = LTFilter,
+                           filter2Data = None, 
+                           filter1Thresh = LTparams['snrThresh'],
+                           iters = iters,
+                           single = True,
+                           paramDict = LTparams)
+  LTstackedHits = LTresults.stackedHits
+
+  # Loss filtering
+  #Lossparams = optimizer.ParamDict(typeDict='Loss')
+  #LossFilter = util.ReadImg(lossFilterName, renorm = True)
+  #Lossresults, _ = bD.TestFilters(testData = img,
+  #                         filter1Data = lossFilterName,
+  #                         filter2Data = None, 
+  #                         filter1Thresh = LTparams['snrThresh'],
+  #                         iters = iters,
+  #                         single = True,
+  #                         paramDict = Lossparams)
+  #LossstackedHits = Lossresults.stackedHits
+  print "WARNING: Temporary placeholder for loss calcs"
+  LossstackedHits = np.zeros_like(img)
+ 
   # BE SURE TO REMOVE ME!!
   print "WARNING: nan returned from stackedHits, so 'circumventing this'"
-  cI = results.coloredImg
+  cI = util.ReadImg(testImage,cvtColor=False)
 
-  wt = np.zeros_like( cI[:,:,0]) 
-  wt[ np.where(cI[:,:,2] > 100) ] = 1
-  lt = np.zeros_like( wt )
-  lt[ np.where(cI[:,:,1] > 100) ] = 1
-  loss = np.zeros_like( wt )
-  loss[ np.where(cI[:,:,0] > 100) ] = 1
+  # Marking superthreshold hits for loss filter
+  LossstackedHits[LossstackedHits < 1.001] = 0
+  LossstackedHits[LossstackedHits >= 1.001] = 255
+  LossstackedHits = np.asarray(LossstackedHits, dtype='uint8')
 
-  # apply masks
-  wtMasked = ReadResizeApplyMask(wt,testImage,ImgTwoSarcSize)
-  ltMasked = ReadResizeApplyMask(lt,testImage,ImgTwoSarcSize)
-  lossMasked = ReadResizeApplyMask(loss,testImage,ImgTwoSarcSize)
+  # applying a loss mask to attenuate false positives from WT and Longitudinal filter
+  WTstackedHits[LossstackedHits == 255] = 0
+  LTstackedHits[LossstackedHits == 255] = 0
+
+  # marking superthreshold hits for longitudinal filter
+  LTstackedHits[LTstackedHits < 1.001] = 0
+  LTstackedHits[LTstackedHits >= 1.001] = 255
+  LTstackedHits = np.asarray(LTstackedHits, dtype='uint8')
+
+  # masking WT response with LT mask so there is no overlap in the markings
+  WTstackedHits[LTstackedHits == 255] = 0
+
+  # marking superthreshold hits for WT filter
+  WTstackedHits[WTstackedHits < 1.001] = 0
+  WTstackedHits[WTstackedHits >= 1.001] = 255
+  WTstackedHits = np.asarray(WTstackedHits, dtype='uint8')
+
+  # apply preprocessed masks
+  wtMasked = ReadResizeApplyMask(WTstackedHits,testImage,ImgTwoSarcSize,filterTwoSarcSize=ImgTwoSarcSize)
+  ltMasked = ReadResizeApplyMask(LTstackedHits,testImage,ImgTwoSarcSize,filterTwoSarcSize=ImgTwoSarcSize)
+  lossMasked = ReadResizeApplyMask(LossstackedHits,testImage,ImgTwoSarcSize,filterTwoSarcSize=ImgTwoSarcSize)
 
   # add to containers
-  stackedHits.WT = wtMasked 
-  stackedHits.Long = ltMasked 
-  stackedHits.loss = lossMasked 
+  #cI[:,:,wtMasked == 255] = 255
+  #WTcopy = cI[:,:,2].copy()
+  #WTcopy[wtMasked == 255] = 255
+  #cI[:,:,2] = WTcopy
 
+  WTcopy = cI[:,:,2]
+  WTcopy[wtMasked == 255] = 255
+
+  LTcopy = cI[:,:,1]
+  LTcopy[ltMasked == 255] = 255
+
+  Losscopy = cI[:,:,0]
+  Losscopy[lossMasked == 255] = 255
+  
   if writeImage:
     # write outputs	  
-    cv2.imwrite(tag+"_output.png",results.coloredImg)       
+    cv2.imwrite(tag+"_output.png",cI)       
 
 
-  return results 
+  return cI 
 
 ##
 ## Defines dataset for myocyte (MI) 
 ##
-import optimizer
 def Myocyte():
     # where to look for images
     root = "myoimages/"
@@ -363,7 +438,6 @@ def ReadResizeApplyMask(img,imgName,ImgTwoSarcSize,filterTwoSarcSize=25):
   try:
     maskGray = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
   except:
-    #print "No mask named '"+imgName+"' was found. Circumventing masking."
     print "No mask named '"+fileName +"' was found. Circumventing masking."
     return img
   scale = float(filterTwoSarcSize) / float(ImgTwoSarcSize)

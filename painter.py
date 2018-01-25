@@ -167,27 +167,27 @@ def StackHits(correlated,  # an array of 'correlation planes'
     #WTlist = []
     #Longlist = []
     #Losslist = []
-    print "DCL Merge me with oth er filter type" 
-    for i, iteration in enumerate(iters):
-        if filterType == "TT":
+  #  print "DCL Merge me with oth er filter type" 
+  #  for i, iteration in enumerate(iters):
+  #      if filterType == "TT":
           
-          masks = empty()
-          corr_i = correlated[i].corr 
+  #        masks = empty()
+  #        corr_i = correlated[i].corr 
           #corr_i_WT = correlated[i].WT
           #corr_i_Long = correlated[i].Long
           #corr_i_Loss = correlated[i].Loss
 
-          mask    = util2.makeMask(threshold, img=corr_i, doKMeans=doKMeans)
+  #        mask    = util2.makeMask(threshold, img=corr_i, doKMeans=doKMeans)
           #masks.WT = util2.makeMask(threshold['WT'], img=corr_i_WT, doKMeans=doKMeans)
           #masks.Long = util2.makeMask(threshold['Longitudinal'], img=corr_i_Long, doKMeans=doKMeans)
           #masks.Loss = util2.makeMask(threshold['Loss'], img=corr_i_Loss, doKMeans=doKMeans,inverseThresh=True)
-          if display:
+  #        if display:
             #WT
-            plt.figure()
+  #          plt.figure()
             #plt.subplot(1,1)
             #plt.imshow(img)
-            plt.subplot(1,3,1)
-            plt.imshow(mask) #s.WT)
+  #          plt.subplot(1,3,1)
+  #          plt.imshow(mask) #s.WT)
             #plt.title('WT')
             # Longituindal
             #plt.subplot(1,3,2)
@@ -205,7 +205,7 @@ def StackHits(correlated,  # an array of 'correlation planes'
           #masks.Long[masks.Long != 0] = colorIndicator
           # not going to mark Loss in the same way to make code a bit more efficient later
 
-          maskList.append(mask)
+   #       maskList.append(mask)
           #WTlist.append(masks.WT)
           #Longlist.append(masks.Long)
           #Losslist.append(masks.Loss)
@@ -216,16 +216,16 @@ def StackHits(correlated,  # an array of 'correlation planes'
     #
 
 
-    if filterType == "TT":
+    #if filterType == "TT":
       #stacked = empty()
       # creating a class that also contains the angle with which the most intense hit was located
 
       #dims = np.shape(WTlist[0]) # all rotations and filter correlations should be the same dimensions
      
       # creating 'poor mans mask' through use of NaN
-      myHolder = np.argmax(maskList,axis=0).astype('float') 
-      myHolder[maskList[0] < 1e-5] = np.nan
-      return myHolder 
+    #  myHolder = np.argmax(maskList,axis=0).astype('float') 
+    #  myHolder[maskList[0] < 1e-5] = np.nan
+    #  return myHolder 
       
       #WTholder = np.argmax(WTlist,axis=0).astype('float')
       #WTholder[WTlist[0] < 0.00001] = np.nan
@@ -236,24 +236,24 @@ def StackHits(correlated,  # an array of 'correlation planes'
       #stacked.Loss = np.sum(Losslist,axis=0)
 
       #if returnAngles: Turning off for code dev
-      if 0: 
-        stackedAngles = empty()
-        WTAngle = WTholder.flatten().astype('float')
-        for i,idx in enumerate(np.invert(np.isnan(WTholder.flatten()))):
-          if idx:
-            WTAngle[i] = iters[int(WTAngle[i])]
-        WTAngle = WTAngle.reshape(dims[0],dims[1])
-        stackedAngles.WT = WTAngle
+    #  if 0: 
+    #    stackedAngles = empty()
+    #    WTAngle = WTholder.flatten().astype('float')
+    #    for i,idx in enumerate(np.invert(np.isnan(WTholder.flatten()))):
+    #      if idx:
+    #        WTAngle[i] = iters[int(WTAngle[i])]
+    #    WTAngle = WTAngle.reshape(dims[0],dims[1])
+    #    stackedAngles.WT = WTAngle
 
-        LongAngle = Longholder.flatten().astype('float')
-        for i,idx in enumerate(np.invert(np.isnan(Longholder.flatten()))):
-          if idx:
-            LongAngle[i] = iters[int(LongAngle[i])]
-        LongAngle = LongAngle.reshape(dims[0],dims[1])
-        stackedAngles.Long = LongAngle
-      else:
-        stackedAngles = None
-      return stacked, stackedAngles
+    #    LongAngle = Longholder.flatten().astype('float')
+    #    for i,idx in enumerate(np.invert(np.isnan(Longholder.flatten()))):
+    #      if idx:
+    #        LongAngle[i] = iters[int(LongAngle[i])]
+    #    LongAngle = LongAngle.reshape(dims[0],dims[1])
+    #    stackedAngles.Long = LongAngle
+    #  else:
+    #    stackedAngles = None
+    #  return stacked, stackedAngles
    
 
 

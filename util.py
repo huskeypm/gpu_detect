@@ -15,11 +15,12 @@ def myplot(img,fileName=None,clim=None):
   if clim!=None:
     plt.clim(clim)
 
-def ReadImg(fileName,renorm=False,bound=False):
+def ReadImg(fileName,cvtColor=True,renorm=False,bound=False):
     img = cv2.imread(fileName)
     if img is None:
         raise RuntimeError(fileName+" likely doesn't exist")
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    if cvtColor:
+      img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     if bound!=False:
 	img=img[bound[0]:bound[1],bound[0]:bound[1]]
     if renorm:# rescaling

@@ -135,7 +135,7 @@ def ParamDict(typeDict='silica'):
     'penaltyscale': 1.2,
     'useFilterInv':True,   
     'sigma_n': 1. ,
-    'filterMode': "simple"   ,
+    'filterMode': "simple",
     'doCLAHE':  True   
         }  
   if typeDict=='WT':
@@ -145,10 +145,13 @@ def ParamDict(typeDict='silica'):
     print "Be sure to update ParamDict constructor once params are optimized"
     paramDict['gamma'] = 3.
     paramDict['mfPunishment'] = util.ReadImg("./myoimages/WTPunishmentFilter.png",renorm=True)
+    paramDict['snrThresh'] = 8.
   elif typeDict=='LT':
     paramDict['useFilterInv'] = False
     paramDict['filterMode'] = 'simple'
     paramDict['doCLAHE'] = False
+  elif typeDict=='Loss':
+    raise RuntimeError("Loss filtering is not yet calculated")
 
   return paramDict
 

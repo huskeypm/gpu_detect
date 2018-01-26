@@ -147,8 +147,13 @@ def StackHits(correlated,  # an array of 'correlation planes'
         #print i, iteration
         if filterType == "Pore":
           # routine for identifying 'unique' hits
-          daMask = util2.makeMask(paramDict['snrThresh'],img = correlated[i].snr,
-                                  doKMeans=doKMeans)
+          try:
+            daMask = util2.makeMask(paramDict['snrThresh'],img = correlated[i].snr,
+                                    doKMeans=doKMeans, inverseThresh=paramDict['inverseSNR'])
+          except:
+            print "DC: Using workaround for tissue param dictionary. Fix me."
+            daMask = util2.makeMask(paramDict['snrThresh'], img=correlated[i].snr,
+                                    doKMeans=doKMeans)
 
           # i don't think this should be rotated 
           #maskList.append((util2.rotater(daMask,iteration)))

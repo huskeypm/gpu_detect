@@ -89,7 +89,7 @@ def fig5():
     ltChannel[ltChannel == 255] = 1
     ltChannel[ltChannel != 1] = 0
     lossChannel = img[:,:,0].copy()
-    lossChannel[lossChannel == 255] = 0
+    lossChannel[lossChannel == 255] = 1
     lossChannel[lossChannel != 1] = 0
     area = float(dimensions[0] * dimensions[1])
     ttContent = np.sum(wtChannel) / area
@@ -99,7 +99,7 @@ def fig5():
     newAreas = np.array([ttContent, ltContent, lossContent])
     normedAreas = newAreas / np.max(newAreas)
     areas[keys[i]] = normedAreas
-    # append to lists
+    # store in lists
     ttResults.append(normedAreas[0])
     ltResults.append(normedAreas[1])
     lossResults.append(normedAreas[2])
@@ -277,18 +277,16 @@ def testMF(
   LTstackedHits = LTresults.stackedHits
 
   # Loss filtering
-  #Lossparams = optimizer.ParamDict(typeDict='Loss')
-  #LossFilter = util.ReadImg(lossFilterName, renorm = True)
-  #Lossresults, _ = bD.TestFilters(testData = img,
-  #                         filter1Data = lossFilterName,
-  #                         filter2Data = None, 
-  #                         filter1Thresh = LTparams['snrThresh'],
-  #                         iters = iters,
-  #                         single = True,
-  #                         paramDict = Lossparams)
-  #LossstackedHits = Lossresults.stackedHits
-  print "WARNING: Temporary placeholder for loss calcs"
-  LossstackedHits = np.zeros_like(img)
+  Lossparams = optimizer.ParamDict(typeDict='Loss')
+  LossFilter = util.ReadImg(lossFilterName, renorm = True)
+  Lossresults, _ = bD.TestFilters(testData = img,
+                           filter1Data = LossFilter,
+                           filter2Data = None, 
+                           filter1Thresh = Lossparams['snrThresh'],
+                           iters = iters,
+                           single = True,
+                           paramDict = Lossparams)
+  LossstackedHits = Lossresults.stackedHits
  
   # BE SURE TO REMOVE ME!!
   print "WARNING: nan returned from stackedHits, so 'circumventing this'"

@@ -136,7 +136,8 @@ def ParamDict(typeDict='silica'):
     'useFilterInv':True,   
     'sigma_n': 1. ,
     'filterMode': "simple",
-    'doCLAHE':  True   
+    'doCLAHE':  True,   
+    'inverseSNR': False
         }  
   if typeDict=='WT':
     paramDict['useFilterInv'] = False
@@ -151,8 +152,10 @@ def ParamDict(typeDict='silica'):
     paramDict['filterMode'] = 'simple'
     paramDict['doCLAHE'] = False
   elif typeDict=='Loss':
-    raise RuntimeError("Loss filtering is not yet calculated")
-
+    paramDict['useFilterInv'] = False
+    paramDict['inverseSNR'] = True
+    paramDict['doCLAHE'] = False
+    paramDict['snrThresh'] = 0.01 
   return paramDict
 
 ##

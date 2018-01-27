@@ -223,7 +223,7 @@ def testMFExp():
       display=display
     )
 
-def testMF(
+def giveMarkedMyocyte(
       ttFilterName=root+"WTFilter.png",
       ltFilterName=root+"LongFilter.png",
       lossFilterName=root+"LossFilter.png",
@@ -233,18 +233,8 @@ def testMF(
       tag = "default_",
       writeImage = False,
       iters=[-20,-15,-10,-5,0,5,10,15,20]):
-  print "RENAME ME TO SOMETHING INTUITIVE!!!!!!!!!!"
+  
   img = util.ReadImg(testImage,renorm=True)
-
-  #results = empty()
-  #results = Rs.giveStackedHits(testImage, 
-  #                 ttThresh, ltThresh, gamma, ImgTwoSarcSize=ImgTwoSarcSize,
-  #                 WTFilterName=ttFilterName,
-  #                 LongitudinalFilterName=ltFilterName,
-  #                 LossFilterName = lossFilterName,
-  #                 WTPunishFilterName=wtPunishFilterName,
-  #                 iters=iters
-  #                 )
 
   # WT filtering
   WTparams = optimizer.ParamDict(typeDict='WT')
@@ -279,11 +269,12 @@ def testMF(
   # Loss filtering
   Lossparams = optimizer.ParamDict(typeDict='Loss')
   LossFilter = util.ReadImg(lossFilterName, renorm = True)
+  Lossiters = [0] # don't need rotations for loss filtering
   Lossresults, _ = bD.TestFilters(testData = img,
                            filter1Data = LossFilter,
                            filter2Data = None, 
                            filter1Thresh = Lossparams['snrThresh'],
-                           iters = iters,
+                           iters = Lossiters,
                            single = True,
                            paramDict = Lossparams)
   LossstackedHits = Lossresults.stackedHits
@@ -293,8 +284,7 @@ def testMF(
   cI = util.ReadImg(testImage,cvtColor=False)
 
   # Marking superthreshold hits for loss filter
-  LossstackedHits[LossstackedHits < 1.001] = 0
-  LossstackedHits[LossstackedHits >= 1.001] = 255
+  LossstackedHits[LossstackedHits != 0] = 255
   LossstackedHits = np.asarray(LossstackedHits, dtype='uint8')
 
   # applying a loss mask to attenuate false positives from WT and Longitudinal filter
@@ -302,29 +292,25 @@ def testMF(
   LTstackedHits[LossstackedHits == 255] = 0
 
   # marking superthreshold hits for longitudinal filter
-  LTstackedHits[LTstackedHits < 1.001] = 0
-  LTstackedHits[LTstackedHits >= 1.001] = 255
+  LTstackedHits[LTstackedHits != 0] = 255
   LTstackedHits = np.asarray(LTstackedHits, dtype='uint8')
 
   # masking WT response with LT mask so there is no overlap in the markings
   WTstackedHits[LTstackedHits == 255] = 0
 
   # marking superthreshold hits for WT filter
-  WTstackedHits[WTstackedHits < 1.001] = 0
-  WTstackedHits[WTstackedHits >= 1.001] = 255
+  WTstackedHits[WTstackedHits != 0] = 255
   WTstackedHits = np.asarray(WTstackedHits, dtype='uint8')
 
   # apply preprocessed masks
-  wtMasked = ReadResizeApplyMask(WTstackedHits,testImage,ImgTwoSarcSize,filterTwoSarcSize=ImgTwoSarcSize)
-  ltMasked = ReadResizeApplyMask(LTstackedHits,testImage,ImgTwoSarcSize,filterTwoSarcSize=ImgTwoSarcSize)
-  lossMasked = ReadResizeApplyMask(LossstackedHits,testImage,ImgTwoSarcSize,filterTwoSarcSize=ImgTwoSarcSize)
+  wtMasked = ReadResizeApplyMask(WTstackedHits,testImage,ImgTwoSarcSize,
+                                 filterTwoSarcSize=ImgTwoSarcSize)
+  ltMasked = ReadResizeApplyMask(LTstackedHits,testImage,ImgTwoSarcSize,
+                                 filterTwoSarcSize=ImgTwoSarcSize)
+  lossMasked = ReadResizeApplyMask(LossstackedHits,testImage,ImgTwoSarcSize,
+                                   filterTwoSarcSize=ImgTwoSarcSize)
 
-  # add to containers
-  #cI[:,:,wtMasked == 255] = 255
-  #WTcopy = cI[:,:,2].copy()
-  #WTcopy[wtMasked == 255] = 255
-  #cI[:,:,2] = WTcopy
-
+  # color corrresponding channels
   WTcopy = cI[:,:,2]
   WTcopy[wtMasked == 255] = 255
 
@@ -337,7 +323,6 @@ def testMF(
   if writeImage:
     # write outputs	  
     cv2.imwrite(tag+"_output.png",cI)       
-
 
   return cI 
 
@@ -451,79 +436,68 @@ def ReadResizeApplyMask(img,imgName,ImgTwoSarcSize,filterTwoSarcSize=25):
       combined[:,:,i] = combined[:,:,i] * normed
   return combined
 
+def assessContent(markedImg):
+  # pull out channels
+  wt = markedImg[:,:,2]
+  lt = markedImg[:,:,1]
+  loss = markedImg[:,:,0]
+
+  # get rid of everything that isn't a hit (hits are marked as 255)
+  wt[wt != 255] = 0
+  lt[lt != 255] = 0
+  loss[loss != 255] = 0
+
+  # normalize
+  wtNormed = wt / np.max(wt)
+  ltNormed = lt / np.max(lt)
+  lossNormed = loss / np.max(loss)
+
+  # calculate content
+  wtContent = np.sum(wtNormed)
+  ltContent = np.sum(ltNormed)
+  lossContent = np.sum(lossNormed)
+
+  return wtContent, ltContent, lossContent
+
 # function to validate that code has not changed since last commit
 def validate(testImage=root+"MI_D_78.png",
              ImgTwoSarcSize=22,
              ):
   # run algorithm
-  results = testMF(testImage=testImage,ImgTwoSarcSize=ImgTwoSarcSize)
+  markedImg = giveMarkedMyocyte(testImage=testImage,ImgTwoSarcSize=ImgTwoSarcSize)
 
-  ## run test
-  cI = results.coloredImg
-  wt = np.zeros_like( cI[:,:,0])
-  wt[ np.where(cI[:,:,2] > 100) ] = 1
-  lt = np.zeros_like( wt )
-  lt[ np.where(cI[:,:,1] > 100) ] = 1
-  loss = np.zeros_like( wt )
-  loss[ np.where(cI[:,:,0] > 100) ] = 1
-  # apply masks
-  wtMasked = ReadResizeApplyMask(wt,testImage,ImgTwoSarcSize)
-  ltMasked = ReadResizeApplyMask(lt,testImage,ImgTwoSarcSize)
-  lossMasked = ReadResizeApplyMask(loss,testImage,ImgTwoSarcSize)
-  # find total content
-  wtContent = np.sum(wtMasked)
-  ltContent = np.sum(ltMasked)
-  lossContent = np.sum(lossMasked)
-  # compare to previously tested output
-  print "WARNING: Dig into why longitdunial content = 0"
-  assert(abs(wtContent - 35.0) < 1)
-  assert(abs(ltContent - 0) < 1)
-  assert(abs(lossContent - 300.0) < 1)
-  #  print wtContent, ltContent, lossContent
+  # calculate wt, lt, and loss content  
+  wtContent, ltContent, lossContent = assessContent(markedImg)
+
+  #print wtContent, ltContent, lossContent
+  
+  assert(abs(wtContent - 572) < 1), "WT validation failed."
+  assert(abs(ltContent - 32669) < 1), "LT validation failed."
+  assert(abs(lossContent - 72895) < 1), "Loss validation failed."
   print "PASSED!"
 
-def minorValidate(testImage="./myoimages/unittest.png",
-                  ImgTwoSarcSize=21,
+# A minor validation function to serve as small tests between commits
+def minorValidate(testImage=root+"MI_D_73_annotation.png",
+                  ImgTwoSarcSize=25, #img is already resized to 25 px
                   iters=[-10,0,10]):
 
-  # A minor validation function to serve as small tests between commits
+  # run algorithm
+  markedImg = giveMarkedMyocyte(testImage=testImage, 
+                                ImgTwoSarcSize=ImgTwoSarcSize,iters=iters)
 
-  ## setup parameters
-  paramDict = optimizer.ParamDict(typeDict='WT')
-  #paramDict['covarianceMatrix'] = np.ones_like()
+  # assess content
+  wtContent, ltContent, lossContent = assessContent(markedImg) 
   
-  ## run algorithm
-  results = testMF(testImage=testImage, ImgTwoSarcSize=ImgTwoSarcSize,iters=iters)
+  #print "WT Content:",wtContent
+  #print "Longitudinal Content", ltContent
+  #print "Loss Content", lossContent
 
-  ## run test
-  cI = results.coloredImg
-  wt = np.zeros_like( cI[:,:,0])
-  wt[ np.where(cI[:,:,2] > 100) ] = 1
-  lt = np.zeros_like( wt )
-  lt[ np.where(cI[:,:,1] > 100) ] = 1
-  loss = np.zeros_like( wt )
-  loss[ np.where(cI[:,:,0] > 100) ] = 1
-  # apply masks
-  wtMasked = ReadResizeApplyMask(wt,testImage,ImgTwoSarcSize)
-  ltMasked = ReadResizeApplyMask(lt,testImage,ImgTwoSarcSize)
-  lossMasked = ReadResizeApplyMask(loss,testImage,ImgTwoSarcSize)
-  # find total content
-  wtContent = np.sum(wtMasked)
-  ltContent = np.sum(ltMasked)
-  lossContent = np.sum(lossMasked)
-  # compare to previously tested output
-  #print wtContent,ltContent,lossContent
-  print "WARNING: Unit test is currently broken due to commited code but values are correct. Fix code immediately."
-  print "WT Content:",wtContent
-  print "Longitudinal Content", ltContent
-  print "Loss Content", lossContent
-  val = 0; #5
+  val = 187 
   assert(abs(wtContent - val) < 1),"%f != %f"%(wtContent, val)       
-  val = 568
+  val = 9249
   assert(abs(ltContent - val) < 1),"%f != %f"%(ltContent, val) 
-  val = 568
+  val = 13833
   assert(abs(lossContent - val) < 1),"%f != %f"%(lossContent, val)
-  #  print wtContent, ltContent, lossContent
   print "PASSED!"
 
 

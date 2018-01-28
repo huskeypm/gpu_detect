@@ -240,9 +240,10 @@ def validate():
         'penaltyscale': 1.2,
         'useFilterInv':True,  
         'sigma_n': 1.,
-        'filterMode': "simple"   ,
+        'filterMode': "simple",
         'doCLAHE':  True,
-        'inverseSNR': False
+        'inverseSNR': False,
+        'demeanMF': True
         }
   filter1PS,filter2NS,filter2PS,filter1NS = optimizer.TestParams_Simultaneous(
     dataSet,

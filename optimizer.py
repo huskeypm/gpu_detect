@@ -137,7 +137,8 @@ def ParamDict(typeDict='silica'):
     'sigma_n': 1. ,
     'filterMode': "simple",
     'doCLAHE':  True,   
-    'inverseSNR': False
+    'inverseSNR': False,
+    'demeanMF': True
         }  
   if typeDict=='WT':
     paramDict['useFilterInv'] = False
@@ -146,16 +147,19 @@ def ParamDict(typeDict='silica'):
     print "Be sure to update ParamDict constructor once params are optimized"
     paramDict['gamma'] = 3.
     paramDict['mfPunishment'] = util.ReadImg("./myoimages/WTPunishmentFilter.png",renorm=True)
-    paramDict['snrThresh'] = 8.
+    paramDict['snrThresh'] = 6.5
+    paramDict['demeanMF'] = False
   elif typeDict=='LT':
     paramDict['useFilterInv'] = False
     paramDict['filterMode'] = 'simple'
     paramDict['doCLAHE'] = False
+    paramDict['demeanMF'] = False
   elif typeDict=='Loss':
     paramDict['useFilterInv'] = False
     paramDict['inverseSNR'] = True
     paramDict['doCLAHE'] = False
-    paramDict['snrThresh'] = 0.01 
+    paramDict['snrThresh'] = 10 
+    paramDict['demeanMF'] = False
   return paramDict
 
 ##

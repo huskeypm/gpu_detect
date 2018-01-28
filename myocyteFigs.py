@@ -67,9 +67,9 @@ def fig5():
   images = [DImage, MImage, PImage]
 
   # BE SURE TO UPDATE TESTMF WITH OPTIMIZED PARAMS
-  Dimg = testMF(testImage=DImageName,ImgTwoSarcSize=DTwoSarcSize)
-  Mimg = testMF(testImage=MImageName,ImgTwoSarcSize=MTwoSarcSize)
-  Pimg = testMF(testImage=PImageName,ImgTwoSarcSize=PTwoSarcSize)
+  Dimg = giveMarkedMyocyte(testImage=DImageName,ImgTwoSarcSize=DTwoSarcSize)
+  Mimg = giveMarkedMyocyte(testImage=MImageName,ImgTwoSarcSize=MTwoSarcSize)
+  Pimg = giveMarkedMyocyte(testImage=PImageName,ImgTwoSarcSize=PTwoSarcSize)
 
   results = [Dimg, Mimg, Pimg]
   keys = ['D', 'M', 'P']
@@ -82,13 +82,13 @@ def fig5():
   # report responses for each case
   for i,img in enumerate(results):
     dimensions = np.shape(img)
-    wtChannel = img[:,:,2].copy()
+    wtChannel = img[:,:,0].copy()
     wtChannel[wtChannel == 255] = 1
     wtChannel[wtChannel != 1] = 0
     ltChannel = img[:,:,1].copy()
     ltChannel[ltChannel == 255] = 1
     ltChannel[ltChannel != 1] = 0
-    lossChannel = img[:,:,0].copy()
+    lossChannel = img[:,:,2].copy()
     lossChannel[lossChannel == 255] = 1
     lossChannel[lossChannel != 1] = 0
     area = float(dimensions[0] * dimensions[1])
@@ -164,7 +164,8 @@ def figAnalysis(
       ImgTwoSarcSize=None,
       tag = "valid", # tag to prepend to images 
       writeImage = False):
-
+  print "DC: Function is broken. Fix using new giveMarkedMyocyte function"
+  quit()
   results = testMF(
       ttFilterName=ttFilterName,#root+"WTFilter.png",
       ltFilterName=ltFilterName,#root+"LongFilter.png",
@@ -311,13 +312,13 @@ def giveMarkedMyocyte(
                                    filterTwoSarcSize=ImgTwoSarcSize)
 
   # color corrresponding channels
-  WTcopy = cI[:,:,2]
+  WTcopy = cI[:,:,0]
   WTcopy[wtMasked == 255] = 255
 
   LTcopy = cI[:,:,1]
   LTcopy[ltMasked == 255] = 255
 
-  Losscopy = cI[:,:,0]
+  Losscopy = cI[:,:,2]
   Losscopy[lossMasked == 255] = 255
   
   if writeImage:
@@ -365,7 +366,7 @@ def rocData():
 
 
   ## Testing TT first 
-  dataSet.filter1PositiveChannel=0
+  dataSet.filter1PositiveChannel= 0
   dataSet.filter1Label = "TT"
   dataSet.filter1Name = root+'WTFilter.png'
   optimizer.SetupTests(dataSet)
@@ -392,26 +393,26 @@ def rocData():
         dataSet,
         paramDict,
         filter1Label = dataSet.filter1Label,
-        f1ts = np.linspace(10,20,3),
-        display=True
+        f1ts = np.linspace(15,25,3),
+        #display=True
       )
 
-
-def rocDataOLD(): 
-  dataSet = Myocyte() 
+  ## Testing Loss
+  print "NOTE: This is using the new loss filter. Rename filter and fix function call."
+  dataSet.filter1PositiveChannel = 2
+  dataSet.filter1Label = "Loss"
+  dataSet.filter1Name = root+"newLossFilter.png"
   optimizer.SetupTests(dataSet)
+  paramDict = optimizer.ParamDict(typeDict='Loss')
 
-  #pass in data like you are doing in your other tests 
-  #threshold? 
-  optimizer.GenFigROC(
-        dataSet,
-        filter1Label = dataSet.filter1Label,
-        filter2Label = dataSet.filter2Label,
-        f1ts = np.linspace(0.05,0.50,9),
-        f2ts = np.linspace(0.05,0.30,9),
-        penaltyscales = [1.2],
-        useFilterInv=True,
-      )
+  optimizer.GenFigROC_TruePos_FalsePos(
+         dataSet,
+         paramDict,
+         filter1Label = dataSet.filter1Label,
+         f1ts = np.linspace(4,15,11),
+         #display=True
+       )
+         
 
 def ReadResizeApplyMask(img,imgName,ImgTwoSarcSize,filterTwoSarcSize=25):
   # function to apply the image mask before outputting results
@@ -438,9 +439,9 @@ def ReadResizeApplyMask(img,imgName,ImgTwoSarcSize,filterTwoSarcSize=25):
 
 def assessContent(markedImg):
   # pull out channels
-  wt = markedImg[:,:,2]
+  wt = markedImg[:,:,0]
   lt = markedImg[:,:,1]
-  loss = markedImg[:,:,0]
+  loss = markedImg[:,:,2]
 
   # get rid of everything that isn't a hit (hits are marked as 255)
   wt[wt != 255] = 0
@@ -606,7 +607,7 @@ if __name__ == "__main__":
       testMFExp()
       quit()
     if(arg=="-test"):
-      testMF(      
+      giveMarkedMyocyte(      
         ttFilterName=sys.argv[i+1],
         ltFilterName=sys.argv[i+2],
         testImage=sys.argv[i+3],           

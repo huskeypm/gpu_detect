@@ -180,7 +180,7 @@ def simpleDetect(
 
   ## get correlation plane w filter 
   results = empty()
-  results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=True) 
+  results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF']) 
   
   if paramDict['useFilterInv']:
       results.snr = CalcInvFilter(inputs,paramDict,results.corr)

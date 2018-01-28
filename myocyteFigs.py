@@ -39,10 +39,50 @@ def fig3():
 ## HF 
 def fig4(): 
 
-  figAnalysis(
-    testImage=root+"HF_1_annotation.png",
-    tag = "HF", 
-    writeImage=True) 
+  filterTwoSarcSize = 25
+
+  imgName = root+"HF_1.png"
+  twoSarcSize = 21
+
+  rawImg = util.ReadImg(imgName)
+
+  markedImg = giveMarkedMyocyte(testImage=imgName,ImgTwoSarcSize=twoSarcSize)
+
+  wtContent, ltContent, lossContent = assessContent(markedImg)
+  contents = np.asarray([wtContent, ltContent, lossContent])
+  dims = np.shape(markedImg[:,:,0])
+  area = float(dims[0]) * float(dims[1])
+  contents = np.divide(contents, area)
+  normedContents = contents / np.max(contents)
+
+  # generating figure
+  width = 0.25
+  colors = ["blue","green","red"]
+  marks = ["WT","LT","Loss"]
+
+  # opting to make a single bar chart
+  N = 1
+  indices = np.arange(N) + width
+  fig,ax = plt.subplots()
+  rects1 = ax.bar(indices, normedContents[0], width, color=colors[0])
+  rects2 = ax.bar(indices+width, normedContents[1], width, color=colors[1])
+  rects3 = ax.bar(indices+2*width, normedContents[2], width, color=colors[2])
+  ax.set_ylabel('Normalized Content')
+  ax.legend(marks)
+  ax.set_xticks([])
+  plt.gcf().savefig('fig4_BarChart.png')
+ 
+  # constructing actual figure
+  fig, axarr = plt.subplots(2,1)
+  axarr[0].imshow(rawImg,cmap='gray')
+  axarr[0].set_title("HF Raw")
+  axarr[0].axis('off') 
+
+  switchedImg = switchBRChannels(markedImg)
+  axarr[1].imshow(switchedImg)
+  axarr[1].set_title("HF Marked")
+  axarr[1].axis('off')
+  plt.gcf().savefig("fig4_RawAndMarked.png")
 
 ## MI 
 def fig5(): 
@@ -81,6 +121,7 @@ def fig5():
 
   # report responses for each case
   for i,img in enumerate(results):
+    print "Replace with assessContent function"
     dimensions = np.shape(img)
     wtChannel = img[:,:,0].copy()
     wtChannel[wtChannel == 255] = 1
@@ -109,21 +150,6 @@ def fig5():
   width = 0.25
   colors = ["blue","green","red"]
   marks = ["WT","LT","Loss"]
-  #plt.rcParams['font.size'] = 6.0
-  #plt.rcParams['figure.figsize'] = [16,8]
-  #plt.rcParams['figure.dpi'] = 300
-  #for i,img in enumerate(images):
-  #  axarr[i,0].imshow(img,cmap='gray')
-  #  axarr[i,0].set_title(keys[i]+" Raw")
-  #  axarr[i,1].imshow(results[i].coloredImg)
-  #  axarr[i,1].set_title(keys[i]+" Marked")
-    # construct bar plot
-  #  axarr[i,2].set_title(keys[i]+" Content")
-  #  indices = np.arange(np.shape(areas[keys[i]])[0])
-  #  rectangles = axarr[i,2].bar(indices,areas[keys[i]],width,color=colors)
-  #  axarr[i,2].set_xticks(indices+width)
-  #  axarr[i,2].set_xticklabels(marks, rotation=90)
-  #plt.gcf().savefig("fig5.png")
 
   # opting to make a single bar chart
   N = 3
@@ -145,12 +171,14 @@ def fig5():
     resizedImg = cv2.resize(img,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
     axarr[i,0].imshow(resizedImg,cmap='gray')
     axarr[i,0].axis('off')
-    #axarr[i,0].set_title(keys[i]+" Raw")
-    # applying masks to each
-    #masked = ReadResizeApplyMask(results[i],imgNames[i],ImgTwoSarcSizes[i])
-    axarr[i,1].imshow(results[i])
+    axarr[i,0].set_title(keys[i]+" Raw")
+
+    # switching color channels due to discrepency between cv2 and matplotlib
+    newResult = switchBRChannels(results[i])
+
+    axarr[i,1].imshow(newResult)
     axarr[i,1].axis('off')
-    #axarr[i,1].set_title(keys[i]+" Marked")
+    axarr[i,1].set_title(keys[i]+" Marked")
   plt.tight_layout()
   plt.gcf().savefig("fig5_RawAndMarked.png")
 
@@ -412,7 +440,20 @@ def rocData():
          f1ts = np.linspace(4,15,11),
          #display=True
        )
-         
+
+###
+### Function to convert from cv2's color channel convention to matplotlib's
+###         
+def switchBRChannels(img):
+  newImg = img.copy()
+
+  # ensuring to copy so that we don't accidentally alter the original image
+  newImg[:,:,0] = img[:,:,2].copy()
+  newImg[:,:,2] = img[:,:,0].copy()
+
+  return newImg
+  
+
 
 def ReadResizeApplyMask(img,imgName,ImgTwoSarcSize,filterTwoSarcSize=25):
   # function to apply the image mask before outputting results
@@ -470,11 +511,13 @@ def validate(testImage=root+"MI_D_78.png",
   # calculate wt, lt, and loss content  
   wtContent, ltContent, lossContent = assessContent(markedImg)
 
-  print wtContent, ltContent, lossContent
+  print "WT Content:",wtContent
+  print "LT Content:", ltContent
+  print "Loss Content:", lossContent
   
-  assert(abs(wtContent - 0) < 1), "WT validation failed."
-  assert(abs(ltContent - 5722) < 1), "LT validation failed."
-  assert(abs(lossContent - 108074) < 1), "Loss validation failed."
+  assert(abs(wtContent - 12534) < 1), "WT validation failed."
+  assert(abs(ltContent - 25687) < 1), "LT validation failed."
+  assert(abs(lossContent - 2198) < 1), "Loss validation failed."
   print "PASSED!"
 
 # A minor validation function to serve as small tests between commits
@@ -490,15 +533,14 @@ def minorValidate(testImage=root+"MI_D_73_annotation.png",
   wtContent, ltContent, lossContent = assessContent(markedImg) 
   
   print "WT Content:",wtContent
-  print "Zero WT content due to poor LT SNR threshold. Should be fixed by using H filter"
   print "Longitudinal Content", ltContent
   print "Loss Content", lossContent
 
-  val = 0 
+  val = 133 
   assert(abs(wtContent - val) < 1),"%f != %f"%(wtContent, val)       
-  val = 21205
+  val = 25286
   assert(abs(ltContent - val) < 1),"%f != %f"%(ltContent, val) 
-  val = 4214
+  val = 0
   assert(abs(lossContent - val) < 1),"%f != %f"%(lossContent, val)
   print "PASSED!"
 
@@ -582,10 +624,12 @@ if __name__ == "__main__":
       # DC: call to generate bottom panel 
 
     if(arg=="-fig4"):               
-      # DC: same as fig 3, but w HF data 
-      1
+      fig4()
+      quit()
+
     if(arg=="-fig5"):               
       fig5()
+      quit()
 
     if(arg=="-fig6"):               
       # RB: generate detected version of Fig 6

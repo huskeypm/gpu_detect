@@ -154,11 +154,12 @@ def ParamDict(typeDict='silica'):
     paramDict['filterMode'] = 'simple'
     paramDict['doCLAHE'] = False
     paramDict['demeanMF'] = False
+    paramDict['snrThresh'] = 10
   elif typeDict=='Loss':
     paramDict['useFilterInv'] = False
     paramDict['inverseSNR'] = True
     paramDict['doCLAHE'] = False
-    paramDict['snrThresh'] = 10 
+    paramDict['snrThresh'] = 1 
     paramDict['demeanMF'] = False
   return paramDict
 

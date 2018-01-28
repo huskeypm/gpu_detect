@@ -17,24 +17,72 @@ import matplotlib.pylab as plt
 import bankDetect as bD
 import util
 import optimizer
+import painter
 class empty:pass
 
 root = "myoimages/"
 
 ## WT 
 def fig3(): 
-  testImage = root+"Sham_M_65_annotation.png"
-  figAnalysis(
-    testImage=testImage,
-    tag = "WT", 
-    writeImage=True) 
+  testImage = root+"Sham_11.png"
+  twoSarcSize = 21
 
-  # write angle 
-  print "DC: UPDATE THRESHOLDS TO OPTIMIZED PARAMETERS (from ROC) " 
-  results = Rs.giveStackedHits(testImage, 0.06, 0.38, 3.)
-  print results.stackedAngles.WT
-                           
+  rawImg = util.ReadImg(testImage,cvtColor=False)
 
+  iters = [-20, -15, -10, -5, 0, 5, 10, 15, 20]
+  coloredImg, coloredAngles, angleCounts = giveMarkedMyocyte(testImage=testImage,
+                        ImgTwoSarcSize=twoSarcSize,returnAngles=True,iters=iters)
+  #plt.figure()
+  #plt.imshow(coloredAngles)
+  #plt.show()
+  #quit()
+  correctColoredAngles = switchBRChannels(coloredAngles)
+  correctColoredImg = switchBRChannels(coloredImg)
+
+  # make bar chart for content
+  wtContent, ltContent, lossContent = assessContent(correctColoredImg)
+  contents = np.asarray([wtContent, ltContent, lossContent],dtype='float')
+  dims = np.shape(coloredImg[:,:,0])
+  area = float(dims[0]) * float(dims[1])
+  contents = np.divide(contents, area)
+  normedContents = contents / np.max(contents)
+
+  # generating figure
+  width = 0.25
+  colors = ["blue","green","red"]
+  marks = ["WT","LT","Loss"]
+
+  # make a single bar chart
+  N = 1
+  indices = np.arange(N) + width
+  fig,ax = plt.subplots()
+  rects1 = ax.bar(indices, normedContents[0], width, color=colors[0])
+  rects2 = ax.bar(indices+width, normedContents[1], width, color=colors[1])
+  rects3 = ax.bar(indices+2*width, normedContents[2], width, color=colors[2])
+  ax.set_ylabel('Normalized Content')
+  ax.legend(marks)
+  ax.set_xticks([])
+  plt.gcf().savefig('fig3_BarChart.png')
+
+  # displaying raw, marked, and marked angle images
+  fig, axarr = plt.subplots(3,1)
+  axarr[0].imshow(rawImg,cmap='gray')
+  axarr[0].axis('off')
+  axarr[1].imshow(correctColoredImg)
+  axarr[1].axis('off')
+  axarr[2].imshow(correctColoredAngles)
+  axarr[2].axis('off')
+  plt.gcf().savefig("fig3_RawAndMarked.png")
+
+  # save histogram of angles
+  plt.figure()
+  n, bins, patches = plt.hist(angleCounts, len(iters), normed=1, 
+                              facecolor='green', alpha=0.5)
+  plt.xlabel('Rotation Angle')
+  plt.ylabel('Probability')
+  plt.gcf().savefig("fig3_histogram.png")
+
+  
 
 ## HF 
 def fig4(): 
@@ -261,7 +309,8 @@ def giveMarkedMyocyte(
       ImgTwoSarcSize=None,
       tag = "default_",
       writeImage = False,
-      iters=[-20,-15,-10,-5,0,5,10,15,20]):
+      iters=[-20,-15,-10,-5,0,5,10,15,20],
+      returnAngles=False):
   
   img = util.ReadImg(testImage,renorm=True)
 
@@ -275,7 +324,8 @@ def giveMarkedMyocyte(
                            filter1Thresh = WTparams['snrThresh'],
                            iters = iters,
                            single = True,
-                           paramDict = WTparams)
+                           paramDict = WTparams,
+                           returnAngles=returnAngles)
   WTstackedHits = WTresults.stackedHits
   #plt.figure()
   #plt.imshow(WTstackedHits)
@@ -353,7 +403,32 @@ def giveMarkedMyocyte(
     # write outputs	  
     cv2.imwrite(tag+"_output.png",cI)       
 
-  return cI 
+  if returnAngles:
+    cImg = util.ReadImg(testImage,cvtColor=False)
+    coloredAngles = painter.colorAngles(cImg,WTresults.stackedAngles,iters)
+    coloredAnglesMasked = ReadResizeApplyMask(coloredAngles,testImage,
+                                              ImgTwoSarcSize,
+                                              filterTwoSarcSize=ImgTwoSarcSize)
+    # mask the container holding the angles
+    stackedAngles = np.add(WTresults.stackedAngles, 1)
+    stackedAngles = ReadResizeApplyMask(stackedAngles,testImage,
+                                            ImgTwoSarcSize,
+                                            filterTwoSarcSize=ImgTwoSarcSize)
+    stackedAngles = np.asarray(stackedAngles, dtype='int')
+    stackedAngles = np.subtract(stackedAngles, 1)
+    dims = np.shape(stackedAngles)
+    angleCounts = []
+    for i in range(dims[0]):
+      for j in range(dims[1]):
+        rotArg = stackedAngles[i,j]
+        if rotArg != -1:
+          # indicates this is a hit
+          angleCounts.append(iters[rotArg])
+    
+    
+    return cI, coloredAnglesMasked, angleCounts
+  else:
+    return cI 
 
 ##
 ## Defines dataset for myocyte (MI) 
@@ -618,7 +693,8 @@ if __name__ == "__main__":
 
     # this function will generate input data for the current fig #3 in the paper 
     if(arg=="-fig3"):               
-      1
+      fig3()
+      quit()
       # DC: what is my WT test image (top panel)  
       # DC: call to generate middle panel 
       # DC: call to generate bottom panel 

@@ -271,18 +271,6 @@ def GenerateLongFilter(filterRoot, twoSarcLengthDict, filterTwoSarcLength=24):
   avgImg /= np.max(avgImg)
   return avgImg
 
-def GenerateLossFilter(LossFilterName, scale):
-  '''
-  routine to generate the loss filter used in the myocyte filtering routines.
-  '''
-  lossFilter = cv2.imread(LossFilterName)
-  gray = cv2.cvtColor(lossFilter, cv2.COLOR_BGR2GRAY)
-  resized = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC).astype('float')
-  resized /= np.max(resized)
-  resized = 1 - resized
-  resized[resized < 0.3] = 0
-  return resized
-
 def GenerateWTPunishmentFilter(LongitudinalFilterName,
                                rowMin=2,rowMax=-1,colMin=6,colMax=13):
   # generates the punishment filter in WT SNR calculation based upon longitudinal filter
@@ -343,10 +331,10 @@ def SaveFixedLongFilter(LongFilterRoot=root+"filterImgs/Longitudinal/",
   # save filter
   cv2.imwrite(root+"LongFilter.png",savedFilt)
 
-def SaveFixedLossFilter(LossFilterName=root+"filterImgs/Loss/TT_Idealized_Loss_TruthFilter.png",
-                        LossScale=float(25)/float(28)):
-  LossFilter = GenerateLossFilter(LossFilterName, LossScale) * 255
-  cv2.imwrite(root+"LossFilter.png",LossFilter)
+def SaveFixedLossFilter():
+  img = np.zeros((12,12),dtype='uint8')
+  img[2:10,2:10] = 255
+  cv2.imwrite("LossFilter.png",img)
 
 def SaveFixedPunishmentFilter(LongitudinalFilterName=root+"LongFilter.png",
                               rowMin=2,rowMax=-1,colMin=6,colMax=13):

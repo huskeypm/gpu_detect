@@ -193,32 +193,84 @@ import optimizer
 
 
 import detection_protocols as dps
-def docalc(imgOrig,
-           mf,
-           rawFloor = 1., # minimum value to image (usually don't chg)
-           eps = 4., # max intensity for TTs
-           smoothScale=3, # number of pixels over which real TT should respond
-           snrThresh = 70000,
-           lossScale = 10, # " over which loss region should be considered
-           lossRegionCutoff = 40,
-           lobemf=None,
-           corrThresh=0.,
-           s=1.,name="corr.png"):
+#def docalc(img,
+#           mf,
+#           lobemf=None,
+#           #corrThresh=0.,
+#           #s=1.,
+#           paramDict = optimizer.ParamDict(),
+#           name="corr.png"):
+#
+#
+#
+#    ## Store info 
+#    inputs=empty()
+#    inputs.imgOrig = img
+#    inputs.mfOrig  = mf  
+#    inputs.lobemf = lobemf
+#
+#
+#    import bankDetect as bD
+#    results = bD.DetectFilter(inputs,paramDict,iters=[0])
+#    result = results.correlated[0]
+#    #corr = np.asarray(results.correlated[0],dtype=float) # or
+#    results.threshed = results.stackedHits
+#    DisplayHits(case.subregion,results.threshed)
+#    plt.gcf().savefig(fileName,dpi=300)
 
-    # correct image so TT features are brightest
-    # set noise floor 
-    img    = np.copy(imgOrig)              
-    img[imgOrig<rawFloor]=rawFloor        
-    img[ np.where(imgOrig> eps)] =eps # enhance so TT visible
+    
+  
+    ##
+    ## Plotting 
+    ## 
 
+    #plt.subplot(2,2,1)
+    #plt.imshow(inputs.imgOrig,cmap='gray')
+#
+#    plt.subplot(2,2,3)
+#    plt.imshow(result.corr)
+#
+#    plt.subplot(2,2,4)
+#    plt.imshow(result.corrlobe)
+#
+#    plt.subplot(2,2,2)
+#    DisplayHits(inputs.imgOrig,results.threshed)                 
+#    plt.gcf().savefig('out.png')
 
-    ## Store info 
-    inputs=empty()
-    inputs.imgOrig = img
-    inputs.mfOrig  = mf  
-    inputs.lobemf = lobemf
-    paramDict = optimizer.ParamDict()
-    paramDict = {
+    
+#    return inputs,results
+
+import cv2
+import util
+
+import detect
+def Test1(
+  fileName = None # "test.png" 
+  ):
+
+  class empty:pass
+  cases = dict()
+  
+  ## Load in image of interest and identify region/px->um conversions
+  case=empty()
+  #case.loc_um = [2366,1086] 
+  case.loc_um = [2577,279] 
+  case.extent_um = [150,150]
+  cases['hard'] = case
+  case=SetupTest()
+  
+  ## Set up matched filters to be used 
+  SetupFilters()
+
+  ##  
+  rawFloor = 1., # minimum value to image (usually don't chg)
+  eps = 4., # max intensity for TTs
+  smoothScale=3, # number of pixels over which real TT should respond
+  snrThresh = 70000,
+  lossScale = 10, # " over which loss region should be considered
+  lossRegionCutoff = 40,
+  paramDict = optimizer.ParamDict()
+  paramDict = {
       'doCLAHE':False,      
       'useFilterInv':False,      
       'sigma_n':1,
@@ -228,57 +280,21 @@ def docalc(imgOrig,
       'lossScale':lossScale,    
       'lossRegionCutoff':lossRegionCutoff}    
 
+  ## Preprocessing
+  # correct image so TT features are brightest
+  # set noise floor 
+  imgOrig = case.subregion
+  img    = np.copy(imgOrig)              
+  img[imgOrig<rawFloor]=rawFloor        
+  img[ np.where(imgOrig> eps)] =eps # enhance so TT visible
 
-    import bankDetect as bD
-    results = bD.DetectFilter(inputs,paramDict,iters=[0])
-    result = results.correlated[0]
-    #corr = np.asarray(results.correlated[0],dtype=float) # or
-    results.threshed = results.stackedHits
-    
   
-    ##
-    ## Plotting 
-    ## 
-
-    plt.subplot(2,2,1)
-    plt.imshow(inputs.imgOrig,cmap='gray')
-
-    plt.subplot(2,2,3)
-    plt.imshow(result.corr)
-
-    plt.subplot(2,2,4)
-    plt.imshow(result.corrlobe)
-
-    plt.subplot(2,2,2)
-    DisplayHits(inputs.imgOrig,results.threshed)                 
-    plt.gcf().savefig('x.png')
-
-    
-    return inputs,results
-
-import cv2
-import util
-def Test1(
-  fileName = None # "test.png" 
-  ):
-
-  class empty:pass
-  cases = dict()
-  
-  case=empty()
-  #case.loc_um = [2366,1086] 
-  case.loc_um = [2577,279] 
-  case.extent_um = [150,150]
-  
-  cases['hard'] = case
-  
-  case=SetupTest()
-  
-  SetupFilters()
-  
-  inputs,results=docalc(case.subregion,
-                 params.mfr,lobemf=params.lobemfr,
-                 snrThresh=50.)
+  ## do Matched filtering  
+  inputs,results=detect.docalc(
+                 case.subregion,
+                 params.mfr,
+                 lobemf=params.lobemfr,
+                 paramDict=paramDict)
 
   if fileName!=None: 
     plt.figure()

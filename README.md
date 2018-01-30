@@ -1,3 +1,6 @@
+!!!! Working to direct everything through detect.py right now, which should be extremely general (down to cmd line operation for arbitrary data) 
+python tissue.py -test1
+need to figure out what's different by detect.py vs origin implementation in tissue.y
 
 # gpu_detect
 GPU-accelerated matched filter detection.

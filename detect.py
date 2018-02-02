@@ -29,6 +29,7 @@ def docalc(img,
            paramDict = optimizer.ParamDict(),
            debug=False,
            smooth = 40, # smoothing for final display
+           iters = [-20,-10,0,10,20], # needs to be put into param dict
            fileName="corr.png"):
 
 
@@ -39,7 +40,6 @@ def docalc(img,
     inputs.mfOrig  = mf
     inputs.lobemf = lobemf
 
-    iters = [-20,-10,0,10,20]
     print "WARNING: TOO RESTRICTIVE ANGLES" 
 
 
@@ -53,6 +53,9 @@ def docalc(img,
     plt.figure()
     DisplayHits(img,results.threshed)
     plt.gcf().savefig(fileName,dpi=300)
+
+
+    return inputs,results 
 
 
 

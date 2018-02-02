@@ -263,12 +263,12 @@ def Test1(
   SetupFilters()
 
   ##  
-  rawFloor = 1., # minimum value to image (usually don't chg)
-  eps = 4., # max intensity for TTs
-  smoothScale=3, # number of pixels over which real TT should respond
-  snrThresh = 70000,
-  lossScale = 10, # " over which loss region should be considered
-  lossRegionCutoff = 40,
+  rawFloor = 1. # minimum value to image (usually don't chg)
+  eps = 4. # max intensity for TTs
+  smoothScale=3 # number of pixels over which real TT should respond
+  snrThresh = 12            
+  lossScale = 10 # " over which loss region should be considered
+  lossRegionCutoff = 40
   paramDict = optimizer.ParamDict()
   paramDict = {
       'doCLAHE':False,      
@@ -294,6 +294,8 @@ def Test1(
                  case.subregion,
                  params.mfr,
                  lobemf=params.lobemfr,
+                 debug=True,
+                 iters=[0],
                  paramDict=paramDict)
 
   if fileName!=None: 
@@ -321,7 +323,7 @@ def validate():
 
   # assert 
   print "WARNING: this test only verifies that the integrated total response is conserved - says nothing about accuracy" 
-  truthVal = 4167011.
+  truthVal = 2233257.
   assert( np.abs( totInfo - truthVal) < 1), "FAIL: %f != %f"%(totInfo,truthVal) 
   print "PASS" 
 

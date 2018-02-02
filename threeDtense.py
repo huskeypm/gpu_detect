@@ -1,6 +1,6 @@
 import cv2
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import numpy as np
 import matplotlib.pylab as plt
 import tensorflow as tf

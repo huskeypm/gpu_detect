@@ -18,6 +18,7 @@ def LoadImage(
   maxDim = 100,
   angle = -35.    
 ):
+  print "WARNING: please use util.ReadImg"
     # read image 
     img = cv2.imread(imgName)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)

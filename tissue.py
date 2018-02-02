@@ -366,7 +366,7 @@ if __name__ == "__main__":
   # Loops over each argument in the command line 
   for i,arg in enumerate(sys.argv):
     # calls 'doit' with the next argument following the argument '-validation'
-    if(arg=="-validate"): 
+    if(arg=="-validation"): 
       validate()
       quit()
     if(arg=="-test1"):

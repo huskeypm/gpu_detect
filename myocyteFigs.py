@@ -16,32 +16,121 @@ import cv2
 import matplotlib.pylab as plt
 import bankDetect as bD
 import util
+import optimizer
+import painter
 class empty:pass
 
 root = "myoimages/"
 
 ## WT 
 def fig3(): 
-  testImage = root+"Sham_M_65_annotation.png"
-  figAnalysis(
-    testImage=testImage,
-    tag = "WT", 
-    writeImage=True) 
+  testImage = root+"Sham_11.png"
+  twoSarcSize = 21
 
-  # write angle 
-  print "DC: UPDATE THRESHOLDS TO OPTIMIZED PARAMETERS (from ROC) " 
-  results = Rs.giveStackedHits(testImage, 0.06, 0.38, 3.)
-  print results.stackedAngles.WT
-                           
+  rawImg = util.ReadImg(testImage,cvtColor=False)
 
+  iters = [-20, -15, -10, -5, 0, 5, 10, 15, 20]
+  coloredImg, coloredAngles, angleCounts = giveMarkedMyocyte(testImage=testImage,
+                        ImgTwoSarcSize=twoSarcSize,returnAngles=True,iters=iters)
+  #plt.figure()
+  #plt.imshow(coloredAngles)
+  #plt.show()
+  #quit()
+  correctColoredAngles = switchBRChannels(coloredAngles)
+  correctColoredImg = switchBRChannels(coloredImg)
+
+  # make bar chart for content
+  wtContent, ltContent, lossContent = assessContent(correctColoredImg)
+  contents = np.asarray([wtContent, ltContent, lossContent],dtype='float')
+  dims = np.shape(coloredImg[:,:,0])
+  area = float(dims[0]) * float(dims[1])
+  contents = np.divide(contents, area)
+  normedContents = contents / np.max(contents)
+
+  # generating figure
+  width = 0.25
+  colors = ["blue","green","red"]
+  marks = ["WT","LT","Loss"]
+
+  # make a single bar chart
+  N = 1
+  indices = np.arange(N) + width
+  fig,ax = plt.subplots()
+  rects1 = ax.bar(indices, normedContents[0], width, color=colors[0])
+  rects2 = ax.bar(indices+width, normedContents[1], width, color=colors[1])
+  rects3 = ax.bar(indices+2*width, normedContents[2], width, color=colors[2])
+  ax.set_ylabel('Normalized Content')
+  ax.legend(marks)
+  ax.set_xticks([])
+  plt.gcf().savefig('fig3_BarChart.png')
+
+  # displaying raw, marked, and marked angle images
+  fig, axarr = plt.subplots(3,1)
+  axarr[0].imshow(rawImg,cmap='gray')
+  axarr[0].axis('off')
+  axarr[1].imshow(correctColoredImg)
+  axarr[1].axis('off')
+  axarr[2].imshow(correctColoredAngles)
+  axarr[2].axis('off')
+  plt.gcf().savefig("fig3_RawAndMarked.png")
+
+  # save histogram of angles
+  plt.figure()
+  n, bins, patches = plt.hist(angleCounts, len(iters), normed=1, 
+                              facecolor='green', alpha=0.5)
+  plt.xlabel('Rotation Angle')
+  plt.ylabel('Probability')
+  plt.gcf().savefig("fig3_histogram.png")
+
+  
 
 ## HF 
 def fig4(): 
 
-  figAnalysis(
-    testImage=root+"HF_1_annotation.png",
-    tag = "HF", 
-    writeImage=True) 
+  filterTwoSarcSize = 25
+
+  imgName = root+"HF_1.png"
+  twoSarcSize = 21
+
+  rawImg = util.ReadImg(imgName)
+
+  markedImg = giveMarkedMyocyte(testImage=imgName,ImgTwoSarcSize=twoSarcSize)
+
+  wtContent, ltContent, lossContent = assessContent(markedImg)
+  contents = np.asarray([wtContent, ltContent, lossContent])
+  dims = np.shape(markedImg[:,:,0])
+  area = float(dims[0]) * float(dims[1])
+  contents = np.divide(contents, area)
+  normedContents = contents / np.max(contents)
+
+  # generating figure
+  width = 0.25
+  colors = ["blue","green","red"]
+  marks = ["WT","LT","Loss"]
+
+  # opting to make a single bar chart
+  N = 1
+  indices = np.arange(N) + width
+  fig,ax = plt.subplots()
+  rects1 = ax.bar(indices, normedContents[0], width, color=colors[0])
+  rects2 = ax.bar(indices+width, normedContents[1], width, color=colors[1])
+  rects3 = ax.bar(indices+2*width, normedContents[2], width, color=colors[2])
+  ax.set_ylabel('Normalized Content')
+  ax.legend(marks)
+  ax.set_xticks([])
+  plt.gcf().savefig('fig4_BarChart.png')
+ 
+  # constructing actual figure
+  fig, axarr = plt.subplots(2,1)
+  axarr[0].imshow(rawImg,cmap='gray')
+  axarr[0].set_title("HF Raw")
+  axarr[0].axis('off') 
+
+  switchedImg = switchBRChannels(markedImg)
+  axarr[1].imshow(switchedImg)
+  axarr[1].set_title("HF Marked")
+  axarr[1].axis('off')
+  plt.gcf().savefig("fig4_RawAndMarked.png")
 
 ## MI 
 def fig5(): 
@@ -66,11 +155,11 @@ def fig5():
   images = [DImage, MImage, PImage]
 
   # BE SURE TO UPDATE TESTMF WITH OPTIMIZED PARAMS
-  DResults = testMF(testImage=DImageName,ImgTwoSarcSize=DTwoSarcSize)
-  MResults = testMF(testImage=MImageName,ImgTwoSarcSize=MTwoSarcSize)
-  PResults = testMF(testImage=PImageName,ImgTwoSarcSize=PTwoSarcSize)
+  Dimg = giveMarkedMyocyte(testImage=DImageName,ImgTwoSarcSize=DTwoSarcSize)
+  Mimg = giveMarkedMyocyte(testImage=MImageName,ImgTwoSarcSize=MTwoSarcSize)
+  Pimg = giveMarkedMyocyte(testImage=PImageName,ImgTwoSarcSize=PTwoSarcSize)
 
-  results = [DResults, MResults, PResults]
+  results = [Dimg, Mimg, Pimg]
   keys = ['D', 'M', 'P']
   areas = {}
 
@@ -79,18 +168,27 @@ def fig5():
   lossResults = []
 
   # report responses for each case
-  for i,result in enumerate(results):
-    sH = result.stackedHits
-    dimensions = np.shape(sH.WT)
+  for i,img in enumerate(results):
+    print "Replace with assessContent function"
+    dimensions = np.shape(img)
+    wtChannel = img[:,:,0].copy()
+    wtChannel[wtChannel == 255] = 1
+    wtChannel[wtChannel != 1] = 0
+    ltChannel = img[:,:,1].copy()
+    ltChannel[ltChannel == 255] = 1
+    ltChannel[ltChannel != 1] = 0
+    lossChannel = img[:,:,2].copy()
+    lossChannel[lossChannel == 255] = 1
+    lossChannel[lossChannel != 1] = 0
     area = float(dimensions[0] * dimensions[1])
-    ttContent = np.sum(sH.WT) / area
-    ltContent = np.sum(sH.Long) / area
-    lossContent = np.sum(sH.loss) / area
+    ttContent = np.sum(wtChannel) / area
+    ltContent = np.sum(ltChannel) / area
+    lossContent = np.sum(lossChannel) / area
     # construct array of areas and norm 
     newAreas = np.array([ttContent, ltContent, lossContent])
     normedAreas = newAreas / np.max(newAreas)
     areas[keys[i]] = normedAreas
-    # append to lists
+    # store in lists
     ttResults.append(normedAreas[0])
     ltResults.append(normedAreas[1])
     lossResults.append(normedAreas[2])
@@ -100,21 +198,6 @@ def fig5():
   width = 0.25
   colors = ["blue","green","red"]
   marks = ["WT","LT","Loss"]
-  #plt.rcParams['font.size'] = 6.0
-  #plt.rcParams['figure.figsize'] = [16,8]
-  #plt.rcParams['figure.dpi'] = 300
-  #for i,img in enumerate(images):
-  #  axarr[i,0].imshow(img,cmap='gray')
-  #  axarr[i,0].set_title(keys[i]+" Raw")
-  #  axarr[i,1].imshow(results[i].coloredImg)
-  #  axarr[i,1].set_title(keys[i]+" Marked")
-    # construct bar plot
-  #  axarr[i,2].set_title(keys[i]+" Content")
-  #  indices = np.arange(np.shape(areas[keys[i]])[0])
-  #  rectangles = axarr[i,2].bar(indices,areas[keys[i]],width,color=colors)
-  #  axarr[i,2].set_xticks(indices+width)
-  #  axarr[i,2].set_xticklabels(marks, rotation=90)
-  #plt.gcf().savefig("fig5.png")
 
   # opting to make a single bar chart
   N = 3
@@ -136,12 +219,14 @@ def fig5():
     resizedImg = cv2.resize(img,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
     axarr[i,0].imshow(resizedImg,cmap='gray')
     axarr[i,0].axis('off')
-    #axarr[i,0].set_title(keys[i]+" Raw")
-    # applying masks to each
-    masked = ReadResizeApplyMask(results[i].coloredImg,imgNames[i],ImgTwoSarcSizes[i])
-    axarr[i,1].imshow(masked)
+    axarr[i,0].set_title(keys[i]+" Raw")
+
+    # switching color channels due to discrepency between cv2 and matplotlib
+    newResult = switchBRChannels(results[i])
+
+    axarr[i,1].imshow(newResult)
     axarr[i,1].axis('off')
-    #axarr[i,1].set_title(keys[i]+" Marked")
+    axarr[i,1].set_title(keys[i]+" Marked")
   plt.tight_layout()
   plt.gcf().savefig("fig5_RawAndMarked.png")
 
@@ -155,7 +240,8 @@ def figAnalysis(
       ImgTwoSarcSize=None,
       tag = "valid", # tag to prepend to images 
       writeImage = False):
-
+  print "DC: Function is broken. Fix using new giveMarkedMyocyte function"
+  quit()
   results = testMF(
       ttFilterName=ttFilterName,#root+"WTFilter.png",
       ltFilterName=ltFilterName,#root+"LongFilter.png",
@@ -214,63 +300,139 @@ def testMFExp():
       display=display
     )
 
-def testMF(
+def giveMarkedMyocyte(
       ttFilterName=root+"WTFilter.png",
       ltFilterName=root+"LongFilter.png",
       lossFilterName=root+"LossFilter.png",
       wtPunishFilterName=root+"WTPunishmentFilter.png",
       testImage=root+"MI_D_73_annotation.png",
-      ttThresh=0.06 ,
-      ltThresh=0.38 ,
-      gamma=3.,
       ImgTwoSarcSize=None,
       tag = "default_",
       writeImage = False,
-      iters=[-20,-15,-10,-5,0,5,10,15,20]):
+      iters=[-20,-15,-10,-5,0,5,10,15,20],
+      returnAngles=False):
+  
+  img = util.ReadImg(testImage,renorm=True)
 
-  #results = empty()
-  results = Rs.giveStackedHits(testImage, 
-		   ttThresh, ltThresh, gamma, ImgTwoSarcSize=ImgTwoSarcSize,
-                   WTFilterName=ttFilterName,
-                   LongitudinalFilterName=ltFilterName,
-                   LossFilterName = lossFilterName,
-                   WTPunishFilterName=wtPunishFilterName,
-                   iters=iters
-                   )
-  stackedHits = results.stackedHits
+  # WT filtering
+  WTparams = optimizer.ParamDict(typeDict='WT')
+  WTparams['covarianceMatrix'] = np.ones_like(img)
+  ttFilter = util.ReadImg(ttFilterName, renorm=True)
+  WTresults, _ = bD.TestFilters(testData = img,
+                           filter1Data = ttFilter,
+                           filter2Data = None, 
+                           filter1Thresh = WTparams['snrThresh'],
+                           iters = iters,
+                           single = True,
+                           paramDict = WTparams,
+                           returnAngles=returnAngles)
+  WTstackedHits = WTresults.stackedHits
+  #plt.figure()
+  #plt.imshow(WTstackedHits)
+  #plt.colorbar()
+  #plt.show()
+  #quit()
 
+  # LT filtering
+  LTparams = optimizer.ParamDict(typeDict='LT')
+  LTFilter = util.ReadImg(ltFilterName, renorm = True)
+  LTresults, _ = bD.TestFilters(testData = img,
+                           filter1Data = LTFilter,
+                           filter2Data = None, 
+                           filter1Thresh = LTparams['snrThresh'],
+                           iters = iters,
+                           single = True,
+                           paramDict = LTparams)
+  LTstackedHits = LTresults.stackedHits
+
+  # Loss filtering
+  Lossparams = optimizer.ParamDict(typeDict='Loss')
+  LossFilter = util.ReadImg(lossFilterName, renorm = True)
+  Lossiters = [0] # don't need rotations for loss filtering
+  Lossresults, _ = bD.TestFilters(testData = img,
+                           filter1Data = LossFilter,
+                           filter2Data = None, 
+                           filter1Thresh = Lossparams['snrThresh'],
+                           iters = Lossiters,
+                           single = True,
+                           paramDict = Lossparams)
+  LossstackedHits = Lossresults.stackedHits
+ 
   # BE SURE TO REMOVE ME!!
   print "WARNING: nan returned from stackedHits, so 'circumventing this'"
-  cI = results.coloredImg
+  cI = util.ReadImg(testImage,cvtColor=False)
 
-  wt = np.zeros_like( cI[:,:,0]) 
-  wt[ np.where(cI[:,:,2] > 100) ] = 1
-  lt = np.zeros_like( wt )
-  lt[ np.where(cI[:,:,1] > 100) ] = 1
-  loss = np.zeros_like( wt )
-  loss[ np.where(cI[:,:,0] > 100) ] = 1
+  # Marking superthreshold hits for loss filter
+  LossstackedHits[LossstackedHits != 0] = 255
+  LossstackedHits = np.asarray(LossstackedHits, dtype='uint8')
 
-  # apply masks
-  wtMasked = ReadResizeApplyMask(wt,testImage,ImgTwoSarcSize)
-  ltMasked = ReadResizeApplyMask(lt,testImage,ImgTwoSarcSize)
-  lossMasked = ReadResizeApplyMask(loss,testImage,ImgTwoSarcSize)
+  # applying a loss mask to attenuate false positives from WT and Longitudinal filter
+  WTstackedHits[LossstackedHits == 255] = 0
+  LTstackedHits[LossstackedHits == 255] = 0
 
-  # add to containers
-  stackedHits.WT = wtMasked 
-  stackedHits.Long = ltMasked 
-  stackedHits.loss = lossMasked 
+  # marking superthreshold hits for longitudinal filter
+  LTstackedHits[LTstackedHits != 0] = 255
+  LTstackedHits = np.asarray(LTstackedHits, dtype='uint8')
 
+  # masking WT response with LT mask so there is no overlap in the markings
+  WTstackedHits[LTstackedHits == 255] = 0
+
+  # marking superthreshold hits for WT filter
+  WTstackedHits[WTstackedHits != 0] = 255
+  WTstackedHits = np.asarray(WTstackedHits, dtype='uint8')
+
+  # apply preprocessed masks
+  wtMasked = ReadResizeApplyMask(WTstackedHits,testImage,ImgTwoSarcSize,
+                                 filterTwoSarcSize=ImgTwoSarcSize)
+  ltMasked = ReadResizeApplyMask(LTstackedHits,testImage,ImgTwoSarcSize,
+                                 filterTwoSarcSize=ImgTwoSarcSize)
+  lossMasked = ReadResizeApplyMask(LossstackedHits,testImage,ImgTwoSarcSize,
+                                   filterTwoSarcSize=ImgTwoSarcSize)
+
+  # color corrresponding channels
+  WTcopy = cI[:,:,0]
+  WTcopy[wtMasked == 255] = 255
+
+  LTcopy = cI[:,:,1]
+  LTcopy[ltMasked == 255] = 255
+
+  Losscopy = cI[:,:,2]
+  Losscopy[lossMasked == 255] = 255
+  
   if writeImage:
     # write outputs	  
-    cv2.imwrite(tag+"_output.png",results.coloredImg)       
+    cv2.imwrite(tag+"_output.png",cI)       
 
-
-  return results 
+  if returnAngles:
+    cImg = util.ReadImg(testImage,cvtColor=False)
+    coloredAngles = painter.colorAngles(cImg,WTresults.stackedAngles,iters)
+    coloredAnglesMasked = ReadResizeApplyMask(coloredAngles,testImage,
+                                              ImgTwoSarcSize,
+                                              filterTwoSarcSize=ImgTwoSarcSize)
+    # mask the container holding the angles
+    stackedAngles = np.add(WTresults.stackedAngles, 1)
+    stackedAngles = ReadResizeApplyMask(stackedAngles,testImage,
+                                            ImgTwoSarcSize,
+                                            filterTwoSarcSize=ImgTwoSarcSize)
+    stackedAngles = np.asarray(stackedAngles, dtype='int')
+    stackedAngles = np.subtract(stackedAngles, 1)
+    dims = np.shape(stackedAngles)
+    angleCounts = []
+    for i in range(dims[0]):
+      for j in range(dims[1]):
+        rotArg = stackedAngles[i,j]
+        if rotArg != -1:
+          # indicates this is a hit
+          angleCounts.append(iters[rotArg])
+    
+    
+    return cI, coloredAnglesMasked, angleCounts
+  else:
+    return cI 
 
 ##
 ## Defines dataset for myocyte (MI) 
 ##
-import optimizer
 def Myocyte():
     # where to look for images
     root = "myoimages/"
@@ -307,17 +469,19 @@ def rocData():
 
 
   ## Testing TT first 
-  dataSet.filter1PositiveChannel=0
+  dataSet.filter1PositiveChannel= 0
   dataSet.filter1Label = "TT"
   dataSet.filter1Name = root+'WTFilter.png'
   optimizer.SetupTests(dataSet)
-  paramDict = optimizer.ParamDict()
+  paramDict = optimizer.ParamDict(typeDict='WT')
+  paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
+  paramDict['mfPunishment'] = util.ReadImg(root+"WTPunishmentFilter.png",renorm=True)
   
   optimizer.GenFigROC_TruePos_FalsePos(
         dataSet,
         paramDict,
         filter1Label = dataSet.filter1Label,
-        f1ts = np.linspace(30,50,5),
+        f1ts = np.linspace(3,15,12),
         #display=True
       )
 
@@ -326,32 +490,45 @@ def rocData():
   dataSet.filter1Label = "LT"
   dataSet.filter1Name = root+'LongFilter.png'
   optimizer.SetupTests(dataSet)
-  paramDict = optimizer.ParamDict()  
+  paramDict = optimizer.ParamDict(typeDict='LT')  
   
   optimizer.GenFigROC_TruePos_FalsePos(
         dataSet,
         paramDict,
         filter1Label = dataSet.filter1Label,
-        f1ts = np.linspace(10,20,3),
-        display=True
+        f1ts = np.linspace(15,25,3),
+        #display=True
       )
 
-
-def rocDataOLD(): 
-  dataSet = Myocyte() 
+  ## Testing Loss
+  print "NOTE: This is using the new loss filter. Rename filter and fix function call."
+  dataSet.filter1PositiveChannel = 2
+  dataSet.filter1Label = "Loss"
+  dataSet.filter1Name = root+"newLossFilter.png"
   optimizer.SetupTests(dataSet)
+  paramDict = optimizer.ParamDict(typeDict='Loss')
 
-  #pass in data like you are doing in your other tests 
-  #threshold? 
-  optimizer.GenFigROC(
-        dataSet,
-        filter1Label = dataSet.filter1Label,
-        filter2Label = dataSet.filter2Label,
-        f1ts = np.linspace(0.05,0.50,9),
-        f2ts = np.linspace(0.05,0.30,9),
-        penaltyscales = [1.2],
-        useFilterInv=True,
-      )
+  optimizer.GenFigROC_TruePos_FalsePos(
+         dataSet,
+         paramDict,
+         filter1Label = dataSet.filter1Label,
+         f1ts = np.linspace(4,15,11),
+         #display=True
+       )
+
+###
+### Function to convert from cv2's color channel convention to matplotlib's
+###         
+def switchBRChannels(img):
+  newImg = img.copy()
+
+  # ensuring to copy so that we don't accidentally alter the original image
+  newImg[:,:,0] = img[:,:,2].copy()
+  newImg[:,:,2] = img[:,:,0].copy()
+
+  return newImg
+  
+
 
 def ReadResizeApplyMask(img,imgName,ImgTwoSarcSize,filterTwoSarcSize=25):
   # function to apply the image mask before outputting results
@@ -361,7 +538,6 @@ def ReadResizeApplyMask(img,imgName,ImgTwoSarcSize,filterTwoSarcSize=25):
   try:
     maskGray = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
   except:
-    #print "No mask named '"+imgName+"' was found. Circumventing masking."
     print "No mask named '"+fileName +"' was found. Circumventing masking."
     return img
   scale = float(filterTwoSarcSize) / float(ImgTwoSarcSize)
@@ -377,74 +553,78 @@ def ReadResizeApplyMask(img,imgName,ImgTwoSarcSize,filterTwoSarcSize=25):
       combined[:,:,i] = combined[:,:,i] * normed
   return combined
 
+def assessContent(markedImg):
+  # pull out channels
+  wt = markedImg[:,:,0]
+  lt = markedImg[:,:,1]
+  loss = markedImg[:,:,2]
+
+  # get rid of everything that isn't a hit (hits are marked as 255)
+  wt[wt != 255] = 0
+  lt[lt != 255] = 0
+  loss[loss != 255] = 0
+
+  # normalize
+  wtNormed = wt / np.max(wt)
+  ltNormed = lt / np.max(lt)
+  lossNormed = loss / np.max(loss)
+
+  # calculate content
+  wtContent = np.sum(wtNormed)
+  ltContent = np.sum(ltNormed)
+  lossContent = np.sum(lossNormed)
+
+  return wtContent, ltContent, lossContent
+
 # function to validate that code has not changed since last commit
 def validate(testImage=root+"MI_D_78.png",
              ImgTwoSarcSize=22,
              ):
   # run algorithm
-  results = testMF(testImage=testImage,ImgTwoSarcSize=ImgTwoSarcSize)
+  markedImg = giveMarkedMyocyte(testImage=testImage,ImgTwoSarcSize=ImgTwoSarcSize)
 
-  ## run test
-  cI = results.coloredImg
-  wt = np.zeros_like( cI[:,:,0])
-  wt[ np.where(cI[:,:,2] > 100) ] = 1
-  lt = np.zeros_like( wt )
-  lt[ np.where(cI[:,:,1] > 100) ] = 1
-  loss = np.zeros_like( wt )
-  loss[ np.where(cI[:,:,0] > 100) ] = 1
-  # apply masks
-  wtMasked = ReadResizeApplyMask(wt,testImage,ImgTwoSarcSize)
-  ltMasked = ReadResizeApplyMask(lt,testImage,ImgTwoSarcSize)
-  lossMasked = ReadResizeApplyMask(loss,testImage,ImgTwoSarcSize)
-  # find total content
-  wtContent = np.sum(wtMasked)
-  ltContent = np.sum(ltMasked)
-  lossContent = np.sum(lossMasked)
-  # compare to previously tested output
-  print "WARNING: Dig into why longitdunial content = 0"
-  assert(abs(wtContent - 35.0) < 1)
-  assert(abs(ltContent - 0) < 1)
-  assert(abs(lossContent - 300.0) < 1)
-  #  print wtContent, ltContent, lossContent
+  # calculate wt, lt, and loss content  
+  wtContent, ltContent, lossContent = assessContent(markedImg)
+
+  print "WT Content:",wtContent
+  print "LT Content:", ltContent
+  print "Loss Content:", lossContent
+  
+  assert(abs(wtContent - 12534) < 1), "WT validation failed."
+  assert(abs(ltContent - 25687) < 1), "LT validation failed."
+  assert(abs(lossContent - 2198) < 1), "Loss validation failed."
   print "PASSED!"
 
-def minorValidate(testImage="./myoimages/unittest.png",
-                  ImgTwoSarcSize=21,
+# A minor validation function to serve as small tests between commits
+def minorValidate(testImage=root+"MI_D_73_annotation.png",
+                  ImgTwoSarcSize=25, #img is already resized to 25 px
                   iters=[-10,0,10]):
 
-  # A minor validation function to serve as small tests between commits
-  ## run algorithm
-  results = testMF(testImage=testImage, ImgTwoSarcSize=ImgTwoSarcSize,iters=iters)
+  # run algorithm
+  markedImg = giveMarkedMyocyte(testImage=testImage, 
+                                ImgTwoSarcSize=ImgTwoSarcSize,iters=iters)
 
-  ## run test
-  cI = results.coloredImg
-  wt = np.zeros_like( cI[:,:,0])
-  wt[ np.where(cI[:,:,2] > 100) ] = 1
-  lt = np.zeros_like( wt )
-  lt[ np.where(cI[:,:,1] > 100) ] = 1
-  loss = np.zeros_like( wt )
-  loss[ np.where(cI[:,:,0] > 100) ] = 1
-  # apply masks
-  wtMasked = ReadResizeApplyMask(wt,testImage,ImgTwoSarcSize)
-  ltMasked = ReadResizeApplyMask(lt,testImage,ImgTwoSarcSize)
-  lossMasked = ReadResizeApplyMask(loss,testImage,ImgTwoSarcSize)
-  # find total content
-  wtContent = np.sum(wtMasked)
-  ltContent = np.sum(ltMasked)
-  lossContent = np.sum(lossMasked)
-  # compare to previously tested output
-  #print wtContent,ltContent,lossContent
-  print "WARNING: Unit test is currently broken due to commited code but values are correct. Fix code immediately."
-  val = 0; #5
+  # assess content
+  wtContent, ltContent, lossContent = assessContent(markedImg) 
+  
+  print "WT Content:",wtContent
+  print "Longitudinal Content", ltContent
+  print "Loss Content", lossContent
+
+  val = 133 
   assert(abs(wtContent - val) < 1),"%f != %f"%(wtContent, val)       
-  val = 568
+  val = 25286
   assert(abs(ltContent - val) < 1),"%f != %f"%(ltContent, val) 
-  val = 568
+  val = 0
   assert(abs(lossContent - val) < 1),"%f != %f"%(lossContent, val)
-  #  print wtContent, ltContent, lossContent
   print "PASSED!"
 
-def Test1():
+
+###
+### Function to test that the optimizer routines that assess positive and negative
+### filter scores are working correctly.
+###
+def scoreTest():
   dataSet = Myocyte() 
 
   ## Testing TT first 
@@ -452,13 +632,25 @@ def Test1():
   dataSet.filter1Label = "TT"
   dataSet.filter1Name = root+'WTFilter.png'
   optimizer.SetupTests(dataSet)
+  dataSet.filter1Thresh = 5.5
 
-  paramDict = optimizer.ParamDict()
+  paramDict = optimizer.ParamDict(typeDict='WT')
+  paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
 
   filter1PS,filter1NS = optimizer.TestParams_Single(
     dataSet,
-    #paramDict, # PKH needs to implement
+    paramDict,
+    iters=[-20,-15,-10,-5,0,5,10,15,20],
     display=False)  
+    #display=True)  
+
+  print filter1PS, filter1NS
+
+  val = 0.926816518557
+  assert((filter1PS - val) < 1e-3), "Filter 1 Positive Score failed"
+  val = 0.342082872458
+  assert((filter1NS - val) < 1e-3), "Filter 1 Negative Score failed"
+  print "PASSED"
 
 
 #
@@ -501,16 +693,16 @@ if __name__ == "__main__":
 
     # this function will generate input data for the current fig #3 in the paper 
     if(arg=="-fig3"):               
-      1
-      # DC: what is my WT test image (top panel)  
-      # DC: call to generate middle panel 
-      # DC: call to generate bottom panel 
+      fig3()
+      quit()
 
     if(arg=="-fig4"):               
-      # DC: same as fig 3, but w HF data 
-      1
+      fig4()
+      quit()
+
     if(arg=="-fig5"):               
       fig5()
+      quit()
 
     if(arg=="-fig6"):               
       # RB: generate detected version of Fig 6
@@ -535,7 +727,7 @@ if __name__ == "__main__":
       testMFExp()
       quit()
     if(arg=="-test"):
-      testMF(      
+      giveMarkedMyocyte(      
         ttFilterName=sys.argv[i+1],
         ltFilterName=sys.argv[i+2],
         testImage=sys.argv[i+3],           
@@ -545,19 +737,11 @@ if __name__ == "__main__":
 	tag = tag,
 	writeImage = True)            
       quit()
-    if(arg=="-test1"):
-      Test1()             
-      print "WILL PHASE OUT SOON...." 
+    if(arg=="-scoretest"):
+      scoreTest()             
       quit()
     if(arg=="-minorValidate"):
       minorValidate()
       quit()
 
-
-
-
   raise RuntimeError("Arguments not understood")
-
-
-
-

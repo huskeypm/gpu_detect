@@ -4,7 +4,7 @@ to cleanly pick out data features
 
 """
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import cv2
 import sys
 import bankDetect as bD

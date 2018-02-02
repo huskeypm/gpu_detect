@@ -146,7 +146,7 @@ def ParamDict(typeDict='silica'):
     paramDict['doCLAHE'] = False
     print "Be sure to update ParamDict constructor once params are optimized"
     paramDict['gamma'] = 3.
-    paramDict['mfPunishment'] = util.ReadImg("./myoimages/WTPunishmentFilter.png",renorm=True)
+    #paramDict['mfPunishment'] = util.ReadImg("./myoimages/WTPunishmentFilter.png",renorm=True)
     paramDict['snrThresh'] = 6.5
     paramDict['demeanMF'] = False
   elif typeDict=='LT':

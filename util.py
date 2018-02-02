@@ -334,7 +334,7 @@ def SaveFixedLongFilter(LongFilterRoot=root+"filterImgs/Longitudinal/",
 def SaveFixedLossFilter():
   img = np.zeros((12,12),dtype='uint8')
   img[2:10,2:10] = 255
-  cv2.imwrite("LossFilter.png",img)
+  cv2.imwrite(root+"LossFilter.png",img)
 
 def SaveFixedPunishmentFilter(LongitudinalFilterName=root+"LongFilter.png",
                               rowMin=2,rowMax=-1,colMin=6,colMax=13):

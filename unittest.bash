@@ -1,3 +1,5 @@
+# if running for this first time
+# python util.py -genAllMyo
 # Run these before committing 
 python silicaFigs.py -validate
 python myocyteFigs.py -roc                   

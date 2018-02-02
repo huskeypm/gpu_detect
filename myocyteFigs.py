@@ -317,6 +317,7 @@ def giveMarkedMyocyte(
   # WT filtering
   WTparams = optimizer.ParamDict(typeDict='WT')
   WTparams['covarianceMatrix'] = np.ones_like(img)
+  WTparams['mfPunishment'] = util.ReadImg("./myoimages/WTPunishmentFilter.png",renorm=True)
   ttFilter = util.ReadImg(ttFilterName, renorm=True)
   WTresults, _ = bD.TestFilters(testData = img,
                            filter1Data = ttFilter,
@@ -488,23 +489,30 @@ def rocData():
   ## Testing LT now
   dataSet.filter1PositiveChannel=1
   dataSet.filter1Label = "LT"
-  dataSet.filter1Name = root+'LongFilter.png'
+  #dataSet.filter1Name = root+'LongFilter.png'
+  # opting to test H filter now
+  dataSet.filter1Name = root+'newLTfilter.png'
   optimizer.SetupTests(dataSet)
   paramDict = optimizer.ParamDict(typeDict='LT')  
+
+  paramDict['filterMode'] = 'punishmentFilter'
+  paramDict['mfPunishment'] = util.ReadImg(root+"newLTPunishmentFilter.png",renorm=True)
+  paramDict['gamma'] = 3
+  paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
+
   
   optimizer.GenFigROC_TruePos_FalsePos(
         dataSet,
         paramDict,
         filter1Label = dataSet.filter1Label,
-        f1ts = np.linspace(15,25,3),
+        f1ts = np.linspace(1,2,10),
         #display=True
       )
 
   ## Testing Loss
-  print "NOTE: This is using the new loss filter. Rename filter and fix function call."
   dataSet.filter1PositiveChannel = 2
   dataSet.filter1Label = "Loss"
-  dataSet.filter1Name = root+"newLossFilter.png"
+  dataSet.filter1Name = root+"LossFilter.png"
   optimizer.SetupTests(dataSet)
   paramDict = optimizer.ParamDict(typeDict='Loss')
 

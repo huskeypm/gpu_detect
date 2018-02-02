@@ -2,6 +2,18 @@
 python tissue.py -test1
 need to figure out what's different by detect.py vs origin implementation in tissue.y
 
+## MASTER SCRIPT 
+# detect.py 
+To validate:
+python detect.py -validation
+
+To run from command line with user-provided images:
+python detect.py -simple myoimages/Sham_11.png myoimages/WTFilter.png 0.01
+
+To run with yaml: (follow ex.yml for an example) 
+python detect.py -simpleYaml ex.yml
+
+
 # gpu_detect
 GPU-accelerated matched filter detection.
 

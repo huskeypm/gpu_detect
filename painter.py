@@ -43,17 +43,20 @@ def correlateThresher(
         iters = [0,30,60,90],  
         printer = True, 
         filterMode=None,
-        label=None,
+        label="undef",
         ):
 
-    # Ryan ?? equalized image?
-    # Dylan - Adding in option to turn off CLAHE
     # TODO - this should be done in preprocessing, not here
     #print "PKH: turn into separate proproccessing routine"
     img = inputs.imgOrig
+    
     if params['doCLAHE']:
+      if img.dtype != 'uint8':
+        myImg = np.array((img * 255),dtype='uint8')
+      else:
+        myImg = img
       clahe99 = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(16,16))
-      img = clahe99.apply(inputs.imgOrig)
+      img = clahe99.apply(myImg)
 
     filterRef = util.renorm(np.array(inputs.mfOrig,dtype=float),scale=1.)
     
@@ -74,20 +77,23 @@ def correlateThresher(
       rFN = util.PadRotate(filterRef,angle)  
       inputs.mf = rFN  
       
-   
       # matched filtering 
       result = dps.FilterSingle(inputs,params)      
 
-      # store
+      # store. Results contain both correlation plane and snr
       result.rFN = np.copy(rFN)
       correlated.append(result) 
-      
-      
 
     ##
     ## write
     ##
-    if label!=None and printer:
+    #if label!=None and printer:
+    if printer: 
+       if label==None:
+         label="undef"
+       if filterMode==None:
+         filterMode="undef"
+
        for i, angle in enumerate(iters):
         tag = filterMode 
         daTitle = "rot %4.1f "%angle # + "hit %4.1f "%hit 
@@ -105,12 +111,11 @@ def correlateThresher(
         fileName = label+"_"+tag+'_{}.png'.format(angle)
         plt.gcf().savefig(fileName,dpi=300)
         plt.close()
-     
-      
 
     return correlated  # a list of objects that contain SNR, etc 
 
 def CalcSNR(signalResponse,sigma_n=1):
+  print "PHASE ME OUT" 
   return signalResponse/sigma_n
 
 import util 
@@ -125,136 +130,103 @@ def StackHits(correlated,  # an array of 'correlation planes'
               display=False,
               rescaleCorr=False,
               doKMeans=False, #True,
-              filterType="Pore",
               returnAngles=False):
      # TODO
     if rescaleCorr:
       raise RuntimeError("Why is this needed? IGNORING")
-      
+    if display:
+      print "Call me debug" 
     # Function that iterates through correlations at varying rotations of a single filter,
     # constructs a mask consisting of 'NaNs' and returns a list of these masked correlations
 
 
     ##
-    ##
+    ## select hits based on those entries about the snrThresh 
     ##
     maskList = []
-    daMax = -1e9
     for i, iteration in enumerate(iters):
-        #print i, iteration
-        if filterType == "Pore":
-          # routine for identifying 'unique' hits
+        # routine for identifying 'unique' hits
+        try:
           daMask = util2.makeMask(paramDict['snrThresh'],img = correlated[i].snr,
+                                  doKMeans=doKMeans, inverseThresh=paramDict['inverseSNR'])
+        except:
+          print "DC: Using workaround for tissue param dictionary. Fix me."
+          daMask = util2.makeMask(paramDict['snrThresh'], img=correlated[i].snr,
                                   doKMeans=doKMeans)
-
-          # i don't think this should be rotated 
-          #maskList.append((util2.rotater(daMask,iteration)))
-          maskList.append(daMask)
-
-      #print maskList
-    if filterType == "Pore":  
-      stacked  = np.sum(maskList, axis =0)
-      return stacked 
-  
-    ##
-    ##
-    ##
-    
-        #print "REMOVE ME" 
-    #WTlist = []
-    #Longlist = []
-    #Losslist = []
-    print "DCL Merge me with oth er filter type" 
-    for i, iteration in enumerate(iters):
-        if filterType == "TT":
-          
-          masks = empty()
-          corr_i = correlated[i].corr 
-          #corr_i_WT = correlated[i].WT
-          #corr_i_Long = correlated[i].Long
-          #corr_i_Loss = correlated[i].Loss
-
-          mask    = util2.makeMask(threshold, img=corr_i, doKMeans=doKMeans)
-          #masks.WT = util2.makeMask(threshold['WT'], img=corr_i_WT, doKMeans=doKMeans)
-          #masks.Long = util2.makeMask(threshold['Longitudinal'], img=corr_i_Long, doKMeans=doKMeans)
-          #masks.Loss = util2.makeMask(threshold['Loss'], img=corr_i_Loss, doKMeans=doKMeans,inverseThresh=True)
-          if display:
-            #WT
+                                  
+        #  print debugging info                                    
+        if display:
             plt.figure()
-            #plt.subplot(1,1)
-            #plt.imshow(img)
-            plt.subplot(1,3,1)
-            plt.imshow(mask) #s.WT)
-            #plt.title('WT')
-            # Longituindal
-            #plt.subplot(1,3,2)
-            #plt.imshow(masks.Long)
-            #plt.title('Longitudinal')
-            # Loss
-            #plt.subplot(1,3,3)
-            #plt.imshow(masks.Loss)
-            #plt.title('Loss')
-            #plt.close()
+            plt.subplot(2,1,1)
+            plt.imshow(correlated[i].snr)
+            plt.colorbar()
+            plt.subplot(2,1,2)
+            plt.imshow(daMask,cmap="gray")
+            plt.gcf().savefig("stack_%d.png"%iteration)    
 
-          # changing values to strings that will later be interpreted by colorHits function
-          #colorIndicator = 'rot'+str(i)
-          #masks.WT[masks.WT != 0] = colorIndicator
-          #masks.Long[masks.Long != 0] = colorIndicator
-          # not going to mark Loss in the same way to make code a bit more efficient later
+        # i don't think this should be rotated 
+        #maskList.append((util2.rotater(daMask,iteration)))
+        maskList.append(daMask)
 
-          maskList.append(mask)
-          #WTlist.append(masks.WT)
-          #Longlist.append(masks.Long)
-          #Losslist.append(masks.Loss)
-
-    #
-    # Return
-    # DC: Need to consolidate 
-    #
-
-
-    if filterType == "TT":
-      #stacked = empty()
-      # creating a class that also contains the angle with which the most intense hit was located
-
-      #dims = np.shape(WTlist[0]) # all rotations and filter correlations should be the same dimensions
-     
-      # creating 'poor mans mask' through use of NaN
-      myHolder = np.argmax(maskList,axis=0).astype('float') 
-      myHolder[maskList[0] < 1e-5] = np.nan
-      return myHolder 
+    # sum all hits; Basically looking for one or more angles that are above threshold
+    stacked  = np.sum(maskList, axis =0)
+    
+    # default behavior (just returned stacked images) 
+    if not returnAngles:
+      return stacked 
+    
+    # function that returns angle associated with optimal response
+    if returnAngles:
+      imgDims = np.shape(stacked)
+      maskArray = np.asarray(maskList)
       
-      #WTholder = np.argmax(WTlist,axis=0).astype('float')
-      #WTholder[WTlist[0] < 0.00001] = np.nan
-      #stacked.WT = WTholder
-      #Longholder = np.argmax(Longlist,axis=0).astype('float')
-      #Longholder[Longlist[0] < 0.00001] = np.nan
-      #stacked.Long = Longholder
-      #stacked.Loss = np.sum(Losslist,axis=0)
-
-      #if returnAngles: Turning off for code dev
-      if 0: 
-        stackedAngles = empty()
-        WTAngle = WTholder.flatten().astype('float')
-        for i,idx in enumerate(np.invert(np.isnan(WTholder.flatten()))):
-          if idx:
-            WTAngle[i] = iters[int(WTAngle[i])]
-        WTAngle = WTAngle.reshape(dims[0],dims[1])
-        stackedAngles.WT = WTAngle
-
-        LongAngle = Longholder.flatten().astype('float')
-        for i,idx in enumerate(np.invert(np.isnan(Longholder.flatten()))):
-          if idx:
-            LongAngle[i] = iters[int(LongAngle[i])]
-        LongAngle = LongAngle.reshape(dims[0],dims[1])
-        stackedAngles.Long = LongAngle
-      else:
-        stackedAngles = None
+      # defaulting array to -1 so it is evident what is and is not a hit
+      stackedAngles = np.subtract(np.zeros_like(stacked,dtype='int'), 1)
+      #print np.shape(maskArray), imgDims
+      angleCounts = []
+      for i in range(imgDims[0]):
+        for j in range(imgDims[1]):
+          if stacked[i,j] != 0:
+            # indicates that this is a hit
+            iterIdx = int(np.argmax(maskArray[:,i,j]))
+            stackedAngles[i,j] = iterIdx
       return stacked, stackedAngles
-   
+  
+###
+### Function to color the angles previously returned in StackHits
+###   
+def colorAngles(rawOrig, stackedAngles,iters,leftChannel='red',rightChannel='blue'):
+  channelDict = {'blue':0, 'green':1, 'red':2}
 
+  dims = np.shape(stackedAngles)
 
+  if len(np.shape(rawOrig)) > 2:
+    coloredImg = rawOrig.copy()
+    #plt.figure()
+    #plt.imshow(coloredImg)
+    #plt.show()
+    #quit()
+  else:
+    # we need to make an RGB version of the image
+    coloredImg = np.zeros((dims[0],dims[1],3),dtype='uint8')
+    scale = 0.75
+    coloredImg[:,:,0] = scale * rawOrig
+    coloredImg[:,:,1] = scale * rawOrig
+    coloredImg[:,:,2] = scale * rawOrig
 
+  leftmostIdx = 0 # mark as left channel
+  rightmostIdx = len(iters) # mark as right channel
+  # any idx between these two will be colored a blend of the two channels
+
+  spacing = 255 / rightmostIdx
+
+  for i in range(dims[0]):
+    for j in range(dims[1]):
+      rotArg = stackedAngles[i,j]
+      if rotArg != -1:
+        coloredImg[i,j,channelDict[leftChannel]] = int(255 - rotArg*spacing)
+        coloredImg[i,j,channelDict[rightChannel]] = int(rotArg*spacing)
+  return coloredImg
 
 def paintME(myImg, myFilter1,  threshold = 190, cropper=[24,129,24,129],iters = [0,30,60,90], fused =True):
   correlateThresher(myImg, myFilter1,  threshold, cropper,iters, fused, False)

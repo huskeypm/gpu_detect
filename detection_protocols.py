@@ -112,21 +112,59 @@ def CalcInvFilter(inputs,paramDict,corr):
 
 
 
-# This script determines detections by integrating the correlation response
-# over a small area, then dividing that by the response of a 'lobe' filter 
+# This script determines detections by correlating a filter with the image
+# and dividing this response by a covariance matrix and a weighted 'punishment
+# filter'
 # need to write this in paper, if it works 
-def dcDetect(
+def punishmentFilter(
   inputs,    # data sets, filters etc 
   paramDict  # dictionary of parameters needed for detection
   ):
     # get data 
     img = inputs.img # raw (preprocessed image) 
+    import matplotlib.pylab as plt
+    #plt.figure()
+    #plt.title('Preprocessed Image')
+    #plt.imshow(img)
+    #plt.colorbar()
+    #plt.show()
     mf  = inputs.mf  # raw (preprocessed image) 
+    #plt.figure()
+    #plt.title('Matched filter')
+    #plt.imshow(mf)
+    #plt.colorbar()
+    #plt.show()
+    try:
+      mfPunishment = paramDict['mfPunishment']
+    except:
+      raise RuntimeError("No punishment filter was found in paramDict['mfPunishment']")
+    try:
+      cM = paramDict['covarianceMatrix']
+    except:
+      raise RuntimeError("Covariance matrix was not specified in paramDict")
+    try:
+      gamma = paramDict['gamma']
+    except:
+      raise RuntimeError("Punishment filter weighting term (gamma) not found\
+                          within paramDict")
 
     ## get correlation plane w filter 
     corr = mF.matchedFilter(img,mf,parsevals=False,demean=False)
+    #print np.max(corr)
+
+    ## get correlation plane w punishment filter
+    corrPunishment = mF.matchedFilter(img,mfPunishment,parsevals=False,demean=False)
+    #print "corrPunishment Max:", np.max(corrPunishment)
+
+    ## calculate snr
+    snr = corr / (cM + gamma * corrPunishment)
+    #print "SNR Max:", np.max(snr)
 
     results = empty()
+
+    results.snr = snr
+    results.corr = corr
+
     return results 
 
 #
@@ -142,7 +180,7 @@ def simpleDetect(
 
   ## get correlation plane w filter 
   results = empty()
-  results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=True) 
+  results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF']) 
   
   if paramDict['useFilterInv']:
       results.snr = CalcInvFilter(inputs,paramDict,results.corr)
@@ -168,8 +206,9 @@ def FilterSingle(
   mode = paramDict['filterMode']  
   if mode=="lobemode":
     results = lobeDetect(inputs,paramDict)
-  elif mode=="dcmode": 
-    results = dcDetect(inputs,paramDict)
+  elif mode=="punishmentFilter": 
+    # for the WT SNR. Uses WT filter and WT punishment filter
+    results = punishmentFilter(inputs,paramDict)
   elif mode=="simple":
     results = simpleDetect(inputs,paramDict)
   else: 

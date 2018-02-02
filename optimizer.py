@@ -10,6 +10,7 @@ import sys
 import bankDetect as bD
 import numpy as np
 import matplotlib.pylab as plt
+import util
 
 class empty():pass
 
@@ -79,6 +80,7 @@ def SetupTests(dataSet):
     ## load data against which filters are tested
     testData = cv2.imread(testDataName)
     testData = cv2.cvtColor(testData, cv2.COLOR_BGR2GRAY)
+    testData = util.renorm(np.array(testData,dtype=float),scale=1.)
 
     # crop 
     if isinstance(subsection, (list, tuple, np.ndarray)):
@@ -93,6 +95,7 @@ def SetupTests(dataSet):
     else:
       truthData = cv2.cvtColor(truthData, cv2.COLOR_BGR2GRAY)
     truthData= np.array(truthData> 0, dtype=np.float)
+    truthData = util.renorm(truthData,scale=1.)
 
     msg =   "%s != %s"%(np.shape(truthData), np.shape(testData))
     assert( np.prod(np.shape(truthData)) == np.prod(np.shape(testData))), msg
@@ -119,20 +122,45 @@ def SetupTests(dataSet):
   #print dataSet.filter1Name
   filter1Filter = cv2.imread(dataSet.filter1Name)
   dataSet.filter1Data   = cv2.cvtColor(filter1Filter, cv2.COLOR_BGR2GRAY)
+  dataSet.filter1Data = util.renorm(np.array(dataSet.filter1Data,dtype=float),scale=1.)
 
   filter2Filter = cv2.imread(dataSet.filter2Name)
   dataSet.filter2Data   = cv2.cvtColor(filter2Filter, cv2.COLOR_BGR2GRAY)
+  dataSet.filter2Data = util.renorm(np.array(dataSet.filter2Data,dtype=float),scale=1.)
 
-def ParamDict():
+def ParamDict(typeDict='silica'):
   print "WILL MAKE INTO CLASS LATER"
   paramDict={
     'snrThresh':1.,
     'penaltyscale': 1.2,
     'useFilterInv':True,   
     'sigma_n': 1. ,
-    'filterMode': "simple"   ,
-    'doCLAHE':  True   
+    'filterMode': "simple",
+    'doCLAHE':  True,   
+    'inverseSNR': False,
+    'demeanMF': True
         }  
+  if typeDict=='WT':
+    paramDict['useFilterInv'] = False
+    paramDict['filterMode'] = 'punishmentFilter'
+    paramDict['doCLAHE'] = False
+    print "Be sure to update ParamDict constructor once params are optimized"
+    paramDict['gamma'] = 3.
+    paramDict['mfPunishment'] = util.ReadImg("./myoimages/WTPunishmentFilter.png",renorm=True)
+    paramDict['snrThresh'] = 6.5
+    paramDict['demeanMF'] = False
+  elif typeDict=='LT':
+    paramDict['useFilterInv'] = False
+    paramDict['filterMode'] = 'simple'
+    paramDict['doCLAHE'] = False
+    paramDict['demeanMF'] = False
+    paramDict['snrThresh'] = 10
+  elif typeDict=='Loss':
+    paramDict['useFilterInv'] = False
+    paramDict['inverseSNR'] = True
+    paramDict['doCLAHE'] = False
+    paramDict['snrThresh'] = 1 
+    paramDict['demeanMF'] = False
   return paramDict
 
 ##
@@ -284,6 +312,7 @@ def TestParams_Simultaneous(
     #dataSet.iters = [30], # focus on best angle for fused pore data
     ## Test both filters on filter1 test data 
     optimalAngleFused = 30
+    print np.max(dataSet.filter1TestData)
     filter1_filter1Test, filter2_filter1Test = bD.TestFilters(
       testData = dataSet.filter1TestData, 
       filter1Data = dataSet.filter1Data,

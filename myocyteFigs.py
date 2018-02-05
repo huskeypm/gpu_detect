@@ -24,8 +24,8 @@ root = "myoimages/"
 
 ## WT 
 def fig3(): 
-  #testImage = root+"Sham_11_processed.png"
-  testImage = root+"Sham_11.png"
+  testImage = root+"Sham_11_processed.png"
+  #testImage = root+"Sham_11.png"
   twoSarcSize = 21
 
   rawImg = util.ReadImg(testImage,cvtColor=False)
@@ -90,7 +90,8 @@ def fig4():
 
   filterTwoSarcSize = 25
 
-  imgName = root+"HF_1.png"
+  #imgName = root+"HF_1.png"
+  imgName = root + "HF_1_processed.png"
   twoSarcSize = 21
 
   rawImg = util.ReadImg(imgName)
@@ -343,7 +344,17 @@ def giveMarkedMyocyte(
     LTparams['snrThresh'] = ltThresh
   LTFilter = util.ReadImg(ltFilterName, renorm = True)
   inputs.mfOrig = LTFilter
-  LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)
+
+  ###################################################################
+  print "PROTOTYPING NEW LONGITUDINAL FILTERING. TURN OFF FOR COMMITS"
+  inputs.mfOrig = util.ReadImg(root+'newLTfilter.png', renorm = True)
+  LTparams['filterMode'] = 'punishmentFilter'
+  LTparams['mfPunishment'] = util.ReadImg(root+"newLTPunishmentFilter.png",renorm=True)
+  LTparams['gamma'] = 0.15 
+  LTparams['covarianceMatrix'] = np.ones_like(inputs.imgOrig)
+  ###################################################################
+
+  LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles,display=True)
   LTstackedHits = LTresults.stackedHits
 
   # Loss filtering
@@ -490,7 +501,7 @@ def rocData():
 
   paramDict['filterMode'] = 'punishmentFilter'
   paramDict['mfPunishment'] = util.ReadImg(root+"newLTPunishmentFilter.png",renorm=True)
-  paramDict['gamma'] = 3
+  paramDict['gamma'] = 0.15 
   paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
 
   
@@ -498,7 +509,7 @@ def rocData():
         dataSet,
         paramDict,
         filter1Label = dataSet.filter1Label,
-        f1ts = np.linspace(1,2,10),
+        f1ts = np.linspace(20,35,10),
         #display=True
       )
 

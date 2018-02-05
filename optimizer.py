@@ -158,7 +158,7 @@ def ParamDict(typeDict=None):
     paramDict['filterMode'] = 'simple'
     paramDict['doCLAHE'] = False
     paramDict['demeanMF'] = False
-    paramDict['snrThresh'] = 10
+    paramDict['snrThresh'] = 20
   elif typeDict=='Loss':
     paramDict['useFilterInv'] = False
     paramDict['inverseSNR'] = True

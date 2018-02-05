@@ -159,7 +159,7 @@ def ParamDict(typeDict='silica'):
     paramDict['useFilterInv'] = False
     paramDict['inverseSNR'] = True
     paramDict['doCLAHE'] = False
-    paramDict['snrThresh'] = 1 
+    paramDict['snrThresh'] = 6 
     paramDict['demeanMF'] = False
   return paramDict
 

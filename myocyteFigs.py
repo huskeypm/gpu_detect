@@ -309,16 +309,25 @@ def giveMarkedMyocyte(
       ImgTwoSarcSize=None,
       tag = "default_",
       writeImage = False,
+      ttThresh=None,
+      ltThresh=None,
+      gamma=None,
       iters=[-20,-15,-10,-5,0,5,10,15,20],
       returnAngles=False):
   
-  img = util.ReadImg(testImage,renorm=True)
+  #img = util.ReadImg(testImage,renorm=True)
+  print "No need to renorm the image since preprocessing should be done already"
+  img = util.ReadImg(testImage,renorm=False)
 
   # WT filtering
   WTparams = optimizer.ParamDict(typeDict='WT')
   WTparams['covarianceMatrix'] = np.ones_like(img)
   WTparams['mfPunishment'] = util.ReadImg("./myoimages/WTPunishmentFilter.png",renorm=True)
   ttFilter = util.ReadImg(ttFilterName, renorm=True)
+  if ttThresh != None:
+    WTparams['snrThresh'] = ttThresh
+  if gamma != None:
+    WTparams['gamma'] = gamma
   WTresults, _ = bD.TestFilters(testData = img,
                            filter1Data = ttFilter,
                            filter2Data = None, 
@@ -328,14 +337,11 @@ def giveMarkedMyocyte(
                            paramDict = WTparams,
                            returnAngles=returnAngles)
   WTstackedHits = WTresults.stackedHits
-  #plt.figure()
-  #plt.imshow(WTstackedHits)
-  #plt.colorbar()
-  #plt.show()
-  #quit()
 
   # LT filtering
   LTparams = optimizer.ParamDict(typeDict='LT')
+  if ltThresh != None:
+    LTparams['snrThresh'] = ltThresh
   LTFilter = util.ReadImg(ltFilterName, renorm = True)
   LTresults, _ = bD.TestFilters(testData = img,
                            filter1Data = LTFilter,
@@ -587,9 +593,16 @@ def assessContent(markedImg):
 # function to validate that code has not changed since last commit
 def validate(testImage=root+"MI_D_78.png",
              ImgTwoSarcSize=22,
+             display=False
              ):
   # run algorithm
   markedImg = giveMarkedMyocyte(testImage=testImage,ImgTwoSarcSize=ImgTwoSarcSize)
+
+  if display:
+    import matplotlib.pyplot as plt
+    plt.figure()
+    plt.imshow(markedImg)
+    plt.show()
 
   # calculate wt, lt, and loss content  
   wtContent, ltContent, lossContent = assessContent(markedImg)
@@ -598,19 +611,25 @@ def validate(testImage=root+"MI_D_78.png",
   print "LT Content:", ltContent
   print "Loss Content:", lossContent
   
-  assert(abs(wtContent - 12534) < 1), "WT validation failed."
-  assert(abs(ltContent - 25687) < 1), "LT validation failed."
-  assert(abs(lossContent - 2198) < 1), "Loss validation failed."
+  assert(abs(wtContent - 5) < 1), "WT validation failed."
+  assert(abs(ltContent - 16111) < 1), "LT validation failed."
+  assert(abs(lossContent - 96611) < 1), "Loss validation failed."
   print "PASSED!"
 
 # A minor validation function to serve as small tests between commits
 def minorValidate(testImage=root+"MI_D_73_annotation.png",
                   ImgTwoSarcSize=25, #img is already resized to 25 px
-                  iters=[-10,0,10]):
+                  iters=[-10,0,10],
+                  display=False):
 
   # run algorithm
   markedImg = giveMarkedMyocyte(testImage=testImage, 
                                 ImgTwoSarcSize=ImgTwoSarcSize,iters=iters)
+  if display:
+    import matplotlib.pyplot as plt
+    plt.figure()
+    plt.imshow(markedImg)
+    plt.show()
 
   # assess content
   wtContent, ltContent, lossContent = assessContent(markedImg) 
@@ -619,11 +638,11 @@ def minorValidate(testImage=root+"MI_D_73_annotation.png",
   print "Longitudinal Content", ltContent
   print "Loss Content", lossContent
 
-  val = 133 
+  val = 11 
   assert(abs(wtContent - val) < 1),"%f != %f"%(wtContent, val)       
-  val = 25286
+  val = 24653
   assert(abs(ltContent - val) < 1),"%f != %f"%(ltContent, val) 
-  val = 0
+  val = 755
   assert(abs(lossContent - val) < 1),"%f != %f"%(lossContent, val)
   print "PASSED!"
 
@@ -742,6 +761,7 @@ if __name__ == "__main__":
         ttThresh=np.float(sys.argv[i+4]),           
         ltThresh=np.float(sys.argv[i+5]),
         gamma=np.float(sys.argv[i+6]),
+        ImgTwoSarcSize=(sys.argv[i+7]),
 	tag = tag,
 	writeImage = True)            
       quit()
@@ -750,6 +770,12 @@ if __name__ == "__main__":
       quit()
     if(arg=="-minorValidate"):
       minorValidate()
+      quit()
+    if(arg=="-testMyocyte"):
+      testImage = sys.argv[i+1]
+      giveMarkedMyocyte(testImage=testImage,
+                        tag="Testing",
+                        writeImage=True)
       quit()
 
   raise RuntimeError("Arguments not understood")

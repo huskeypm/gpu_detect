@@ -110,20 +110,23 @@ def MaskRegion(region,sidx,margin,value=0):
 
 def ApplyCLAHE(grayImgList, tileGridSize, clipLimit=2.0, plot=False):
     clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
-    clahedimages = []
-    for i,img in enumerate(grayImgList):
-        clahedImage = clahe.apply(img)
-        clahedimages.append(clahedImage)
-    return clahedimages
+    clahedImage = clahe.apply(grayImgList) # stupid hack
+    return clahedImage
+    #clahedimages = []
+    #for i,img in enumerate(grayImgList):
+    #    clahedImage = clahe.apply(img)
+    #    clahedimages.append(clahedImage)
+    #return clahedimages
 
 # function to take raw myocyte png name, read, resize, renorm, CLAHE, save output
 def preprocessPNG(imgName, twoSarcSize, filterTwoSarcSize):
   img = ReadImg(imgName)
   scale = float(filterTwoSarcSize) / float(twoSarcSize)
-  rescaledImg = cv2.resize(img,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
-  normed = renorm(rescaledImg)
-  clahed = ApplyCLAHE(normed,filterTwoSarcSize)
-  name, filetype = imgName.split('.')
+  rescaledImg = np.asarray(cv2.resize(img,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC), dtype=float)
+  normed = np.asarray(rescaledImg / np.max(rescaledImg) * 255,dtype='uint8')
+  tileGridSize = (filterTwoSarcSize, filterTwoSarcSize)
+  clahed = ApplyCLAHE(normed,tileGridSize)
+  name, filetype = imgName[:-4], imgName[-4:]
   cv2.imwrite(name+'_processed'+filetype,clahed)
   
 # # Generating filters

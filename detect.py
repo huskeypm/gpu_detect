@@ -78,6 +78,10 @@ def simple(imgName,mfName,thresh,debug=False,smooth=40,outName="hits.png"):
 
   paramDict = optimizer.ParamDict()
   paramDict['snrThresh'] = thresh
+  paramDict['penaltyscale'] = 1.
+  paramDict['useFilterInv'] = False
+  paramDict['doCLAHE'] = False
+  paramDict['demeanMF'] = False
   docalc(img,
          mf,
          paramDict = paramDict, 

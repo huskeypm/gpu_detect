@@ -6,7 +6,7 @@ python myocyteFigs.py -roc
 python myocyteFigs.py -minorValidate
 python myocyteFigs.py -validate
 echo "Broken until longitudinal filtering sorted out";python myocyteFigs.py -scoretest
-python tissue.py -validate
+python tissue.py -validation
 python optimizer.py -optimizeLight  # move these to silica figs
 
 

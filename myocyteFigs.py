@@ -24,6 +24,7 @@ root = "myoimages/"
 
 ## WT 
 def fig3(): 
+  #testImage = root+"Sham_11_processed.png"
   testImage = root+"Sham_11.png"
   twoSarcSize = 21
 
@@ -40,7 +41,7 @@ def fig3():
   correctColoredImg = switchBRChannels(coloredImg)
 
   # make bar chart for content
-  wtContent, ltContent, lossContent = assessContent(correctColoredImg)
+  wtContent, ltContent, lossContent = assessContent(coloredImg)
   contents = np.asarray([wtContent, ltContent, lossContent],dtype='float')
   dims = np.shape(coloredImg[:,:,0])
   area = float(dims[0]) * float(dims[1])
@@ -319,23 +320,21 @@ def giveMarkedMyocyte(
   print "No need to renorm the image since preprocessing should be done already"
   img = util.ReadImg(testImage,renorm=False)
 
+  # defining inputs in structure to be read by DetectFilter function
+  inputs = empty()
+  inputs.imgOrig = img
+
   # WT filtering
   WTparams = optimizer.ParamDict(typeDict='WT')
   WTparams['covarianceMatrix'] = np.ones_like(img)
   WTparams['mfPunishment'] = util.ReadImg("./myoimages/WTPunishmentFilter.png",renorm=True)
-  ttFilter = util.ReadImg(ttFilterName, renorm=True)
   if ttThresh != None:
     WTparams['snrThresh'] = ttThresh
   if gamma != None:
     WTparams['gamma'] = gamma
-  WTresults, _ = bD.TestFilters(testData = img,
-                           filter1Data = ttFilter,
-                           filter2Data = None, 
-                           filter1Thresh = WTparams['snrThresh'],
-                           iters = iters,
-                           single = True,
-                           paramDict = WTparams,
-                           returnAngles=returnAngles)
+  ttFilter = util.ReadImg(ttFilterName, renorm=True)
+  inputs.mfOrig = ttFilter
+  WTresults = bD.DetectFilter(inputs,WTparams,iters,returnAngles=returnAngles)  
   WTstackedHits = WTresults.stackedHits
 
   # LT filtering
@@ -343,30 +342,18 @@ def giveMarkedMyocyte(
   if ltThresh != None:
     LTparams['snrThresh'] = ltThresh
   LTFilter = util.ReadImg(ltFilterName, renorm = True)
-  LTresults, _ = bD.TestFilters(testData = img,
-                           filter1Data = LTFilter,
-                           filter2Data = None, 
-                           filter1Thresh = LTparams['snrThresh'],
-                           iters = iters,
-                           single = True,
-                           paramDict = LTparams)
+  inputs.mfOrig = LTFilter
+  LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)
   LTstackedHits = LTresults.stackedHits
 
   # Loss filtering
   Lossparams = optimizer.ParamDict(typeDict='Loss')
-  LossFilter = util.ReadImg(lossFilterName, renorm = True)
   Lossiters = [0] # don't need rotations for loss filtering
-  Lossresults, _ = bD.TestFilters(testData = img,
-                           filter1Data = LossFilter,
-                           filter2Data = None, 
-                           filter1Thresh = Lossparams['snrThresh'],
-                           iters = Lossiters,
-                           single = True,
-                           paramDict = Lossparams)
+  LossFilter = util.ReadImg(lossFilterName, renorm = True)
+  inputs.mfOrig =  LossFilter
+  Lossresults = bD.DetectFilter(inputs,Lossparams,Lossiters,returnAngles=returnAngles)
   LossstackedHits = Lossresults.stackedHits
  
-  # BE SURE TO REMOVE ME!!
-  print "WARNING: nan returned from stackedHits, so 'circumventing this'"
   cI = util.ReadImg(testImage,cvtColor=False)
 
   # Marking superthreshold hits for loss filter

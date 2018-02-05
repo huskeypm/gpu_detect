@@ -72,7 +72,8 @@ def DoTest(testCase,
         'useFilterInv':True,  
         'sigma_n': 1.,
         'filterMode': "simple"   ,
-        'doCLAHE':  True
+        'doCLAHE':  True,
+        'demeanMF': True
         }
 
   filter1_filter1Test, filter2_filter1Test = bD.TestFilters(
@@ -240,7 +241,8 @@ def doROC():
         'useFilterInv':True,   
         'sigma_n': 1.,
         'filterMode': "simple"   ,
-        'doCLAHE':  True
+        'doCLAHE':  True,
+        'demeanMF': True
         }
       optimizer.GenFigROC(dataSet,paramDict,loadOnly=False) 
     

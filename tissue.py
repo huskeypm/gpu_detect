@@ -51,6 +51,24 @@ def SetupFilters(rot=20.):
   params.mfr=mfr
   params.lobemfr=lobemfr
 
+def SetupParams():
+  smoothScale=3 # number of pixels over which real TT should respond
+  snrThresh = 12            
+  lossScale = 10 # " over which loss region should be considered
+  lossRegionCutoff = 40
+  paramDict = optimizer.ParamDict()
+  paramDict = {
+      'doCLAHE':False,      
+      'useFilterInv':False,      
+      'sigma_n':1,
+      'filterMode':"lobemode",
+      'smoothScale':smoothScale,
+      'snrThresh':snrThresh,    
+      'rawFloor':1., # minimum value to image (usually don't chg)
+      'eps':4.,# max intensity for TTs
+      'lossScale':lossScale,    
+      'lossRegionCutoff':lossRegionCutoff}    
+  return paramDict
 
 
 
@@ -83,6 +101,7 @@ def get_fiji(gray, loc_um,d_um):
 
 import display_util as du
 def dbgimg(case,results,
+           rotIter=0, # which rotation result you want
            orig=True,
            thrsh=True,
            corr=True,
@@ -95,41 +114,51 @@ def dbgimg(case,results,
            ):
     l,r=ul
     ll,rr=lr
+
+    rotResult = results.correlated[rotIter]
     
     if orig:
         plt.figure()
         plt.imshow(case.subregion[l:r,ll:rr],cmap="gray")
+        plt.title("orig") 
         plt.colorbar()
 
     if thrsh:    
         plt.figure()
-        plt.imshow(results.img[l:r,ll:rr],cmap="gray")
+        plt.imshow(rotResult.img[l:r,ll:rr],cmap="gray")
+        plt.title("thrsh") 
         plt.colorbar()
 
     if corr:
         plt.figure()
-        plt.imshow(results.corr[l:r,ll:rr],cmap="gray")
+        plt.imshow(rotResult.corr[l:r,ll:rr],cmap="gray")
+        plt.title("corr") 
         plt.colorbar()
 
     if corrLobe:    
         plt.figure()
-        plt.imshow(results.corrlobe[l:r,ll:rr],cmap="gray")
+        plt.imshow(rotResult.corrlobe[l:r,ll:rr],cmap="gray")
+        plt.title("corrlobe") 
         plt.colorbar()
 
     if snr:
         plt.figure()
-        plt.imshow(results.snr[l:r,ll:rr],cmap="gray")
+        plt.imshow(rotResult.snr[l:r,ll:rr],cmap="gray")
+        plt.title("snr")   
         plt.colorbar()
 
     if merged:
         plt.figure()
         #stackem(results.corr[550:750,550:750],results.corrlobe[550:750,550:750])
         du.StackGrayRedAlpha(case.subregion[l:r,ll:rr],results.threshed[l:r,ll:rr])
+        
+        plt.title("threshed/marked") 
 
     if mergedSmooth:
         plt.figure()
         #sadf = sadf>50
         DisplayHits(case.subregion[l:r,ll:rr],results.threshed[l:r,ll:rr])
+        plt.title("threshed/marked/smoothed") 
         plt.colorbar()     
 
 def DisplayHits(img,threshed):
@@ -193,53 +222,6 @@ import optimizer
 
 
 import detection_protocols as dps
-#def docalc(img,
-#           mf,
-#           lobemf=None,
-#           #corrThresh=0.,
-#           #s=1.,
-#           paramDict = optimizer.ParamDict(),
-#           name="corr.png"):
-#
-#
-#
-#    ## Store info 
-#    inputs=empty()
-#    inputs.imgOrig = img
-#    inputs.mfOrig  = mf  
-#    inputs.lobemf = lobemf
-#
-#
-#    import bankDetect as bD
-#    results = bD.DetectFilter(inputs,paramDict,iters=[0])
-#    result = results.correlated[0]
-#    #corr = np.asarray(results.correlated[0],dtype=float) # or
-#    results.threshed = results.stackedHits
-#    DisplayHits(case.subregion,results.threshed)
-#    plt.gcf().savefig(fileName,dpi=300)
-
-    
-  
-    ##
-    ## Plotting 
-    ## 
-
-    #plt.subplot(2,2,1)
-    #plt.imshow(inputs.imgOrig,cmap='gray')
-#
-#    plt.subplot(2,2,3)
-#    plt.imshow(result.corr)
-#
-#    plt.subplot(2,2,4)
-#    plt.imshow(result.corrlobe)
-#
-#    plt.subplot(2,2,2)
-#    DisplayHits(inputs.imgOrig,results.threshed)                 
-#    plt.gcf().savefig('out.png')
-
-    
-#    return inputs,results
-
 import cv2
 import util
 
@@ -249,43 +231,38 @@ def Test1(
   ):
 
   class empty:pass
-  cases = dict()
+  #cases = dict()
   
   ## Load in image of interest and identify region/px->um conversions
-  case=empty()
+  #case=empty()
   #case.loc_um = [2366,1086] 
-  case.loc_um = [2577,279] 
-  case.extent_um = [150,150]
-  cases['hard'] = case
+  #case.loc_um = [2577,279] 
+  #case.extent_um = [150,150]
+  #cases['hard'] = case
   case=SetupTest()
+
+  results = Run(case,fileName=fileName)
+  return results 
   
+def Run(case,paramDict=None,fileName="out.png"):
+  ## Load image 
+  SetupCase(case)
+
   ## Set up matched filters to be used 
   SetupFilters()
 
-  ##  
-  rawFloor = 1. # minimum value to image (usually don't chg)
-  eps = 4. # max intensity for TTs
-  smoothScale=3 # number of pixels over which real TT should respond
-  snrThresh = 12            
-  lossScale = 10 # " over which loss region should be considered
-  lossRegionCutoff = 40
-  paramDict = optimizer.ParamDict()
-  paramDict = {
-      'doCLAHE':False,      
-      'useFilterInv':False,      
-      'sigma_n':1,
-      'filterMode':"lobemode",
-      'smoothScale':smoothScale,
-      'snrThresh':snrThresh,    
-      'lossScale':lossScale,    
-      'lossRegionCutoff':lossRegionCutoff}    
+  ## Define params  
+  if paramDict is None:
+    paramDict = SetupParams()
 
   ## Preprocessing
   # correct image so TT features are brightest
   # set noise floor 
   imgOrig = case.subregion
   img    = np.copy(imgOrig)              
+  rawFloor = paramDict['rawFloor']
   img[imgOrig<rawFloor]=rawFloor        
+  eps = paramDict['eps']
   img[ np.where(imgOrig> eps)] =eps # enhance so TT visible
 
   

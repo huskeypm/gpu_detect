@@ -335,8 +335,10 @@ def SaveFixedLongFilter(LongFilterRoot=root+"filterImgs/Longitudinal/",
   cv2.imwrite(root+"LongFilter.png",savedFilt)
 
 def SaveFixedLossFilter():
-  img = np.zeros((12,12),dtype='uint8')
-  img[2:10,2:10] = 255
+  #img = np.zeros((12,12),dtype='uint8')
+  #img[2:10,2:10] = 255
+  img = np.zeros((14,14,),dtype='uint8')
+  img[2:12,2:12] = 255
   cv2.imwrite(root+"LossFilter.png",img)
 
 def SaveFixedPunishmentFilter(LongitudinalFilterName=root+"LongFilter.png",
@@ -531,6 +533,15 @@ if __name__ == "__main__":
       SaveFixedPunishmentFilter()
     elif(arg=="-genAllMyo"): 
       SaveAllMyo()
+    elif(arg=="-preprocess"):
+      imgName = sys.argv[i+1]
+      imgTwoSarcSize = float(sys.argv[i+2])
+      try:
+        filterTwoSarcSize = int(sys.argv[i+3])
+      except:
+        filterTwoSarcSize = 25
+      preprocessPNG(imgName, imgTwoSarcSize, filterTwoSarcSize)
+      quit()
 
     elif(i>0):
       raise RuntimeError("Arguments not understood")

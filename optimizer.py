@@ -163,7 +163,7 @@ def ParamDict(typeDict=None):
     paramDict['useFilterInv'] = False
     paramDict['inverseSNR'] = True
     paramDict['doCLAHE'] = False
-    paramDict['snrThresh'] = 6 
+    paramDict['snrThresh'] = 8 
     paramDict['demeanMF'] = False
   return paramDict
 

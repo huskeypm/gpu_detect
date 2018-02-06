@@ -98,7 +98,7 @@ def fig4():
 
   markedImg = giveMarkedMyocyte(testImage=imgName,ImgTwoSarcSize=twoSarcSize)
 
-  wtContent, ltContent, lossContent = assessContent(markedImg)
+  wtContent, ltContent, lossContent = assessContent(markedImg.copy())
   contents = np.asarray([wtContent, ltContent, lossContent])
   dims = np.shape(markedImg[:,:,0])
   area = float(dims[0]) * float(dims[1])
@@ -140,11 +140,12 @@ def fig5():
   filterTwoSarcSize = 25
 
   # Distal, Medial, Proximal
-  DImageName = root+"MI_D_78.png"
+  print "TwoSarcSize argument is deprecated with new preprocssing function. Remove."
+  DImageName = root+"MI_D_76_processed.png"
   DTwoSarcSize = 22
-  MImageName = root+"MI_M_45.png"
+  MImageName = root+"MI_M_45_processed.png"
   MTwoSarcSize = 21
-  PImageName = root+"MI_P_16.png"
+  PImageName = root+"MI_P_16_processed.png"
   PTwoSarcSize = 21
 
   imgNames = [DImageName, MImageName, PImageName]
@@ -318,7 +319,7 @@ def giveMarkedMyocyte(
       returnAngles=False):
   
   #img = util.ReadImg(testImage,renorm=True)
-  print "No need to renorm the image since preprocessing should be done already"
+  # No need to renorm the image since preprocessing should be done already
   img = util.ReadImg(testImage,renorm=False)
 
   # defining inputs in structure to be read by DetectFilter function
@@ -354,7 +355,7 @@ def giveMarkedMyocyte(
   LTparams['covarianceMatrix'] = np.ones_like(inputs.imgOrig)
   ###################################################################
 
-  LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles,display=True)
+  LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)#,display=True)
   LTstackedHits = LTresults.stackedHits
 
   # Loss filtering
@@ -609,9 +610,9 @@ def validate(testImage=root+"MI_D_78.png",
   print "LT Content:", ltContent
   print "Loss Content:", lossContent
   
-  assert(abs(wtContent - 5) < 1), "WT validation failed."
-  assert(abs(ltContent - 16111) < 1), "LT validation failed."
-  assert(abs(lossContent - 96611) < 1), "Loss validation failed."
+  assert(abs(wtContent - 3454) < 1), "WT validation failed."
+  assert(abs(ltContent - 243) < 1), "LT validation failed."
+  assert(abs(lossContent - 90118) < 1), "Loss validation failed."
   print "PASSED!"
 
 # A minor validation function to serve as small tests between commits
@@ -636,11 +637,11 @@ def minorValidate(testImage=root+"MI_D_73_annotation.png",
   print "Longitudinal Content", ltContent
   print "Loss Content", lossContent
 
-  val = 11 
+  val = 5774 
   assert(abs(wtContent - val) < 1),"%f != %f"%(wtContent, val)       
-  val = 24653
+  val = 1564
   assert(abs(ltContent - val) < 1),"%f != %f"%(ltContent, val) 
-  val = 755
+  val = 250
   assert(abs(lossContent - val) < 1),"%f != %f"%(lossContent, val)
   print "PASSED!"
 

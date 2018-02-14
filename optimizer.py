@@ -151,7 +151,7 @@ def ParamDict(typeDict=None):
     paramDict['doCLAHE'] = False
     print "Be sure to update ParamDict constructor once params are optimized"
     paramDict['gamma'] = 3.
-    paramDict['snrThresh'] = 6.5
+    paramDict['snrThresh'] = 74.1
     paramDict['demeanMF'] = False
   elif typeDict=='LT':
     paramDict['useFilterInv'] = False

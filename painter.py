@@ -162,6 +162,7 @@ def StackHits(correlated,  # an array of 'correlation planes'
             plt.colorbar()
             plt.subplot(2,1,2)
             plt.imshow(daMask,cmap="gray")
+            #plt.axis("off")
             plt.gcf().savefig("stack_%d.png"%iteration)    
 
         # i don't think this should be rotated 

@@ -335,6 +335,12 @@ def giveMarkedMyocyte(
   if gamma != None:
     WTparams['gamma'] = gamma
   ttFilter = util.ReadImg(ttFilterName, renorm=True)
+  ## Attempting new punishment filter routine
+  WTparams['mfPunishmentMax'] = np.sum(WTparams['mfPunishment'])
+  WTparams['snrThresh'] = 74.1
+  ##
+  WTparams['gamma'] = 3
+
   inputs.mfOrig = ttFilter
   WTresults = bD.DetectFilter(inputs,WTparams,iters,returnAngles=returnAngles)  
   WTstackedHits = WTresults.stackedHits
@@ -430,6 +436,9 @@ def giveMarkedMyocyte(
         if rotArg != -1:
           # indicates this is a hit
           angleCounts.append(iters[rotArg])
+
+    if writeImage:
+      cv2.imwrite(tag+"_angles_output.png",coloredAnglesMasked)
     
     
     return cI, coloredAnglesMasked, angleCounts
@@ -482,12 +491,16 @@ def rocData():
   paramDict = optimizer.ParamDict(typeDict='WT')
   paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
   paramDict['mfPunishment'] = util.ReadImg(root+"WTPunishmentFilter.png",renorm=True)
+  ## Attempting new punishment filter routine
+  paramDict['mfPunishmentMax'] = np.sum(paramDict['mfPunishment'])
+  ##
+  paramDict['gamma'] = 3 
   
   optimizer.GenFigROC_TruePos_FalsePos(
         dataSet,
         paramDict,
         filter1Label = dataSet.filter1Label,
-        f1ts = np.linspace(3,15,12),
+        f1ts = np.linspace(55,85,12),
         #display=True
       )
 
@@ -610,7 +623,7 @@ def validate(testImage=root+"MI_D_78.png",
   print "LT Content:", ltContent
   print "Loss Content:", lossContent
   
-  assert(abs(wtContent - 3454) < 1), "WT validation failed."
+  assert(abs(wtContent - 103) < 1), "WT validation failed."
   assert(abs(ltContent - 243) < 1), "LT validation failed."
   assert(abs(lossContent - 90118) < 1), "Loss validation failed."
   print "PASSED!"
@@ -637,7 +650,7 @@ def minorValidate(testImage=root+"MI_D_73_annotation.png",
   print "Longitudinal Content", ltContent
   print "Loss Content", lossContent
 
-  val = 5774 
+  val = 2165 
   assert(abs(wtContent - val) < 1),"%f != %f"%(wtContent, val)       
   val = 1564
   assert(abs(ltContent - val) < 1),"%f != %f"%(ltContent, val) 
@@ -774,6 +787,12 @@ if __name__ == "__main__":
       testImage = sys.argv[i+1]
       giveMarkedMyocyte(testImage=testImage,
                         tag="Testing",
+                        writeImage=True)
+      quit()
+    if(arg=="-workflowFig"):
+      giveMarkedMyocyte(testImage="./myoimages/MI_D_73_annotation.png",
+                        tag="WorkflowFig",
+                        returnAngles=True,
                         writeImage=True)
       quit()
 

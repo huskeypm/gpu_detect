@@ -182,6 +182,14 @@ if __name__ == "__main__":
       simpleYaml(ymlName)
       quit()
 
+    if(arg=="-giveCorrelation"):
+      imgName = sys.argv[i+1]
+      mfName = sys.argv[i+2]
+      thresh = float(sys.argv[i+3])
+      debug = True
+      simple(imgName,mfName,thresh,debug=debug)
+      quit()
+
 
 
 

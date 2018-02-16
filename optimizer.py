@@ -146,25 +146,16 @@ def ParamDict(typeDict=None):
     paramDict['penaltyscale'] = 1.2
     paramDict['doCLAHE'] = True
   elif typeDict=='WT':
-    paramDict['useFilterInv'] = False
     paramDict['filterMode'] = 'punishmentFilter'
-    paramDict['doCLAHE'] = False
     print "Be sure to update ParamDict constructor once params are optimized"
     paramDict['gamma'] = .15
     paramDict['snrThresh'] = 22.5#35 
-    paramDict['demeanMF'] = False
   elif typeDict=='LT':
-    paramDict['useFilterInv'] = False
     paramDict['filterMode'] = 'simple'
-    paramDict['doCLAHE'] = False
-    paramDict['demeanMF'] = False
     paramDict['snrThresh'] = 20
   elif typeDict=='Loss':
-    paramDict['useFilterInv'] = False
     paramDict['inverseSNR'] = True
-    paramDict['doCLAHE'] = False
     paramDict['snrThresh'] = 7.3 
-    paramDict['demeanMF'] = False
   return paramDict
 
 ##

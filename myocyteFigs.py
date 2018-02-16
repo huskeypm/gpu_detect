@@ -252,7 +252,7 @@ def analyzeAllMyo():
      markedMyocyte = giveMarkedMyocyte(testImage=root+realName,
                                        ImgTwoSarcSize=twoSarcSize,
                                        tag=name,
-                                       #writeImage=True,
+                                       writeImage=True,
                                        returnAngles=False)
      # assess content
      wtC, ltC, lossC = assessContent(markedMyocyte)
@@ -370,8 +370,9 @@ def analyzeAllMyo():
 
   ax.set_ylabel('Normalized Content')
   ax.legend(handles=[rects1,rects4,rects7])
-  ax.set_xticks(indices)
-  ax.xaxis.set_tick_params(horizontalalignment='center')
+  newInd = indices + width/2.
+  ax.set_xticks(newInd)
+  #ax.xaxis.set_tick_params(horizontalalignment='center')
   ax.set_xticklabels(['D', 'M','P','','D','M','P','','D','M','P'])
   plt.gcf().savefig('MI_BarChart.png')
 
@@ -545,8 +546,9 @@ def giveMarkedMyocyte(
   inputs.mfOrig = util.ReadImg(root+'newLTfilter.png', renorm = True)
   LTparams['filterMode'] = 'punishmentFilter'
   LTparams['mfPunishment'] = util.ReadImg(root+"newLTPunishmentFilter.png",renorm=True)
-  LTparams['gamma'] = 0.15 
+  LTparams['gamma'] = 0.05 
   LTparams['covarianceMatrix'] = np.ones_like(inputs.imgOrig)
+  LTparams['snrThresh'] = 12.5
   ###################################################################
 
   LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)#,display=True)
@@ -692,7 +694,7 @@ def rocData():
         dataSet,
         paramDict,
         filter1Label = dataSet.filter1Label,
-        f1ts = np.linspace(15,65,25),
+        f1ts = np.linspace(15,45,15),
         iters=iters
         #display=True
       )
@@ -708,7 +710,7 @@ def rocData():
 
   paramDict['filterMode'] = 'punishmentFilter'
   paramDict['mfPunishment'] = util.ReadImg(root+"newLTPunishmentFilter.png",renorm=True)
-  paramDict['gamma'] = 0.15 
+  paramDict['gamma'] = 0.05 
   paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
 
   
@@ -716,7 +718,8 @@ def rocData():
         dataSet,
         paramDict,
         filter1Label = dataSet.filter1Label,
-        f1ts = np.linspace(10,25,10),
+        #f1ts = np.linspace(10,25,10),
+        f1ts = np.linspace(10,20,10),
         iters=iters
         #display=True
       )
@@ -819,8 +822,8 @@ def validate(testImage=root+"MI_D_78.png",
   print "LT Content:", ltContent
   print "Loss Content:", lossContent
   
-  assert(abs(wtContent - 635) < 1), "WT validation failed."
-  assert(abs(ltContent - 249) < 1), "LT validation failed."
+  assert(abs(wtContent - 529) < 1), "WT validation failed."
+  assert(abs(ltContent - 2085) < 1), "LT validation failed."
   assert(abs(lossContent - 86476) < 1), "Loss validation failed."
   print "PASSED!"
 
@@ -846,9 +849,9 @@ def minorValidate(testImage=root+"MI_D_73_annotation.png",
   print "Longitudinal Content", ltContent
   print "Loss Content", lossContent
 
-  val = 6313 
+  val = 5226 
   assert(abs(wtContent - val) < 1),"%f != %f"%(wtContent, val)       
-  val = 361
+  val = 2563
   assert(abs(ltContent - val) < 1),"%f != %f"%(ltContent, val) 
   val = 537
   assert(abs(lossContent - val) < 1),"%f != %f"%(lossContent, val)

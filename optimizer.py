@@ -150,8 +150,8 @@ def ParamDict(typeDict=None):
     paramDict['filterMode'] = 'punishmentFilter'
     paramDict['doCLAHE'] = False
     print "Be sure to update ParamDict constructor once params are optimized"
-    paramDict['gamma'] = 3.
-    paramDict['snrThresh'] = 74.1
+    paramDict['gamma'] = .15
+    paramDict['snrThresh'] = 22.5#35 
     paramDict['demeanMF'] = False
   elif typeDict=='LT':
     paramDict['useFilterInv'] = False
@@ -163,7 +163,7 @@ def ParamDict(typeDict=None):
     paramDict['useFilterInv'] = False
     paramDict['inverseSNR'] = True
     paramDict['doCLAHE'] = False
-    paramDict['snrThresh'] = 8 
+    paramDict['snrThresh'] = 7.3 
     paramDict['demeanMF'] = False
   return paramDict
 
@@ -524,6 +524,7 @@ def Assess_Single(
   paramDict,
   filter1Threshes = np.linspace(800,1100,10), 
   hdf5Name = "optimizer_single.h5",
+  iters=None,
   display=False
   ):
   
@@ -536,10 +537,17 @@ def Assess_Single(
         # set params 
         dataSet.filter1Thresh=filter1Thresh
         # run test 
-        filter1PS,filter1NS = TestParams_Single(
-          dataSet,
-          paramDict,
-          display=display)
+        if iters != None:
+          filter1PS,filter1NS = TestParams_Single(
+            dataSet,
+            paramDict,
+            display=display,
+            iters=iters)
+        else:
+          filter1PS,filter1NS = TestParams_Single(
+            dataSet,
+            paramDict,
+            display=display)
 
         # store outputs 
         raw_data =  {\
@@ -564,7 +572,8 @@ def GenFigROC_TruePos_FalsePos(
   f1ts = np.linspace(0.05,0.50,10),
   hdf5Name ="single.hdf5",
   loadOnly=False,
-  display=False
+  display=False,
+  iters=None
   ):
   ##
   ## perform trials using parameter ranges 
@@ -578,7 +587,8 @@ def GenFigROC_TruePos_FalsePos(
         paramDict,
         filter1Threshes = f1ts,
         hdf5Name = hdf5Name,
-        display=display
+        display=display,
+        iters=iters
       )
       
   ##

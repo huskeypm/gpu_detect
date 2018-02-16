@@ -120,7 +120,7 @@ def ApplyCLAHE(grayImgList, tileGridSize, clipLimit=2.0, plot=False):
 
 # function to take raw myocyte png name, read, resize, renorm, CLAHE, save output
 def preprocessPNG(imgName, twoSarcSize, filterTwoSarcSize):
-  img = ReadImg(imgName)
+  img = ReadImg(imgName,renorm=True)
   scale = float(filterTwoSarcSize) / float(twoSarcSize)
   rescaledImg = np.asarray(cv2.resize(img,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC), dtype=float)
   normed = np.asarray(rescaledImg / np.max(rescaledImg) * 255,dtype='uint8')
@@ -316,6 +316,10 @@ def SaveFixedWTFilter(WTFilterRoot=root+"filterImgs/WT/",filterTwoSarcSize=25,
   # convert to png format
   savedFilt = fixedFilter * 255
   savedFilt = savedFilt.astype('uint8')
+
+  # cropping image
+  savedFilt = savedFilt[6:,:]
+
   # save filter
   cv2.imwrite(root+"WTFilter.png",savedFilt)
 
@@ -343,8 +347,11 @@ def SaveFixedLossFilter():
 
 def SaveFixedPunishmentFilter(LongitudinalFilterName=root+"LongFilter.png",
                               rowMin=2,rowMax=-1,colMin=6,colMax=13):
-  punishFilter = GenerateWTPunishmentFilter(LongitudinalFilterName,
-                                            rowMin=2,rowMax=-1,colMin=6,colMax=13)
+  print "This function is deprecated. Replace with simpler one"
+  #punishFilter = GenerateWTPunishmentFilter(LongitudinalFilterName,
+  #                                          rowMin=2,rowMax=-1,colMin=7,colMax=12)
+  punishFilter = np.zeros((28,7),dtype='uint8')
+  punishFilter[1:-1,2:-2] = 255
   cv2.imwrite(root+"WTPunishmentFilter.png",punishFilter)
 
 def PadWithZeros(img, padding = 15):

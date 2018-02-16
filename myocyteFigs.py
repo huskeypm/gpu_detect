@@ -30,7 +30,7 @@ def fig3():
 
   rawImg = util.ReadImg(testImage,cvtColor=False)
 
-  iters = [-20, -15, -10, -5, 0, 5, 10, 15, 20]
+  iters = [-25,-20, -15, -10, -5, 0, 5, 10, 15, 20,25]
   coloredImg, coloredAngles, angleCounts = giveMarkedMyocyte(testImage=testImage,
                         ImgTwoSarcSize=twoSarcSize,returnAngles=True,iters=iters)
   #plt.figure()
@@ -141,7 +141,9 @@ def fig5():
 
   # Distal, Medial, Proximal
   print "TwoSarcSize argument is deprecated with new preprocssing function. Remove."
-  DImageName = root+"MI_D_76_processed.png"
+  #DImageName = root+"MI_D_76_processed.png"
+  #DTwoSarcSize = 22
+  DImageName = root+"MI_D_73_processed.png"
   DTwoSarcSize = 22
   MImageName = root+"MI_M_45_processed.png"
   MTwoSarcSize = 21
@@ -233,6 +235,190 @@ def fig5():
   plt.tight_layout()
   plt.gcf().savefig("fig5_RawAndMarked.png")
 
+def analyzeAllMyo():
+  root = "/home/AD/dfco222/Desktop/LouchData/processedImgs/"
+  twoSarcSizeDict = {'Sham_P_23':21, 'Sham_M_65':21, 'Sham_D_100':20, 'Sham_23':22,
+                      'Sham_11':21, 'MI_P_8':21, 'MI_P_5':21, 'MI_P_16':21, 'MI_M_46':22,
+                      'MI_M_45':21, 'MI_M_44':21, 'HF_1':21, 'HF_13':21,'MI_D_78':22,
+                      'MI_D_76':21, 'MI_D_73':22,
+                      'HF_5':21 
+                       }
+  # instantiate dicitionary to hold content values
+  Sham = {}; MI_D = {}; MI_M = {}; MI_P = {}; HF = {};
+  for name,twoSarcSize in twoSarcSizeDict.iteritems():
+     print name
+     # iterate through names and mark the images
+     realName = name+"_processed.png"
+     markedMyocyte = giveMarkedMyocyte(testImage=root+realName,
+                                       ImgTwoSarcSize=twoSarcSize,
+                                       tag=name,
+                                       #writeImage=True,
+                                       returnAngles=False)
+     # assess content
+     wtC, ltC, lossC = assessContent(markedMyocyte)
+     content = np.asarray([wtC, ltC, lossC],dtype=float)
+     content /= np.max(content)
+     # utilizing mask to calculate cell area and normalize content from there
+     #mask = cv2.imread(root+name+"_processed_mask.png")
+     #mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+     #scale = 25. / float(twoSarcSize)
+     #mask = cv2.resize(mask, None, fx=scale,fy=scale, interpolation=cv2.INTER_CUBIC)	
+     #mask[mask != 255] = 0
+     #mask = np.asarray(mask, dtype=float)
+     #mask /= np.max(mask)
+     #cellArea = np.sum(mask)
+     #content = np.divide(content, cellArea)
+
+     # above didn't actually work. I think I would need to paste the filter for each pixel hit to 
+     # accurately do this
+
+     # store content in respective dictionary
+     if 'Sham' in name:
+       Sham[name] = content
+     elif 'HF' in name:
+       HF[name] = content
+     elif 'MI' in name:
+       if '_D' in name:
+         MI_D[name] = content
+       elif '_M' in name:
+         MI_M[name] = content
+       elif '_P' in name:
+         MI_P[name] = content
+
+  # use function to construct and write bar charts for each content dictionary
+  giveBarChartfromDict(Sham,'Sham')
+  giveBarChartfromDict(HF,'HF')
+  #giveBarChartfromDict(MI_D,root+'MI_D')
+  #giveBarChartfromDict(MI_M,root+'MI_M')
+  #giveBarChartfromDict(MI_P,root+'MI_P')
+  wtAvgs = {}; wtStds = {}; ltAvgs = {}; ltStds = {}; lossAvgs = {}; lossStds = {};
+
+  DwtC = []; DltC = []; DlossC = [];
+  for name, content in MI_D.iteritems():
+    wtC = content[0]
+    ltC = content[1]
+    lossC = content[2]
+    DwtC.append(wtC)
+    DltC.append(ltC)
+    DlossC.append(lossC)
+  wtAvgs['D'] = np.mean(DwtC)
+  wtStds['D'] = np.std(DwtC)
+  ltAvgs['D'] = np.mean(DltC)
+  ltStds['D'] = np.std(DltC)
+  lossAvgs['D'] = np.mean(DlossC)
+  lossStds['D'] = np.std(DlossC)
+
+  MwtC = []; MltC = []; MlossC = [];
+  for name, content in MI_M.iteritems():
+    wtC = content[0]
+    ltC = content[1]
+    lossC = content[2]
+    MwtC.append(wtC)
+    MltC.append(ltC)
+    MlossC.append(lossC)
+  wtAvgs['M'] = np.mean(MwtC)
+  wtStds['M'] = np.std(MwtC)
+  ltAvgs['M'] = np.mean(MltC)
+  ltStds['M'] = np.std(MltC)
+  lossAvgs['M'] = np.mean(MlossC)
+  lossStds['M'] = np.std(MlossC)
+
+
+  PwtC = []; PltC = []; PlossC = [];
+  for name, content in MI_P.iteritems():
+    wtC = content[0]
+    ltC = content[1]
+    lossC = content[2]
+    PwtC.append(wtC)
+    PltC.append(ltC)
+    PlossC.append(lossC)
+  wtAvgs['P'] = np.mean(PwtC)
+  wtStds['P'] = np.std(PwtC)
+  ltAvgs['P'] = np.mean(PltC)
+  ltStds['P'] = np.std(PltC)
+  lossAvgs['P'] = np.mean(PlossC)
+  lossStds['P'] = np.std(PlossC)
+
+  # opting to combine MI results
+  colors = ["blue","green","red"]
+  marks = ["WT", "LT", "Loss"]
+  #width = 0.25
+  width = 1.0
+  N = 11
+  indices = np.arange(N)*width + width/4.
+  fig,ax = plt.subplots()
+
+  # plot WT
+  rects1 = ax.bar(indices[0], wtAvgs['D'], width, color=colors[0],yerr=wtStds['D'],ecolor='k',label='WT')
+  rects2 = ax.bar(indices[1], wtAvgs['M'], width, color=colors[0],yerr=wtStds['M'],ecolor='k',label='WT')
+  rects3 = ax.bar(indices[2], wtAvgs['P'], width, color=colors[0],yerr=wtStds['P'],ecolor='k',label='WT')
+
+
+  #rects1 = ax.bar(indices[0], wtAvg, width, color=colors[0],yerr=wtStd,ecolor='k')
+  #rects2 = ax.bar(indices[0]+width, ltAvg, width, color=colors[1],yerr=ltStd,ecolor='k')
+  #rects3 = ax.bar(indices[0]+2*width, lossAvg, width, color=colors[2],yerr=lossStd,ecolor='k')
+
+  # plot LT
+  rects4 = ax.bar(indices[4], ltAvgs['D'], width, color=colors[1],yerr=ltStds['D'],ecolor='k',label='LT')
+  rects5 = ax.bar(indices[5], ltAvgs['M'], width, color=colors[1],yerr=ltStds['M'],ecolor='k',label='LT')
+  rects6 = ax.bar(indices[6], ltAvgs['P'], width, color=colors[1],yerr=ltStds['P'],ecolor='k',label='LT')
+
+  # plot Loss
+  rects7 = ax.bar(indices[8], lossAvgs['D'], width, color=colors[2],yerr=lossStds['D'],ecolor='k',label='Loss')
+  rects8 = ax.bar(indices[9], lossAvgs['M'], width, color=colors[2],yerr=lossStds['M'],ecolor='k',label='Loss')
+  rects9 = ax.bar(indices[10],lossAvgs['P'], width, color=colors[2],yerr=lossStds['P'],ecolor='k',label='Loss')
+
+  ax.set_ylabel('Normalized Content')
+  ax.legend(handles=[rects1,rects4,rects7])
+  ax.set_xticks(indices)
+  ax.xaxis.set_tick_params(horizontalalignment='center')
+  ax.set_xticklabels(['D', 'M','P','','D','M','P','','D','M','P'])
+  plt.gcf().savefig('MI_BarChart.png')
+
+  
+
+
+def giveBarChartfromDict(dictionary,tag):
+  # instantiate lists to contain contents
+  wtC = []; ltC = []; lossC = [];
+  for name,content in dictionary.iteritems():
+    wtC.append(content[0])
+    ltC.append(content[1])
+    lossC.append(content[2])
+
+  maxContent = np.max([np.max(wtC), np.max(ltC), np.max(lossC)])
+
+  wtC = np.divide(wtC,maxContent)
+  ltC = np.divide(ltC,maxContent)
+  lossC = np.divide(lossC, maxContent)
+
+  wtC = np.asarray(wtC)
+  ltC = np.asarray(ltC)
+  lossC = np.asarray(lossC)
+
+  wtAvg = np.mean(wtC)
+  ltAvg = np.mean(ltC)
+  lossAvg = np.mean(lossC)
+
+  wtStd = np.std(wtC)
+  ltStd = np.std(ltC)
+  lossStd = np.std(lossC)
+
+  # now make a bar chart from this
+  colors = ["blue","green","red"]
+  marks = ["WT", "LT", "Loss"]
+  width = 0.25
+  N = 1
+  indices = np.arange(N) + width
+  fig,ax = plt.subplots()
+  rects1 = ax.bar(indices, wtAvg, width, color=colors[0],yerr=wtStd,ecolor='k')
+  rects2 = ax.bar(indices+width, ltAvg, width, color=colors[1],yerr=ltStd,ecolor='k')
+  rects3 = ax.bar(indices+2*width, lossAvg, width, color=colors[2],yerr=lossStd,ecolor='k')
+  ax.set_ylabel('Normalized Content')
+  ax.legend(marks)
+  ax.set_xticks([])
+  plt.gcf().savefig(tag+'_BarChart.png')
+
 def figAnalysis(
       ttFilterName=root+"WTFilter.png",
       ltFilterName=root+"LongFilter.png",
@@ -315,7 +501,7 @@ def giveMarkedMyocyte(
       ttThresh=None,
       ltThresh=None,
       gamma=None,
-      iters=[-20,-15,-10,-5,0,5,10,15,20],
+      iters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
       returnAngles=False):
   
   #img = util.ReadImg(testImage,renorm=True)
@@ -336,10 +522,12 @@ def giveMarkedMyocyte(
     WTparams['gamma'] = gamma
   ttFilter = util.ReadImg(ttFilterName, renorm=True)
   ## Attempting new punishment filter routine
-  WTparams['mfPunishmentMax'] = np.sum(WTparams['mfPunishment'])
-  WTparams['snrThresh'] = 74.1
+  #WTparams['mfPunishmentMax'] = np.sum(WTparams['mfPunishment'])
+  #WTparams['snrThresh'] = 74.1
   ##
-  WTparams['gamma'] = 3
+  #WTparams['gamma'] = 3
+
+  # turns out the above worked terribly. Need to play around with this more.
 
   inputs.mfOrig = ttFilter
   WTresults = bD.DetectFilter(inputs,WTparams,iters,returnAngles=returnAngles)  
@@ -366,7 +554,7 @@ def giveMarkedMyocyte(
 
   # Loss filtering
   Lossparams = optimizer.ParamDict(typeDict='Loss')
-  Lossiters = [0] # don't need rotations for loss filtering
+  Lossiters = [0, 45] # don't need many rotations for loss filtering
   LossFilter = util.ReadImg(lossFilterName, renorm = True)
   inputs.mfOrig =  LossFilter
   Lossresults = bD.DetectFilter(inputs,Lossparams,Lossiters,returnAngles=returnAngles)
@@ -451,6 +639,7 @@ def giveMarkedMyocyte(
 def Myocyte():
     # where to look for images
     root = "myoimages/"
+
     # name of data used for testing algorithm 
     filter1TestName = root + 'MI_D_73_annotation.png'
     # version of filter1TestName marked 'white' where you expect to get hits for filter1
@@ -482,6 +671,9 @@ def Myocyte():
 def rocData(): 
   dataSet = Myocyte() 
 
+  # rotation angles
+  iters = [-25,-20,-15,-10,-5,0,5,10,15,20,25]
+
 
   ## Testing TT first 
   dataSet.filter1PositiveChannel= 0
@@ -492,15 +684,16 @@ def rocData():
   paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
   paramDict['mfPunishment'] = util.ReadImg(root+"WTPunishmentFilter.png",renorm=True)
   ## Attempting new punishment filter routine
-  paramDict['mfPunishmentMax'] = np.sum(paramDict['mfPunishment'])
+  #paramDict['mfPunishmentMax'] = np.sum(paramDict['mfPunishment'])
   ##
-  paramDict['gamma'] = 3 
+  #paramDict['gamma'] = .15 
   
   optimizer.GenFigROC_TruePos_FalsePos(
         dataSet,
         paramDict,
         filter1Label = dataSet.filter1Label,
-        f1ts = np.linspace(55,85,12),
+        f1ts = np.linspace(15,65,25),
+        iters=iters
         #display=True
       )
 
@@ -523,7 +716,8 @@ def rocData():
         dataSet,
         paramDict,
         filter1Label = dataSet.filter1Label,
-        f1ts = np.linspace(20,35,10),
+        f1ts = np.linspace(10,25,10),
+        iters=iters
         #display=True
       )
 
@@ -533,12 +727,14 @@ def rocData():
   dataSet.filter1Name = root+"LossFilter.png"
   optimizer.SetupTests(dataSet)
   paramDict = optimizer.ParamDict(typeDict='Loss')
+  lossIters = [0,45]
 
   optimizer.GenFigROC_TruePos_FalsePos(
          dataSet,
          paramDict,
          filter1Label = dataSet.filter1Label,
          f1ts = np.linspace(4,15,11),
+         iters=lossIters
          #display=True
        )
 
@@ -623,9 +819,9 @@ def validate(testImage=root+"MI_D_78.png",
   print "LT Content:", ltContent
   print "Loss Content:", lossContent
   
-  assert(abs(wtContent - 103) < 1), "WT validation failed."
-  assert(abs(ltContent - 243) < 1), "LT validation failed."
-  assert(abs(lossContent - 90118) < 1), "Loss validation failed."
+  assert(abs(wtContent - 635) < 1), "WT validation failed."
+  assert(abs(ltContent - 249) < 1), "LT validation failed."
+  assert(abs(lossContent - 86476) < 1), "Loss validation failed."
   print "PASSED!"
 
 # A minor validation function to serve as small tests between commits
@@ -650,11 +846,11 @@ def minorValidate(testImage=root+"MI_D_73_annotation.png",
   print "Longitudinal Content", ltContent
   print "Loss Content", lossContent
 
-  val = 2165 
+  val = 6313 
   assert(abs(wtContent - val) < 1),"%f != %f"%(wtContent, val)       
-  val = 1564
+  val = 361
   assert(abs(ltContent - val) < 1),"%f != %f"%(ltContent, val) 
-  val = 250
+  val = 537
   assert(abs(lossContent - val) < 1),"%f != %f"%(lossContent, val)
   print "PASSED!"
 
@@ -679,7 +875,7 @@ def scoreTest():
   filter1PS,filter1NS = optimizer.TestParams_Single(
     dataSet,
     paramDict,
-    iters=[-20,-15,-10,-5,0,5,10,15,20],
+    iters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
     display=False)  
     #display=True)  
 
@@ -794,6 +990,8 @@ if __name__ == "__main__":
                         tag="WorkflowFig",
                         returnAngles=True,
                         writeImage=True)
+    if(arg=="-analyzeAllMyo"):
+      analyzeAllMyo()
       quit()
 
   raise RuntimeError("Arguments not understood")

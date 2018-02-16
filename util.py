@@ -327,7 +327,7 @@ def SaveFixedLongFilter(LongFilterRoot=root+"filterImgs/Longitudinal/",
                         filterTwoSarcSizeDict={"SongWKY_long1":16, "Xie_RV_Control_long2":14, "Xie_RV_Control_long1":16, "Guo2013Fig1C_long1":22},
                         filterTwoSarcLength=25,
                         pixelCeiling=0.7,pixelFloor=0.4,
-                        rowMin=6, rowMax=13, colMin=0, colMax=-1):
+                        rowMin=8, rowMax=11, colMin=0, colMax=-1):
   # opting now to save Long filter and load into the workhorse script instead of generating filter every call
   Filter = GenerateLongFilter(LongFilterRoot,filterTwoSarcSizeDict,filterTwoSarcLength=filterTwoSarcLength)
   fixedFilter = fixFilter(Filter,pixelCeiling=pixelCeiling,pixelFloor=pixelFloor,

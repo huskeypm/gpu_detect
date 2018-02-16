@@ -160,12 +160,7 @@ def punishmentFilter(
     #snr = corr / (cM + gamma * corrPunishment)
 
     ######
-    #ATTEMPING NEW FILTERING SNR DEFINITION
-    try:
-      snr = corr / (cM + gamma * (corrPunishment / paramDict['mfPunishmentMax']))
-    except:
-      print "YOU NEED TO ADD MFPUNISHMENTMAX TO PARAMDICT"
-      snr = corr / (cM + gamma * corrPunishment)
+    snr = corr / (cM + gamma * corrPunishment)
 
     #print "SNR Max:", np.max(snr)
 

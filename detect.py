@@ -50,7 +50,8 @@ def docalc(img,
     results.threshed = results.stackedHits
     
     print "Writing file %s"%fileName
-    plt.figure()
+    #import matplotlib.pyplot as plt
+    #plt.figure()
     DisplayHits(img,results.threshed)
     plt.gcf().savefig(fileName,dpi=300)
 

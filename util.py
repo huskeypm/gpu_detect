@@ -338,6 +338,28 @@ def SaveFixedLongFilter(LongFilterRoot=root+"filterImgs/Longitudinal/",
   # save filter
   cv2.imwrite(root+"LongFilter.png",savedFilt)
 
+def SaveWeirdLongFilter():
+  filt = np.zeros((6,17),dtype='uint8')
+  filt[1:-1,6:11] = 255
+
+  punish = np.zeros((6,17),dtype='uint8')
+  punish[1:-1,1:5] = 255
+  punish[1:-1,12:-1] = 255
+
+  cv2.imwrite("./myoimages/weirdLTfilter.png", filt)
+  cv2.imwrite("./myoimages/weirdLTPunishmentfilter.png", punish)
+
+def SaveSimpleLongFilter():
+  filt = np.zeros((6,7),dtype='uint8')
+  filt[1:-1,1:-1] = 255
+
+  punish = np.zeros((17, 6), dtype='uint8')
+  punish[1:5,1:-1] = 255
+  punish[12:16, 1:-1] = 255
+
+  cv2.imwrite("./myoimages/simpleLTfilter.png",filt)
+  cv2.imwrite("./myoimages/simpleLTPunishmentfilter.png",punish)
+
 def SaveFixedLossFilter():
   #img = np.zeros((12,12),dtype='uint8')
   #img[2:10,2:10] = 255
@@ -548,6 +570,12 @@ if __name__ == "__main__":
       except:
         filterTwoSarcSize = 25
       preprocessPNG(imgName, imgTwoSarcSize, filterTwoSarcSize)
+      quit()
+    elif(arg=="-genWeirdLong"):
+      SaveWeirdLongFilter()
+      quit()
+    elif(arg=="-genSimpleLong"):
+      SaveSimpleLongFilter()
       quit()
 
     elif(i>0):

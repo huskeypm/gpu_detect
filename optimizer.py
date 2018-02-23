@@ -152,7 +152,7 @@ def ParamDict(typeDict=None):
     paramDict['snrThresh'] = 22.5#35 
   elif typeDict=='LT':
     paramDict['filterMode'] = 'simple'
-    paramDict['snrThresh'] = 20
+    paramDict['snrThresh'] = 21
   elif typeDict=='Loss':
     paramDict['inverseSNR'] = True
     paramDict['snrThresh'] = 7.3 

@@ -45,8 +45,10 @@ def SetupCase(case):
   case.subregion = get_fiji(case.orig,case.loc_um,case.extent_um)
 
 def SetupFilters(rot=20.):
-  mfr = CreateFilter(params,rot=rot)
-  lobemfr = CreateLobeFilter(params,rot=rot)
+  #mfr = CreateFilter(params,rot=rot)
+  mfr = util.ReadImg('./myoimages/WTFilter.png',renorm=True)
+  #lobemfr = CreateLobeFilter(params,rot=rot)
+  lobemfr = None
 
   params.mfr=mfr
   params.lobemfr=lobemfr
@@ -56,18 +58,19 @@ def SetupParams():
   snrThresh = 12            
   lossScale = 10 # " over which loss region should be considered
   lossRegionCutoff = 40
-  paramDict = optimizer.ParamDict()
-  paramDict = {
-      'doCLAHE':False,      
-      'useFilterInv':False,      
-      'sigma_n':1,
-      'filterMode':"lobemode",
-      'smoothScale':smoothScale,
-      'snrThresh':snrThresh,    
-      'rawFloor':1., # minimum value to image (usually don't chg)
-      'eps':4.,# max intensity for TTs
-      'lossScale':lossScale,    
-      'lossRegionCutoff':lossRegionCutoff}    
+  paramDict = optimizer.ParamDict(typeDict='WT')
+  #paramDict = {
+      #'doCLAHE':False,      
+      #'useFilterInv':False,      
+      #'sigma_n':1,
+      #'filterMode':"lobemode",
+  paramDict['smoothScale'] = smoothScale
+      #'snrThresh':snrThresh,    
+  paramDict['rawFloor'] = 1. # minimum value to image (usually don't chg)
+  paramDict['eps'] = 4. # max intensity for TTs
+  paramDict['lossScale'] = lossScale    
+  paramDict['lossRegionCutoff'] = lossRegionCutoff
+  paramDict['mfPunishment'] = util.ReadImg('./myoimages/WTPunishmentFilter.png',renorm=True)
   return paramDict
 
 
@@ -227,7 +230,7 @@ import util
 
 import detect
 def Test1(
-  fileName = None # "test.png" 
+  fileName = "test.png" 
   ):
 
   class empty:pass
@@ -264,6 +267,8 @@ def Run(case,paramDict=None,fileName="out.png"):
   img[imgOrig<rawFloor]=rawFloor        
   eps = paramDict['eps']
   img[ np.where(imgOrig> eps)] =eps # enhance so TT visible
+  
+  paramDict['covarianceMatrix'] = np.ones_like(imgOrig)
 
   
   ## do Matched filtering  

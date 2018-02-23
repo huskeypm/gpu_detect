@@ -24,7 +24,8 @@ root = "myoimages/"
 
 ## WT 
 def fig3(): 
-  testImage = root+"Sham_11_processed.png"
+  #testImage = root+"Sham_11_processed.png"
+  testImage = root+"Sham_M_65_processed.png"
   #testImage = root+"Sham_11.png"
   twoSarcSize = 21
 
@@ -165,7 +166,7 @@ def fig5():
   Pimg = giveMarkedMyocyte(testImage=PImageName,ImgTwoSarcSize=PTwoSarcSize)
 
   results = [Dimg, Mimg, Pimg]
-  keys = ['D', 'M', 'P']
+  keys = ['Distal', 'Medial', 'Proximal']
   areas = {}
 
   ttResults = []
@@ -353,11 +354,6 @@ def analyzeAllMyo():
   rects2 = ax.bar(indices[1], wtAvgs['M'], width, color=colors[0],yerr=wtStds['M'],ecolor='k',label='WT')
   rects3 = ax.bar(indices[2], wtAvgs['P'], width, color=colors[0],yerr=wtStds['P'],ecolor='k',label='WT')
 
-
-  #rects1 = ax.bar(indices[0], wtAvg, width, color=colors[0],yerr=wtStd,ecolor='k')
-  #rects2 = ax.bar(indices[0]+width, ltAvg, width, color=colors[1],yerr=ltStd,ecolor='k')
-  #rects3 = ax.bar(indices[0]+2*width, lossAvg, width, color=colors[2],yerr=lossStd,ecolor='k')
-
   # plot LT
   rects4 = ax.bar(indices[4], ltAvgs['D'], width, color=colors[1],yerr=ltStds['D'],ecolor='k',label='LT')
   rects5 = ax.bar(indices[5], ltAvgs['M'], width, color=colors[1],yerr=ltStds['M'],ecolor='k',label='LT')
@@ -376,8 +372,21 @@ def analyzeAllMyo():
   ax.set_xticklabels(['D', 'M','P','','D','M','P','','D','M','P'])
   plt.gcf().savefig('MI_BarChart.png')
 
-  
+def analyzeSingleMyo(name,twoSarcSize):
+   realName = name+"_processed.png"
+   markedMyocyte = giveMarkedMyocyte(testImage=realName,
+                                     ImgTwoSarcSize=twoSarcSize,
+                                     tag=name,
+                                     writeImage=True,
+                                     returnAngles=False)
+   # assess content
+   wtC, ltC, lossC = assessContent(markedMyocyte)
+   content = np.asarray([wtC, ltC, lossC],dtype=float)
+   content /= np.max(content)
 
+   # making into dictionary to utilize bar graph function
+   dictionary = {name:content}
+   giveBarChartfromDict(dictionary,name)
 
 def giveBarChartfromDict(dictionary,tag):
   # instantiate lists to contain contents
@@ -690,28 +699,33 @@ def rocData():
   ##
   #paramDict['gamma'] = .15 
   
-  optimizer.GenFigROC_TruePos_FalsePos(
-        dataSet,
-        paramDict,
-        filter1Label = dataSet.filter1Label,
-        f1ts = np.linspace(15,45,15),
-        iters=iters
+  #optimizer.GenFigROC_TruePos_FalsePos(
+  #      dataSet,
+  #      paramDict,
+  #      filter1Label = dataSet.filter1Label,
+  #      f1ts = np.linspace(15,45,15),
+  #      iters=iters
         #display=True
-      )
+  #    )
 
   ## Testing LT now
   dataSet.filter1PositiveChannel=1
   dataSet.filter1Label = "LT"
   #dataSet.filter1Name = root+'LongFilter.png'
   # opting to test H filter now
-  dataSet.filter1Name = root+'newLTfilter.png'
+  #dataSet.filter1Name = root+'newLTfilter.png'
+  dataSet.filter1Name = root+'simpleLTfilter.png'
   optimizer.SetupTests(dataSet)
   paramDict = optimizer.ParamDict(typeDict='LT')  
 
   paramDict['filterMode'] = 'punishmentFilter'
-  paramDict['mfPunishment'] = util.ReadImg(root+"newLTPunishmentFilter.png",renorm=True)
-  paramDict['gamma'] = 0.05 
+  #paramDict['mfPunishment'] = util.ReadImg(root+"newLTPunishmentFilter.png",renorm=True)
+  #paramDict['gamma'] = 0.05 
   paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
+
+  # new longitudinal simple filtering
+  paramDict['mfPunishment'] = util.ReadImg(root+"simpleLTPunishmentfilter.png",renorm=True)
+  paramDict['gamma'] = 0.25
 
   
   optimizer.GenFigROC_TruePos_FalsePos(
@@ -719,7 +733,8 @@ def rocData():
         paramDict,
         filter1Label = dataSet.filter1Label,
         #f1ts = np.linspace(10,25,10),
-        f1ts = np.linspace(10,20,10),
+        #f1ts = np.linspace(18,28,10),
+        f1ts = np.linspace(0.1, 10, 15),
         iters=iters
         #display=True
       )
@@ -732,14 +747,14 @@ def rocData():
   paramDict = optimizer.ParamDict(typeDict='Loss')
   lossIters = [0,45]
 
-  optimizer.GenFigROC_TruePos_FalsePos(
-         dataSet,
-         paramDict,
-         filter1Label = dataSet.filter1Label,
-         f1ts = np.linspace(4,15,11),
-         iters=lossIters
+  #optimizer.GenFigROC_TruePos_FalsePos(
+  #       dataSet,
+  #       paramDict,
+  #       filter1Label = dataSet.filter1Label,
+  #       f1ts = np.linspace(4,15,11),
+  #       iters=lossIters
          #display=True
-       )
+  #     )
 
 ###
 ### Function to convert from cv2's color channel convention to matplotlib's
@@ -995,6 +1010,11 @@ if __name__ == "__main__":
                         writeImage=True)
     if(arg=="-analyzeAllMyo"):
       analyzeAllMyo()
+      quit()
+    if(arg=="-analyzeSingleMyo"):
+      name = sys.argv[i+1]
+      twoSarcSize = float(sys.argv[i+2])
+      analyzeSingleMyo(name,twoSarcSize)
       quit()
 
   raise RuntimeError("Arguments not understood")

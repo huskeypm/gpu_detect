@@ -117,12 +117,28 @@ def shittyPadding(dFilter):
   maxAxis = np.argmax(np.shape(dFilter))
   minorAxis = (1+maxAxis)%2  ####### This is effectively hard coding in 2D, revise to make 3D
   diff = (maxDim-minDim)
-  left = np.zeros((maxDim,(diff)/2))
-  temper = np.concatenate((left,paddedFilter,left),axis=1)
-  """
-  temper = np.lib.pad(paddedFilter,diff,padWithZeros)
-  """
+  if maxAxis == 0:
+    left = np.zeros((maxDim,(diff)/2))
+    temper = np.concatenate((left,paddedFilter,left),axis=1)
+    """
+    temper = np.lib.pad(paddedFilter,diff,padWithZeros)
+    """
+    # hack
+    shapeTemper = np.shape(temper)
+    if shapeTemper[0] != shapeTemper[1]:
+      # only case where above fails is if we need one more column, so we add zeros to one side
+      right = np.zeros((maxDim,1))
+      temper = np.concatenate((temper, right),axis=1)
+  elif maxAxis == 1:
+    top = np.zeros(((diff)/2, maxDim))
+    temper = np.concatenate((top,paddedFilter,top),axis=0)
+    shapeTemper = np.shape(temper)
+    if shapeTemper[0] != shapeTemper[1]:
+      # only case where above fails is if we need one more row, so we add zeros to bottom
+      bottom = np.zeros((maxDim,1))
+      temper = np.concatenate((temper, bottom),axis=0)
   return temper
+ 
 
 
 
@@ -182,10 +198,17 @@ def MF(
     useGPU=False
     ):
     print 'shape of dFilter', np.shape(dFilter)
-
-    filt1 = shittyPadding(dFilter)
-    print 'shape of padded Filter', np.shape(filt1) 
-    filt = Pad(dImage,filt1)
+    dFilterShape = np.shape(dFilter)
+    #if dFilterShape[0] == dFilterShape[1]:
+    if 1:
+      filt1 = shittyPadding(dFilter)
+      print 'shape of padded Filter', np.shape(filt1)
+      filt = Pad(dImage,filt1)
+    #elif dFilterShape[0] != dFilterShape[1]:
+    #  raise RuntimeError("The filter must be square to utilize GPU speedup")
+    #filt1 = shittyPadding(dFilter)
+    #print 'shape of padded Filter', np.shape(filt1) 
+    #filt = Pad(dImage,filt1)
     
     if useGPU:
         # NOTE: I pass in an 'nrots' argument, but it doesn't actually do anything (e.g. 'some assembly required')

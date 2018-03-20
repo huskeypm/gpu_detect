@@ -5,6 +5,9 @@ constitutes a detection
 
 import numpy as np 
 import matchedFilter as mF
+import sys
+sys.path.append("./gpu/")
+import simple_GPU_MF as sMF
 class empty:pass
 
 # This script determines detections by integrating the correlation response
@@ -147,27 +150,37 @@ def punishmentFilter(
     except:
       raise RuntimeError("Punishment filter weighting term (gamma) not found\
                           within paramDict")
+    results=empty()
+    ## get correlation plane w filter 
+    if paramDict['useGPU'] == False:
+      #results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF']) 
+      results.corr = sMF.MF(img,mf,useGPU=False)
+      results.corrPunishment = sMF.MF(img,mfPunishment,useGPU=False)
+    elif paramDict['useGPU'] == True:
+      results.corr = sMF.MF(img,mf,useGPU=True)
+      results.corrPunishment = sMF.MF(img,mfPunishment,useGPU=True)
 
     ## get correlation plane w filter 
-    corr = mF.matchedFilter(img,mf,parsevals=False,demean=False)
+    #corr = mF.matchedFilter(img,mf,parsevals=False,demean=False)
     #print np.max(corr)
 
     ## get correlation plane w punishment filter
-    corrPunishment = mF.matchedFilter(img,mfPunishment,parsevals=False,demean=False)
+    
+    #corrPunishment = mF.matchedFilter(img,mfPunishment,parsevals=False,demean=False)
     #print "corrPunishment Max:", np.max(corrPunishment)
 
     ## calculate snr
     #snr = corr / (cM + gamma * corrPunishment)
 
     ######
-    snr = corr / (cM + gamma * corrPunishment)
+    snr = results.corr / (cM + gamma * results.corrPunishment)
 
     #print "SNR Max:", np.max(snr)
 
-    results = empty()
+    #results = empty()
 
     results.snr = snr
-    results.corr = corr
+    #results.corr = corr
 
     return results 
 
@@ -184,7 +197,11 @@ def simpleDetect(
 
   ## get correlation plane w filter 
   results = empty()
-  results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF']) 
+  if paramDict['useGPU'] == False:
+    #results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF']) 
+    results.corr = sMF.MF(img,mf,useGPU=False)
+  elif paramDict['useGPU'] == True:
+    results.corr = sMF.MF(img,mf,useGPU=True)
   
   if paramDict['useFilterInv']:
       results.snr = CalcInvFilter(inputs,paramDict,results.corr)

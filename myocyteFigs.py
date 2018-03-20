@@ -18,6 +18,7 @@ import bankDetect as bD
 import util
 import optimizer
 import painter
+import time
 class empty:pass
 
 root = "myoimages/"
@@ -512,8 +513,11 @@ def giveMarkedMyocyte(
       ltThresh=None,
       gamma=None,
       iters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
-      returnAngles=False):
-  
+      returnAngles=False,
+      useGPU=False):
+ 
+  start = time.time()
+   
   #img = util.ReadImg(testImage,renorm=True)
   # No need to renorm the image since preprocessing should be done already
   img = util.ReadImg(testImage,renorm=False)
@@ -526,6 +530,7 @@ def giveMarkedMyocyte(
   WTparams = optimizer.ParamDict(typeDict='WT')
   WTparams['covarianceMatrix'] = np.ones_like(img)
   WTparams['mfPunishment'] = util.ReadImg("./myoimages/WTPunishmentFilter.png",renorm=True)
+  WTparams['useGPU'] = useGPU
   if ttThresh != None:
     WTparams['snrThresh'] = ttThresh
   if gamma != None:
@@ -550,21 +555,20 @@ def giveMarkedMyocyte(
   LTFilter = util.ReadImg(ltFilterName, renorm = True)
   inputs.mfOrig = LTFilter
 
-  ###################################################################
-  print "PROTOTYPING NEW LONGITUDINAL FILTERING. TURN OFF FOR COMMITS"
   inputs.mfOrig = util.ReadImg(root+'newLTfilter.png', renorm = True)
   LTparams['filterMode'] = 'punishmentFilter'
   LTparams['mfPunishment'] = util.ReadImg(root+"newLTPunishmentFilter.png",renorm=True)
   LTparams['gamma'] = 0.05 
   LTparams['covarianceMatrix'] = np.ones_like(inputs.imgOrig)
   LTparams['snrThresh'] = 12.5
-  ###################################################################
+  LTparams['useGPU'] = useGPU
 
   LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)#,display=True)
   LTstackedHits = LTresults.stackedHits
 
   # Loss filtering
   Lossparams = optimizer.ParamDict(typeDict='Loss')
+  Lossparams['useGPU'] = useGPU
   Lossiters = [0, 45] # don't need many rotations for loss filtering
   LossFilter = util.ReadImg(lossFilterName, renorm = True)
   inputs.mfOrig =  LossFilter
@@ -639,9 +643,14 @@ def giveMarkedMyocyte(
     if writeImage:
       cv2.imwrite(tag+"_angles_output.png",coloredAnglesMasked)
     
-    
+    end = time.time()
+    tElapsed = end - start
+    print "Total Elapsed Time: {}s".format(tElapsed)
     return cI, coloredAnglesMasked, angleCounts
   else:
+    end = time.time()
+    tElapsed = end - start
+    print "Total Elapsed Time: {}s".format(tElapsed)
     return cI 
 
 ##
@@ -1015,6 +1024,15 @@ if __name__ == "__main__":
       name = sys.argv[i+1]
       twoSarcSize = float(sys.argv[i+2])
       analyzeSingleMyo(name,twoSarcSize)
+      quit()
+    if(arg=="-testTissue"):
+      name = "testingNotchFilter.png"
+      giveMarkedMyocyte(testImage=name,
+                        tag="TestingNotchedFilter",
+                        iters=[-5,0,5],
+                        returnAngles=False,
+                        writeImage=True,
+                        useGPU=True)
       quit()
 
   raise RuntimeError("Arguments not understood")

@@ -138,7 +138,8 @@ def ParamDict(typeDict=None):
     'filterMode': "simple",
     'doCLAHE':  False,   
     'inverseSNR': False,
-    'demeanMF': False
+    'demeanMF': False,
+    'useGPU':False
         }  
   if typeDict=='silica':
     paramDict['demeanMF'] = True
@@ -156,6 +157,7 @@ def ParamDict(typeDict=None):
   elif typeDict=='Loss':
     paramDict['inverseSNR'] = True
     paramDict['snrThresh'] = 7.3 
+    #paramDict['useGPU'] = True
   return paramDict
 
 ##

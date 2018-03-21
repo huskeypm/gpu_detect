@@ -197,12 +197,12 @@ def MF(
     dFilter,
     useGPU=False
     ):
-    print 'shape of dFilter', np.shape(dFilter)
+    #print 'shape of dFilter', np.shape(dFilter)
     dFilterShape = np.shape(dFilter)
     #if dFilterShape[0] == dFilterShape[1]:
     if 1:
       filt1 = shittyPadding(dFilter)
-      print 'shape of padded Filter', np.shape(filt1)
+      #print 'shape of padded Filter', np.shape(filt1)
       filt = Pad(dImage,filt1)
     #elif dFilterShape[0] != dFilterShape[1]:
     #  raise RuntimeError("The filter must be square to utilize GPU speedup")
@@ -226,7 +226,7 @@ def MF(
        corr = fftp.ifftn(c)
        corr = np.real(corr)
        tElapsed = time.time()-start
-       print 'fftp:{}s'.format(tElapsed)
+       print 'CPU - fftp:{}s'.format(tElapsed)
        
     #cv2.imshow(dImage,cmap="gray")
     #plt.figure()

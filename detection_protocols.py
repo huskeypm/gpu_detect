@@ -153,9 +153,10 @@ def punishmentFilter(
     results=empty()
     ## get correlation plane w filter 
     if paramDict['useGPU'] == False:
-      #results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF']) 
-      results.corr = sMF.MF(img,mf,useGPU=False)
-      results.corrPunishment = sMF.MF(img,mfPunishment,useGPU=False)
+      results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF']) 
+      results.corrPunishment = mF.matchedFilter(img,mfPunishment,parsevals=False,demean=False)
+      #results.corr = sMF.MF(img,mf,useGPU=False)
+      #results.corrPunishment = sMF.MF(img,mfPunishment,useGPU=False)
     elif paramDict['useGPU'] == True:
       results.corr = sMF.MF(img,mf,useGPU=True)
       results.corrPunishment = sMF.MF(img,mfPunishment,useGPU=True)
@@ -198,8 +199,8 @@ def simpleDetect(
   ## get correlation plane w filter 
   results = empty()
   if paramDict['useGPU'] == False:
-    #results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF']) 
-    results.corr = sMF.MF(img,mf,useGPU=False)
+    results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF']) 
+    #results.corr = sMF.MF(img,mf,useGPU=False)
   elif paramDict['useGPU'] == True:
     results.corr = sMF.MF(img,mf,useGPU=True)
   

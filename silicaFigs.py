@@ -260,7 +260,8 @@ def validate():
         'filterMode': "simple",
         'doCLAHE':  True,
         'inverseSNR': False,
-        'demeanMF': True
+        'demeanMF': True,
+        'useGPU': False
         }
   filter1PS,filter2NS,filter2PS,filter1NS = optimizer.TestParams_Simultaneous(
     dataSet,

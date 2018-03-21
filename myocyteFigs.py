@@ -34,7 +34,13 @@ def fig3():
 
   iters = [-25,-20, -15, -10, -5, 0, 5, 10, 15, 20,25]
   coloredImg, coloredAngles, angleCounts = giveMarkedMyocyte(testImage=testImage,
-                        ImgTwoSarcSize=twoSarcSize,returnAngles=True,iters=iters)
+                        ImgTwoSarcSize=twoSarcSize,
+                        returnAngles=True,
+                        #returnAngles=False,
+                        iters=iters,
+                        #returnPastedFilter=True,
+                        #writeImage=True)
+                        )
   #plt.figure()
   #plt.imshow(coloredAngles)
   #plt.show()
@@ -514,6 +520,7 @@ def giveMarkedMyocyte(
       gamma=None,
       iters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
       returnAngles=False,
+      returnPastedFilter=False,
       useGPU=False):
  
   start = time.time()
@@ -577,6 +584,10 @@ def giveMarkedMyocyte(
  
   cI = util.ReadImg(testImage,cvtColor=False)
 
+  ### Must subtract 1 from the image since all hits are marked 255 and orig img is normed to 255
+  cI -= 1
+  ###
+
   # Marking superthreshold hits for loss filter
   LossstackedHits[LossstackedHits != 0] = 255
   LossstackedHits = np.asarray(LossstackedHits, dtype='uint8')
@@ -604,19 +615,61 @@ def giveMarkedMyocyte(
   lossMasked = ReadResizeApplyMask(LossstackedHits,testImage,ImgTwoSarcSize,
                                    filterTwoSarcSize=ImgTwoSarcSize)
 
-  # color corrresponding channels
-  WTcopy = cI[:,:,0]
-  WTcopy[wtMasked == 255] = 255
+  if not returnPastedFilter:
+    # create holders for marking channels
+    WTcopy = cI[:,:,0]
+    LTcopy = cI[:,:,1]
+    Losscopy = cI[:,:,2]
 
-  LTcopy = cI[:,:,1]
-  LTcopy[ltMasked == 255] = 255
+    # color corrresponding channels
+    WTcopy[wtMasked == 255] = 255
+    LTcopy[ltMasked == 255] = 255
+    Losscopy[lossMasked == 255] = 255
+    if writeImage:
+      #write output image
+      cv2.imwrite(tag+"output.png",cI)
 
-  Losscopy = cI[:,:,2]
-  Losscopy[lossMasked == 255] = 255
+  if returnPastedFilter:
+    # exploiting architecture of painter function to mark hits for me
+    Lossholder = empty()
+    #Lossholder.stackedHits = Losscopy
+    Lossholder.stackedHits = lossMasked
+    LTholder = empty()
+    #LTholder.stackedHits = LTcopy
+    LTholder.stackedHits = ltMasked
+    WTholder = empty()
+    #WTholder.stackedHits = WTcopy
+    WTholder.stackedHits = wtMasked
+
+    # we want to mark WT last since that should be the most stringent
+    # Opting to mark Loss, then Long, then WT
+    halfCellSizeLoss = 5 # should think of how to automate
+    labeledLoss = painter.doLabel(Lossholder,dx=halfCellSizeLoss,thresh=254)
+    halfCellSizeLT = 10
+    labeledLT = painter.doLabel(LTholder,dx=halfCellSizeLT,thresh=254)
+    halfCellSizeWT = 10
+    labeledWT = painter.doLabel(WTholder,dx=halfCellSizeWT,thresh=254)
+
+    ### perform masking
+    WTmask = labeledWT.copy()
+    LTmask = labeledLT.copy()
+    Lossmask = labeledLoss.copy()
+
+    WTmask[labeledLoss] = False
+    #labeledLT[labeledLoss] = False
+    WTmask[labeledLT] = False
+    LTmask[labeledLoss] = False
+
+    #Lossmask[labeledWT] = False
+    LTmask[WTmask] = False
+
+    cI[:,:,2][Lossmask] = 255
+    cI[:,:,1][LTmask] = 255
+    cI[:,:,0][WTmask] = 255
   
-  if writeImage:
-    # write outputs	  
-    cv2.imwrite(tag+"_output.png",cI)       
+    if writeImage:
+      # write outputs	  
+      cv2.imwrite(tag+"_output.png",cI)       
 
   if returnAngles:
     cImg = util.ReadImg(testImage,cvtColor=False)
@@ -647,11 +700,53 @@ def giveMarkedMyocyte(
     tElapsed = end - start
     print "Total Elapsed Time: {}s".format(tElapsed)
     return cI, coloredAnglesMasked, angleCounts
-  else:
-    end = time.time()
-    tElapsed = end - start
-    print "Total Elapsed Time: {}s".format(tElapsed)
-    return cI 
+#  elif returnPastedFilter:
+#    # exploiting architecture of painter function to mark hits for me
+#    Lossholder = empty()
+#    Lossholder.stackedHits = Losscopy
+#    LTholder = empty()
+#    LTholder.stackedHits = LTcopy
+#    WTholder = empty()
+#    WTholder.stackedHits = WTcopy
+
+
+    # we want to mark WT last since that should be the most stringent
+    # Opting to mark Loss, then Long, then WT
+#    halfCellSizeLoss = 5 # should think of how to automate
+#    labeledLoss = painter.doLabel(Lossholder,dx=halfCellSizeLoss,thresh=254)
+#    halfCellSizeLT = 10
+#    labeledLT = painter.doLabel(LTholder,dx=halfCellSizeLT,thresh=254)
+#    halfCellSizeWT = 10
+#    labeledWT = painter.doLabel(WTholder,dx=halfCellSizeWT,thresh=254)
+
+    ### perform masking
+#    WTmask = labeledWT.copy()
+#    LTmask = labeledLT.copy()
+#    Lossmask = labeledLoss.copy()
+
+#    WTmask[labeledLoss] = False
+    #labeledLT[labeledLoss] = False
+#    WTmask[labeledLT] = False
+#    LTmask[labeledLoss] = False
+
+    #Lossmask[labeledWT] = False
+
+#    cI[:,:,2][Lossmask] = 255
+#    cI[:,:,1][LTmask] = 255
+#    cI[:,:,0][WTmask] = 255 
+#    if writeImage:
+#      cv2.imwrite(tag+"_PastedFilterOutput.png",cI)
+
+  #else:
+  #  end = time.time()
+  #  tElapsed = end - start
+  #  print "Total Elapsed Time: {}s".format(tElapsed)
+  #  return cI 
+  end = time.time()
+  tElapsed = end - start
+  print "Total Elapsed Time: {}s".format(tElapsed)
+  return cI 
+
 
 ##
 ## Defines dataset for myocyte (MI) 
@@ -846,9 +941,9 @@ def validate(testImage=root+"MI_D_78.png",
   print "LT Content:", ltContent
   print "Loss Content:", lossContent
   
-  assert(abs(wtContent - 529) < 1), "WT validation failed."
-  assert(abs(ltContent - 2085) < 1), "LT validation failed."
-  assert(abs(lossContent - 86476) < 1), "Loss validation failed."
+  assert(abs(wtContent - 64374) < 1), "WT validation failed."
+  assert(abs(ltContent - 65930) < 1), "LT validation failed."
+  assert(abs(lossContent - 147335) < 1), "Loss validation failed."
   print "PASSED!"
 
 # A minor validation function to serve as small tests between commits
@@ -873,11 +968,11 @@ def minorValidate(testImage=root+"MI_D_73_annotation.png",
   print "Longitudinal Content", ltContent
   print "Loss Content", lossContent
 
-  val = 5226 
+  val = 5230 
   assert(abs(wtContent - val) < 1),"%f != %f"%(wtContent, val)       
-  val = 2563
+  val = 2565
   assert(abs(ltContent - val) < 1),"%f != %f"%(ltContent, val) 
-  val = 537
+  val = 541
   assert(abs(lossContent - val) < 1),"%f != %f"%(lossContent, val)
   print "PASSED!"
 
@@ -1033,6 +1128,31 @@ if __name__ == "__main__":
                         returnAngles=False,
                         writeImage=True,
                         useGPU=True)
+    if(arg=="-testPaster"):
+      # routine to test the output of function that pastes filter onto myocyte
+      # will delete eventually
+      iters = [-25,-20, -15, -10, -5, 0, 5, 10, 15, 20,25]
+
+      SHAMtest = root+"Sham_M_65_processed.png"
+      SHAMtwoSarcSize = 21
+      giveMarkedMyocyte(testImage=SHAMtest,
+                        ImgTwoSarcSize=SHAMtwoSarcSize,
+                        tag="SHAM_Pasted",
+                        iters=iters,
+                        returnPastedFilter=True,
+                        writeImage=True
+                        )
+
+      MItest = root+"MI_D_73_processed.png"
+      MItwoSarcSize = 22
+      giveMarkedMyocyte(testImage=MItest,
+                        ImgTwoSarcSize=MItwoSarcSize,
+                        tag="MI_Pasted",
+                        iters=iters,
+                        returnPastedFilter=True,
+                        writeImage=True
+                        )
+
       quit()
 
   raise RuntimeError("Arguments not understood")

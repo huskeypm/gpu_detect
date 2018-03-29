@@ -243,6 +243,79 @@ def fig5():
   plt.tight_layout()
   plt.gcf().savefig("fig5_RawAndMarked.png")
 
+def fig6():
+  ### taking notch filtered image and marking where WT is located
+  name = "testingNotchFilter.png"
+  #threshed = giveMarkedMyocyte(testImage=name,
+  #                  tag="fig6",
+  #                  iters=[-5,0,5],
+  #                  returnAngles=False,
+  #                  writeImage=False,
+  #                  useGPU=False #for now
+  #                  )
+  
+  ## opting to write specific routine since the stacked hits have to be pulled out separately
+  ttFilterName = root+"WTFilter.png"
+  iters = [-25,20,-15,-10-5,0,5,10,15,20,25]
+  #iters = [0]
+  returnAngles = False
+  img = util.ReadImg(name,renorm=False)
+  inputs = empty()
+  inputs.imgOrig = img
+
+  nonFilteredImg = util.ReadImg('rotatedTissue.png', renorm=False)
+
+  if np.shape(img) != np.shape(nonFilteredImg):
+    raise RuntimeError("The filtered image is not the same dimensions as the non filtered image")
+
+  # setup WT parameters
+  WTparams = optimizer.ParamDict(typeDict='WT')
+  WTparams['covarianceMatrix'] = np.ones_like(img)
+  WTparams['mfPunishment'] = util.ReadImg("./myoimages/WTPunishmentFilter.png",renorm=True)
+  WTparams['useGPU'] = False # for now
+  ttFilter = util.ReadImg(ttFilterName, renorm=True)
+  inputs.mfOrig = ttFilter
+
+  # obtain super threshold filter hits
+  WTresults = bD.DetectFilter(inputs,WTparams,iters,returnAngles=returnAngles)  
+  WTstackedHits = WTresults.stackedHits
+
+  plt.figure()
+  plt.imshow(WTstackedHits)
+  plt.title('stacked hits')
+  plt.show()
+
+  ### potentially experiment with using the pasting filter function to make smoothing better
+  ### Currently too many hits for this to work
+  # pasting filter sized unit square on image to make smoothing look realistic
+  #threshed = np.zeros_like(WTstackedHits)
+  #threshed[WTstackedHits > 0] = 255
+  #halfFilterSize = 10
+  #result = empty()
+  #result.stackedHits = threshed
+  #smoothed = painter.doLabel(result,dx=halfFilterSize,thresh=254)
+  #print type(smoothed)
+
+  #plt.figure()
+  #plt.imshow(smoothed)
+  #plt.title('smoothed')
+  #plt.show()
+  #quit()
+
+  # utilize previously written routine to smooth hits and show WT regions
+  import tissue
+  #tissue.DisplayHits(nonFilteredImg, smoothed)
+  tissue.DisplayHits(nonFilteredImg, WTstackedHits)
+  plt.gcf().savefig("fig6.png",dpi=300)
+
+def figS1():
+  ## routine to generate the necessary ROC figures
+  1
+
+  
+  
+  
+
 def analyzeAllMyo():
   root = "/home/AD/dfco222/Desktop/LouchData/processedImgs/"
   twoSarcSizeDict = {'Sham_P_23':21, 'Sham_M_65':21, 'Sham_D_100':20, 'Sham_23':22,
@@ -517,11 +590,13 @@ def giveMarkedMyocyte(
       writeImage = False,
       ttThresh=None,
       ltThresh=None,
+      lossThresh=None,
       gamma=None,
       iters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
       returnAngles=False,
-      returnPastedFilter=False,
-      useGPU=False):
+      returnPastedFilter=True,
+      useGPU=False
+      ):
  
   start = time.time()
    
@@ -579,6 +654,8 @@ def giveMarkedMyocyte(
   Lossiters = [0, 45] # don't need many rotations for loss filtering
   LossFilter = util.ReadImg(lossFilterName, renorm = True)
   inputs.mfOrig =  LossFilter
+  if lossThresh != None:
+    Lossparams['snrThresh'] = lossThresh
   Lossresults = bD.DetectFilter(inputs,Lossparams,Lossiters,returnAngles=returnAngles)
   LossstackedHits = Lossresults.stackedHits
  
@@ -700,48 +777,7 @@ def giveMarkedMyocyte(
     tElapsed = end - start
     print "Total Elapsed Time: {}s".format(tElapsed)
     return cI, coloredAnglesMasked, angleCounts
-#  elif returnPastedFilter:
-#    # exploiting architecture of painter function to mark hits for me
-#    Lossholder = empty()
-#    Lossholder.stackedHits = Losscopy
-#    LTholder = empty()
-#    LTholder.stackedHits = LTcopy
-#    WTholder = empty()
-#    WTholder.stackedHits = WTcopy
 
-
-    # we want to mark WT last since that should be the most stringent
-    # Opting to mark Loss, then Long, then WT
-#    halfCellSizeLoss = 5 # should think of how to automate
-#    labeledLoss = painter.doLabel(Lossholder,dx=halfCellSizeLoss,thresh=254)
-#    halfCellSizeLT = 10
-#    labeledLT = painter.doLabel(LTholder,dx=halfCellSizeLT,thresh=254)
-#    halfCellSizeWT = 10
-#    labeledWT = painter.doLabel(WTholder,dx=halfCellSizeWT,thresh=254)
-
-    ### perform masking
-#    WTmask = labeledWT.copy()
-#    LTmask = labeledLT.copy()
-#    Lossmask = labeledLoss.copy()
-
-#    WTmask[labeledLoss] = False
-    #labeledLT[labeledLoss] = False
-#    WTmask[labeledLT] = False
-#    LTmask[labeledLoss] = False
-
-    #Lossmask[labeledWT] = False
-
-#    cI[:,:,2][Lossmask] = 255
-#    cI[:,:,1][LTmask] = 255
-#    cI[:,:,0][WTmask] = 255 
-#    if writeImage:
-#      cv2.imwrite(tag+"_PastedFilterOutput.png",cI)
-
-  #else:
-  #  end = time.time()
-  #  tElapsed = end - start
-  #  print "Total Elapsed Time: {}s".format(tElapsed)
-  #  return cI 
   end = time.time()
   tElapsed = end - start
   print "Total Elapsed Time: {}s".format(tElapsed)
@@ -798,10 +834,6 @@ def rocData():
   paramDict = optimizer.ParamDict(typeDict='WT')
   paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
   paramDict['mfPunishment'] = util.ReadImg(root+"WTPunishmentFilter.png",renorm=True)
-  ## Attempting new punishment filter routine
-  #paramDict['mfPunishmentMax'] = np.sum(paramDict['mfPunishment'])
-  ##
-  #paramDict['gamma'] = .15 
   
   #optimizer.GenFigROC_TruePos_FalsePos(
   #      dataSet,
@@ -941,9 +973,9 @@ def validate(testImage=root+"MI_D_78.png",
   print "LT Content:", ltContent
   print "Loss Content:", lossContent
   
-  assert(abs(wtContent - 64374) < 1), "WT validation failed."
-  assert(abs(ltContent - 65930) < 1), "LT validation failed."
-  assert(abs(lossContent - 147335) < 1), "Loss validation failed."
+  assert(abs(wtContent - 65014) < 1), "WT validation failed."
+  assert(abs(ltContent - 76830) < 1), "LT validation failed."
+  assert(abs(lossContent - 158317) < 1), "Loss validation failed."
   print "PASSED!"
 
 # A minor validation function to serve as small tests between commits
@@ -968,11 +1000,11 @@ def minorValidate(testImage=root+"MI_D_73_annotation.png",
   print "Longitudinal Content", ltContent
   print "Loss Content", lossContent
 
-  val = 5230 
+  val = 6987 
   assert(abs(wtContent - val) < 1),"%f != %f"%(wtContent, val)       
-  val = 2565
+  val = 15978
   assert(abs(ltContent - val) < 1),"%f != %f"%(ltContent, val) 
-  val = 541
+  val = 1420
   assert(abs(lossContent - val) < 1),"%f != %f"%(lossContent, val)
   print "PASSED!"
 
@@ -1062,15 +1094,18 @@ if __name__ == "__main__":
       quit()
 
     if(arg=="-fig6"):               
-      # RB: generate detected version of Fig 6
-      # PKH: add in scaling plot 
-      1
+      fig6()
+      quit()
+    if(arg=="-figS1"):
+      figS1()
+      quit()
     # generates all figs
     if(arg=="-allFigs"):
       fig3()     
       fig4()     
       fig5()
       fig6()     
+      figS1()
       quit()
 
     if(arg=="-tag"):

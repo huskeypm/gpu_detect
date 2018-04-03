@@ -6,7 +6,9 @@ constitutes a detection
 import numpy as np 
 import matchedFilter as mF
 import sys
-sys.path.append("./gpu/")
+import os
+dir_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(dir_path+"/gpu/")
 import simple_GPU_MF as sMF
 class empty:pass
 

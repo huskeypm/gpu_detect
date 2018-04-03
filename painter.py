@@ -169,8 +169,14 @@ def StackHits(correlated,  # an array of 'correlation planes'
         #maskList.append((util2.rotater(daMask,iteration)))
         maskList.append(daMask)
 
+    ### Dylan - I'm changing this. I believe that summing the hits adds some noise when thresholds
+    ###         are low relative to the hit intensity.
     # sum all hits; Basically looking for one or more angles that are above threshold
-    stacked  = np.sum(maskList, axis =0)
+    #stacked  = np.sum(maskList, axis =0)
+
+    # instead, take maximum hit
+    stacked = np.max(maskList,axis=0)
+    
     
     # default behavior (just returned stacked images) 
     if not returnAngles:

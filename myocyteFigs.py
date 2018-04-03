@@ -41,20 +41,12 @@ def fig3():
                         #returnPastedFilter=True,
                         #writeImage=True)
                         )
-  #plt.figure()
-  #plt.imshow(coloredAngles)
-  #plt.show()
-  #quit()
   correctColoredAngles = switchBRChannels(coloredAngles)
   correctColoredImg = switchBRChannels(coloredImg)
 
   # make bar chart for content
-  wtContent, ltContent, lossContent = assessContent(coloredImg)
-  contents = np.asarray([wtContent, ltContent, lossContent],dtype='float')
-  dims = np.shape(coloredImg[:,:,0])
-  area = float(dims[0]) * float(dims[1])
-  contents = np.divide(contents, area)
-  normedContents = contents / np.max(contents)
+  wtContent, ltContent, lossContent = assessContent(coloredImg,testImage)
+  normedContents = [wtContent, ltContent, lossContent]
 
   # generating figure
   width = 0.25
@@ -72,6 +64,7 @@ def fig3():
   ax.legend(marks)
   ax.set_xticks([])
   plt.gcf().savefig('fig3_BarChart.png')
+  plt.close()
 
   # displaying raw, marked, and marked angle images
   fig, axarr = plt.subplots(3,1)
@@ -82,6 +75,7 @@ def fig3():
   axarr[2].imshow(correctColoredAngles)
   axarr[2].axis('off')
   plt.gcf().savefig("fig3_RawAndMarked.png")
+  plt.close()
 
   # save histogram of angles
   plt.figure()
@@ -90,6 +84,7 @@ def fig3():
   plt.xlabel('Rotation Angle')
   plt.ylabel('Probability')
   plt.gcf().savefig("fig3_histogram.png")
+  plt.close()
 
   
 
@@ -106,12 +101,16 @@ def fig4():
 
   markedImg = giveMarkedMyocyte(testImage=imgName,ImgTwoSarcSize=twoSarcSize)
 
-  wtContent, ltContent, lossContent = assessContent(markedImg.copy())
-  contents = np.asarray([wtContent, ltContent, lossContent])
-  dims = np.shape(markedImg[:,:,0])
-  area = float(dims[0]) * float(dims[1])
-  contents = np.divide(contents, area)
-  normedContents = contents / np.max(contents)
+  # make bar chart for content
+  wtContent, ltContent, lossContent = assessContent(markedImg,imgName)
+  normedContents = [wtContent, ltContent, lossContent]
+
+  #wtContent, ltContent, lossContent = assessContent(markedImg.copy())
+  #contents = np.asarray([wtContent, ltContent, lossContent])
+  #dims = np.shape(markedImg[:,:,0])
+  #area = float(dims[0]) * float(dims[1])
+  #contents = np.divide(contents, area)
+  #normedContents = contents / np.max(contents)
 
   # generating figure
   width = 0.25
@@ -129,6 +128,7 @@ def fig4():
   ax.legend(marks)
   ax.set_xticks([])
   plt.gcf().savefig('fig4_BarChart.png')
+  plt.close()
  
   # constructing actual figure
   fig, axarr = plt.subplots(2,1)
@@ -141,6 +141,7 @@ def fig4():
   axarr[1].set_title("HF Marked")
   axarr[1].axis('off')
   plt.gcf().savefig("fig4_RawAndMarked.png")
+  plt.close()
 
 ## MI 
 def fig5(): 
@@ -182,29 +183,12 @@ def fig5():
 
   # report responses for each case
   for i,img in enumerate(results):
-    print "Replace with assessContent function"
-    dimensions = np.shape(img)
-    wtChannel = img[:,:,0].copy()
-    wtChannel[wtChannel == 255] = 1
-    wtChannel[wtChannel != 1] = 0
-    ltChannel = img[:,:,1].copy()
-    ltChannel[ltChannel == 255] = 1
-    ltChannel[ltChannel != 1] = 0
-    lossChannel = img[:,:,2].copy()
-    lossChannel[lossChannel == 255] = 1
-    lossChannel[lossChannel != 1] = 0
-    area = float(dimensions[0] * dimensions[1])
-    ttContent = np.sum(wtChannel) / area
-    ltContent = np.sum(ltChannel) / area
-    lossContent = np.sum(lossChannel) / area
-    # construct array of areas and norm 
-    newAreas = np.array([ttContent, ltContent, lossContent])
-    normedAreas = newAreas / np.max(newAreas)
-    areas[keys[i]] = normedAreas
+    # assess content based on cell area
+    wtContent, ltContent, lossContent = assessContent(img,imgNames[i])
     # store in lists
-    ttResults.append(normedAreas[0])
-    ltResults.append(normedAreas[1])
-    lossResults.append(normedAreas[2])
+    ttResults.append(wtContent)
+    ltResults.append(ltContent)
+    lossResults.append(lossContent)
 
   # generating figure
   #fig, axarr = plt.subplots(3,3)
@@ -224,6 +208,7 @@ def fig5():
   ax.set_xticklabels(keys)
   ax.legend(marks)
   plt.gcf().savefig('fig5_BarChart.png')
+  plt.close()
 
   # saving individual marked images
   fig, axarr = plt.subplots(3,2)
@@ -242,6 +227,7 @@ def fig5():
     axarr[i,1].set_title(keys[i]+" Marked")
   plt.tight_layout()
   plt.gcf().savefig("fig5_RawAndMarked.png")
+  plt.close()
 
 def fig6():
   ### taking notch filtered image and marking where WT is located
@@ -307,11 +293,24 @@ def fig6():
   #tissue.DisplayHits(nonFilteredImg, smoothed)
   tissue.DisplayHits(nonFilteredImg, WTstackedHits)
   plt.gcf().savefig("fig6.png",dpi=300)
+  plt.close()
 
 def figS1():
   ## routine to generate the necessary ROC figures
-  1
 
+  # images that were hand annotated
+  imgNames = {'HF':'HF_1_annotation.png',
+              'WT':'Sham_M_65_annotation.png',
+              'MI':'MI_D_73_annotation.png'
+               }
+
+  # images that have hand annotation marked
+  annotatedImgNames = {'HF':'HF_1_annotation_channels.png',
+                       'WT':'Sham_M_65_annotation_channels.png',
+                       'MI':'MI_D_73_annotation_channels.png'
+                       }
+
+  
   
   
   
@@ -929,11 +928,13 @@ def ReadResizeApplyMask(img,imgName,ImgTwoSarcSize,filterTwoSarcSize=25):
       combined[:,:,i] = combined[:,:,i] * normed
   return combined
 
-def assessContent(markedImg):
+def assessContent(markedImg,imgName=None):
+  # create copy
+  imgCopy = markedImg.copy()
   # pull out channels
-  wt = markedImg[:,:,0]
-  lt = markedImg[:,:,1]
-  loss = markedImg[:,:,2]
+  wt = imgCopy[:,:,0]
+  lt = imgCopy[:,:,1]
+  loss = imgCopy[:,:,2]
 
   # get rid of everything that isn't a hit (hits are marked as 255)
   wt[wt != 255] = 0
@@ -941,14 +942,25 @@ def assessContent(markedImg):
   loss[loss != 255] = 0
 
   # normalize
-  wtNormed = wt / np.max(wt)
-  ltNormed = lt / np.max(lt)
-  lossNormed = loss / np.max(loss)
+  wtNormed = np.divide(wt, np.max(wt))
+  ltNormed = np.divide(lt, np.max(lt))
+  lossNormed = np.divide(loss, np.max(loss))
 
   # calculate content
   wtContent = np.sum(wtNormed)
   ltContent = np.sum(ltNormed)
   lossContent = np.sum(lossNormed)
+
+  if isinstance(imgName, (str)):
+    # if imgName is included, we normalize content to cell area
+    dummy = np.multiply(np.ones_like(markedImg[:,:,0]), 255)
+    mask = ReadResizeApplyMask(dummy,imgName,25,25)
+    mask[mask <= 254] = 0
+    mask[mask > 0] = 1
+    cellArea = np.sum(mask,dtype=float)
+    wtContent /= cellArea
+    ltContent /= cellArea
+    lossContent /= cellArea
 
   return wtContent, ltContent, lossContent
 

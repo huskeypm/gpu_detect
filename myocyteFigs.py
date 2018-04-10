@@ -298,20 +298,38 @@ def fig6():
 def figS1():
   ## routine to generate the necessary ROC figures
 
+  root = "./myoimages/"
+
   # images that were hand annotated
   imgNames = {'HF':'HF_1_annotation.png',
-              'WT':'Sham_M_65_annotation.png',
+              'Control':'Sham_M_65_annotation.png',
               'MI':'MI_D_73_annotation.png'
                }
 
   # images that have hand annotation marked
   annotatedImgNames = {'HF':'HF_1_annotation_channels.png',
-                       'WT':'Sham_M_65_annotation_channels.png',
+                       'Control':'Sham_M_65_annotation_channels.png',
                        'MI':'MI_D_73_annotation_channels.png'
                        }
 
+  #for key,imgName in imgNames.iteritems():
+  if 1:
+    key = 'MI'
+    imgName = imgNames[key]
+    # setup data set
+    dataSet = optimizer.DataSet(
+                    root = root,
+                    filter1TestName = root + imgName,
+                    filter1TestRegion=None,
+                    filter1PositiveTest = root + annotatedImgNames[key]
+                    )
+
+    # run func that writes scores to hdf5 file
+    myocyteROC(dataSet)
   
-  
+  # read data from hdf5 files
+
+  # do figure writing routine here
   
   
 
@@ -834,14 +852,14 @@ def rocData():
   paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
   paramDict['mfPunishment'] = util.ReadImg(root+"WTPunishmentFilter.png",renorm=True)
   
-  #optimizer.GenFigROC_TruePos_FalsePos(
-  #      dataSet,
-  #      paramDict,
-  #      filter1Label = dataSet.filter1Label,
-  #      f1ts = np.linspace(15,45,15),
-  #      iters=iters
-        #display=True
-  #    )
+  optimizer.GenFigROC_TruePos_FalsePos(
+        dataSet,
+        paramDict,
+        filter1Label = dataSet.filter1Label,
+        f1ts = np.linspace(15,45,15),
+        iters=iters,
+        display=False
+        )
 
   ## Testing LT now
   dataSet.filter1PositiveChannel=1
@@ -882,14 +900,79 @@ def rocData():
   paramDict = optimizer.ParamDict(typeDict='Loss')
   lossIters = [0,45]
 
-  #optimizer.GenFigROC_TruePos_FalsePos(
-  #       dataSet,
-  #       paramDict,
-  #       filter1Label = dataSet.filter1Label,
-  #       f1ts = np.linspace(4,15,11),
-  #       iters=lossIters
-         #display=True
-  #     )
+  optimizer.GenFigROC_TruePos_FalsePos(
+         dataSet,
+         paramDict,
+         filter1Label = dataSet.filter1Label,
+         f1ts = np.linspace(4,15,11),
+         iters=lossIters,
+         display=True
+       )
+
+
+###
+### Function to calculate data for a full ROC for a given myocyte and return
+### scores for each filter at given thresholds
+###
+def myocyteROC(data,
+               threshes = np.linspace(10,30),
+               iters=[-25,-20,-15,-10,-5,0,5,10,15,20,25]
+               ):
+
+  ### WT
+  # setup WT data in class structure
+  data.filter1PositiveChannel= 0
+  data.filter1Label = "TT"
+  data.filter1Name = root+'WTFilter.png'
+  optimizer.SetupTests(data)
+  WTparams = optimizer.ParamDict(typeDict='WT')
+  WTparams['covarianceMatrix'] = np.ones_like(WTdata.filter1TestData)
+  WTparams['mfPunishment'] = util.ReadImg(root+"WTPunishmentFilter.png",renorm=True)
+
+  # write filter performance data for WT into hdf5 file
+  optimizer.Assess_Single(data, 
+                          WTparams, 
+                          filter1Threshes=threshes, 
+                          hdf5Name=myoName+"_WT.h5",
+                          display=False,
+                          iters=iters)
+  
+  ### LT
+  # setup LT data
+  data.filter1PositiveChannel=1
+  data.filter1Label = "LT"
+  #dataSet.filter1Name = root+'LongFilter.png'
+  # opting to test H filter now
+  #dataSet.filter1Name = root+'newLTfilter.png'
+  data.filter1Name = root+'simpleLTfilter.png'
+  optimizer.SetupTests(data)
+  LTparams = optimizer.ParamDict(typeDict='LT')
+
+  # write filter performance data for LT into hdf5 file
+  optimizer.Assess_Single(data, 
+                          LTparams, 
+                          filter1Threshes=threshes, 
+                          hdf5Name=myoName+"_LT.h5",
+                          display=False,
+                          iters=iters)
+
+  ### Loss  
+  # setup Loss data
+  data.filter1PositiveChannel = 2
+  data.filter1Label = "Loss"
+  data.filter1Name = root+"LossFilter.png"
+  optimizer.SetupTests(data)
+  Lossparams = optimizer.ParamDict(typeDict='Loss')
+  lossIters = [0,45]
+
+  # write filter performance data for Loss into hdf5 file
+  optimizer.Assess_Single(data, 
+                          Lossparams, 
+                          filter1Threshes=threshes, 
+                          hdf5Name=myoName+"_Loss.h5",
+                          display=False,
+                          iters=LossIters)
+
 
 ###
 ### Function to convert from cv2's color channel convention to matplotlib's

@@ -295,6 +295,9 @@ def fig6():
   plt.gcf().savefig("fig6.png",dpi=300)
   plt.close()
 
+###
+### Generates the large ROC figure for each of the annotated images
+###
 def figS1():
   ## routine to generate the necessary ROC figures
 
@@ -307,29 +310,77 @@ def figS1():
                }
 
   # images that have hand annotation marked
-  annotatedImgNames = {'HF':'HF_1_annotation_channels.png',
-                       'Control':'Sham_M_65_annotation_channels.png',
+  annotatedImgNames = {'HF':'HF_1_annotation_channels_new.png',
+                       'Control':'Sham_M_65_annotation_channels_new.png',
                        'MI':'MI_D_73_annotation_channels.png'
                        }
 
-  #for key,imgName in imgNames.iteritems():
-  if 1:
-    key = 'MI'
-    imgName = imgNames[key]
-    # setup data set
-    dataSet = optimizer.DataSet(
-                    root = root,
-                    filter1TestName = root + imgName,
-                    filter1TestRegion=None,
-                    filter1PositiveTest = root + annotatedImgNames[key]
-                    )
+  for key,imgName in imgNames.iteritems():
+      # setup dataset
+      dataSet = optimizer.DataSet(
+                  root = root,
+                  filter1TestName = root + imgName,
+                  filter1TestRegion=None,
+                  filter1PositiveTest = root + annotatedImgNames[key]
+                  )
 
-    # run func that writes scores to hdf5 file
-    myocyteROC(dataSet)
+      # run func that writes scores to hdf5 file
+      myocyteROC(dataSet,key,threshes = np.linspace(5,30,15))
   
   # read data from hdf5 files
+  import pandas as pd
+  # make big ol' dictionary
+  bigData = {}
+  bigData['MI'] = {}
+  bigData['HF'] = {}
+  bigData['Control'] = {}
+  # read in data from each myocyte
+  for key,nestDict in bigData.iteritems():
+    nestDict['WT'] = pd.read_hdf(key+"_WT.h5",'table')
+    nestDict['LT'] = pd.read_hdf(key+"_LT.h5",'table')
+    nestDict['Loss'] = pd.read_hdf(key+"_Loss.h5",'table')
 
-  # do figure writing routine here
+
+  ## Figure generation
+  f, axs = plt.subplots(3,2,figsize=[7,12])
+  plt.subplots_adjust(wspace=0.5,bottom=0.05,top=0.95,hspace=0.25)
+  locDict = {'Control':0,'MI':1,'HF':2}
+  for key,loc in locDict.iteritems():
+    # writing detection rate fig
+    axs[loc,0].scatter(bigData[key]['WT']['filter1Thresh'], 
+                     bigData[key]['WT']['filter1PS'],label='WT',c='b')
+    axs[loc,0].scatter(bigData[key]['LT']['filter1Thresh'], 
+                     bigData[key]['LT']['filter1PS'],label='LT',c='g')
+    axs[loc,0].scatter(bigData[key]['Loss']['filter1Thresh'],
+                     bigData[key]['Loss']['filter1PS'],label='Loss',c='r')
+    axs[loc,0].set_title(key+" Detection Rate",size=12)
+    axs[loc,0].set_xlabel('Threshold')
+    axs[loc,0].set_ylabel('Detection Rate')
+    axs[loc,0].set_ylim([0,1])
+    axs[loc,0].set_xlim(xmin=0)
+    #axs[loc,0].legend(prop={'size':8})
+  
+    # writing ROC fig
+    axs[loc,1].set_title(key+" ROC",size=12)
+    axs[loc,1].scatter(bigData[key]['WT']['filter1NS'], 
+                       bigData[key]['WT']['filter1PS'],label='WT',c='b')
+    axs[loc,1].scatter(bigData[key]['LT']['filter1NS'],    
+                       bigData[key]['LT']['filter1PS'],label='LT',c='g')
+    axs[loc,1].scatter(bigData[key]['Loss']['filter1NS'],    
+                       bigData[key]['Loss']['filter1PS'],label='Loss',c='r')
+    # giving 50% line
+    vert = np.linspace(0,1,10)
+    axs[loc,1].plot(vert,vert,'k--')
+
+    axs[loc,1].set_xlim([0,1])
+    axs[loc,1].set_ylim([0,1])
+    axs[loc,1].set_xlabel('False Positive Rate')
+    axs[loc,1].set_ylabel('True Positive Rate')
+
+  #plt.subplots_adjust(bottom=1,top=3)
+
+  #plt.show()
+  plt.gcf().savefig('figS1.png')
   
   
 
@@ -914,8 +965,8 @@ def rocData():
 ### Function to calculate data for a full ROC for a given myocyte and return
 ### scores for each filter at given thresholds
 ###
-def myocyteROC(data,
-               threshes = np.linspace(10,30),
+def myocyteROC(data, myoName,
+               threshes = np.linspace(5,30,10),
                iters=[-25,-20,-15,-10,-5,0,5,10,15,20,25]
                ):
 
@@ -926,7 +977,7 @@ def myocyteROC(data,
   data.filter1Name = root+'WTFilter.png'
   optimizer.SetupTests(data)
   WTparams = optimizer.ParamDict(typeDict='WT')
-  WTparams['covarianceMatrix'] = np.ones_like(WTdata.filter1TestData)
+  WTparams['covarianceMatrix'] = np.ones_like(data.filter1TestData)
   WTparams['mfPunishment'] = util.ReadImg(root+"WTPunishmentFilter.png",renorm=True)
 
   # write filter performance data for WT into hdf5 file
@@ -963,7 +1014,7 @@ def myocyteROC(data,
   data.filter1Name = root+"LossFilter.png"
   optimizer.SetupTests(data)
   Lossparams = optimizer.ParamDict(typeDict='Loss')
-  lossIters = [0,45]
+  LossIters = [0,45]
 
   # write filter performance data for Loss into hdf5 file
   optimizer.Assess_Single(data, 

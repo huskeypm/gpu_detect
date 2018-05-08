@@ -649,9 +649,10 @@ def testMFExp():
 
 def giveMarkedMyocyte(
       ttFilterName=root+"WTFilter.png",
-      ltFilterName=root+"LongFilter.png",
+      ltFilterName=root+"newLTfilter.png",
       lossFilterName=root+"LossFilter.png",
       wtPunishFilterName=root+"WTPunishmentFilter.png",
+      ltPunishFilterName=root+"newLTPunishmentFilter.png",
       testImage=root+"MI_D_73_annotation.png",
       ImgTwoSarcSize=None,
       tag = "default_",
@@ -659,7 +660,8 @@ def giveMarkedMyocyte(
       ttThresh=None,
       ltThresh=None,
       lossThresh=None,
-      gamma=None,
+      wtGamma=None,
+      ltGamma=None,
       iters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
       returnAngles=False,
       returnPastedFilter=True,
@@ -679,12 +681,12 @@ def giveMarkedMyocyte(
   # WT filtering
   WTparams = optimizer.ParamDict(typeDict='WT')
   WTparams['covarianceMatrix'] = np.ones_like(img)
-  WTparams['mfPunishment'] = util.ReadImg("./myoimages/WTPunishmentFilter.png",renorm=True)
+  WTparams['mfPunishment'] = util.ReadImg(wtPunishFilterName,renorm=True)
   WTparams['useGPU'] = useGPU
   if ttThresh != None:
     WTparams['snrThresh'] = ttThresh
-  if gamma != None:
-    WTparams['gamma'] = gamma
+  if wtGamma != None:
+    WTparams['gamma'] = wtGamma
   ttFilter = util.ReadImg(ttFilterName, renorm=True)
   ## Attempting new punishment filter routine
   #WTparams['mfPunishmentMax'] = np.sum(WTparams['mfPunishment'])
@@ -702,15 +704,19 @@ def giveMarkedMyocyte(
   LTparams = optimizer.ParamDict(typeDict='LT')
   if ltThresh != None:
     LTparams['snrThresh'] = ltThresh
+  else:
+    LTparams['snrThresh'] = 12.5
+  if ltGamma != None:
+    LTparams['gamma'] = ltGamma
+  else:
+    LTparams['gamma'] = 0.05
   LTFilter = util.ReadImg(ltFilterName, renorm = True)
   inputs.mfOrig = LTFilter
 
-  inputs.mfOrig = util.ReadImg(root+'newLTfilter.png', renorm = True)
+  inputs.mfOrig = util.ReadImg(ltFilterName, renorm = True)
   LTparams['filterMode'] = 'punishmentFilter'
-  LTparams['mfPunishment'] = util.ReadImg(root+"newLTPunishmentFilter.png",renorm=True)
-  LTparams['gamma'] = 0.05 
+  LTparams['mfPunishment'] = util.ReadImg(ltPunishFilterName,renorm=True)
   LTparams['covarianceMatrix'] = np.ones_like(inputs.imgOrig)
-  LTparams['snrThresh'] = 12.5
   LTparams['useGPU'] = useGPU
 
   LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)#,display=True)

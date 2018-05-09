@@ -216,6 +216,39 @@ def simpleDetect(
 
   return results
 
+def regionalDeviation(inputs,paramDict):
+  '''
+  Detection protocol that will correlate the filter with the measured signal 
+  and threshold based on simple threshold. From this list of hits, the 
+  function will take the standard deviation of all pixels surrounding the hit
+  on the original image. If this standard deviation is too high, signifying a 
+  bright spot in the measured signal, then the hit will be discarded.
+  '''
+
+  ### Perform simple detection
+  img = inputs.img
+  mf = inputs.mf
+  results = empty()
+
+  if paramDict['useGPU'] == False:
+    simpleCorr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF'])
+  else:
+    simpleCorr = sMF.MF(img,mf,useGPU=True)
+
+  ### Find all pixels that are deemed a hit
+
+  ### Construct kernel that will be used to find std deviation of hit ROI
+  # based on where mf > 0 + eps
+
+  ### Find standard deviation of all hits
+  # do I have to do this the dumb way with an interative process?
+
+  ### Threshold those hits based on a standard deviation threshold
+  # or should I come up with some bs function to where SNR proportional to std dev?
+
+  return results
+
+
 #
 # Calls different modes of selecting best hits 
 #
@@ -235,6 +268,8 @@ def FilterSingle(
     results = punishmentFilter(inputs,paramDict)
   elif mode=="simple":
     results = simpleDetect(inputs,paramDict)
+  elif mode=="regionalDeviation":
+    results = regionalDeviation(inputs,paramDict)
   else: 
     #raise RuntimeError("need to define mode") 
     print "Patiently ignoring you until this is implemented" 

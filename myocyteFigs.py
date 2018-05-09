@@ -713,13 +713,17 @@ def giveMarkedMyocyte(
   LTFilter = util.ReadImg(ltFilterName, renorm = True)
   inputs.mfOrig = LTFilter
 
-  inputs.mfOrig = util.ReadImg(ltFilterName, renorm = True)
-  LTparams['filterMode'] = 'punishmentFilter'
-  LTparams['mfPunishment'] = util.ReadImg(ltPunishFilterName,renorm=True)
-  LTparams['covarianceMatrix'] = np.ones_like(inputs.imgOrig)
+  #LTparams['filterMode'] = 'punishmentFilter'
+  #LTparams['mfPunishment'] = util.ReadImg(ltPunishFilterName,renorm=True)
+  #LTparams['covarianceMatrix'] = np.ones_like(inputs.imgOrig)
+
+  LTparams['filterMode'] = 'simple'  
+  LTiters = [-10,-5,0,5,10]
+
+
   LTparams['useGPU'] = useGPU
 
-  LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)#,display=True)
+  LTresults = bD.DetectFilter(inputs,LTparams,LTiters,returnAngles=returnAngles)#,display=True)
   LTstackedHits = LTresults.stackedHits
 
   # Loss filtering
@@ -1055,8 +1059,11 @@ def ReadResizeApplyMask(img,imgName,ImgTwoSarcSize,filterTwoSarcSize=25):
   except:
     print "No mask named '"+fileName +"' was found. Circumventing masking."
     return img
-  scale = float(filterTwoSarcSize) / float(ImgTwoSarcSize)
-  maskResized = cv2.resize(maskGray,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
+  if ImgTwoSarcSize != None:
+    scale = float(filterTwoSarcSize) / float(ImgTwoSarcSize)
+    maskResized = cv2.resize(maskGray,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
+  else:
+    maskResized = maskGray
   normed = maskResized.astype('float') / float(np.max(maskResized))
   normed[normed < 1.0] = 0
   dimensions = np.shape(img)

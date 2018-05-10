@@ -676,7 +676,8 @@ def giveMarkedMyocyte(
 
   # defining inputs in structure to be read by DetectFilter function
   inputs = empty()
-  inputs.imgOrig = img
+  #inputs.imgOrig = img
+  inputs.imgOrig = ReadResizeApplyMask(img,testImage,25,25) # just applies mask
 
   # WT filtering
   WTparams = optimizer.ParamDict(typeDict='WT')
@@ -705,7 +706,7 @@ def giveMarkedMyocyte(
   if ltThresh != None:
     LTparams['snrThresh'] = ltThresh
   else:
-    LTparams['snrThresh'] = 12.5
+    LTparams['snrThresh'] = 15
   if ltGamma != None:
     LTparams['gamma'] = ltGamma
   else:
@@ -717,13 +718,17 @@ def giveMarkedMyocyte(
   #LTparams['mfPunishment'] = util.ReadImg(ltPunishFilterName,renorm=True)
   #LTparams['covarianceMatrix'] = np.ones_like(inputs.imgOrig)
 
-  LTparams['filterMode'] = 'simple'  
-  LTiters = [-10,-5,0,5,10]
+  #LTparams['filterMode'] = 'simple'  
+  #LTiters = [-10,-5,0,5,10]
 
+  # tyring out new standard deviation filter detection
+  LTparams['filterMode'] = 'regionalDeviation'
+  LTparams['stdDevThresh'] = .09 # tweaks where we discard hits for having too high std Dev
+  
 
   LTparams['useGPU'] = useGPU
 
-  LTresults = bD.DetectFilter(inputs,LTparams,LTiters,returnAngles=returnAngles)#,display=True)
+  LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)#,display=True)
   LTstackedHits = LTresults.stackedHits
 
   # Loss filtering

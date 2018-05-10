@@ -68,7 +68,11 @@ def correlateThresher(
     correlated = []
 
     inputs.img = util.renorm(np.array(img,dtype=float),scale=1.)
+    inputs.demeanedImg = np.abs(np.subtract(inputs.img, np.mean(inputs.img)))
+    #print np.max(inputs.demeanedImg)
+    #print np.min(inputs.demeanedImg)
     for i, angle in enumerate(iters):
+      print angle
       result = empty()
       # copy of original image 
 

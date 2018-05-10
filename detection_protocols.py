@@ -227,6 +227,7 @@ def regionalDeviation(inputs,paramDict):
 
   ### Perform simple detection
   img = inputs.img
+  demeanedImg = inputs.demeanedImg
   mf = inputs.mf
   results = empty()
 
@@ -236,15 +237,98 @@ def regionalDeviation(inputs,paramDict):
     simpleCorr = sMF.MF(img,mf,useGPU=True)
 
   ### Find all pixels that are deemed a hit
+  hitArray = np.transpose(np.nonzero(simpleCorr > paramDict['snrThresh']))
 
   ### Construct kernel that will be used to find std deviation of hit ROI
-  # based on where mf > 0 + eps
+  mfShape = np.shape(mf)
+  centerY = int(round(mfShape[0] / 2.))
+  centerX = int(round(mfShape[1] / 2.))
+  # find where mf > 0 to find where to calculate standard deviation in kernel
+  mfStdArray = np.nonzero(mf)
+  # subtract x and y value of the center pixel from these values
+  mfStdIdxs = (np.subtract(mfStdArray[0],centerY),np.subtract(mfStdArray[1],centerX))
+  maxStdIdxRow,maxStdIdxCol = np.max(mfStdArray[0]),np.max(mfStdArray[1])
+
+  ### Construct dummy resulting image
+  resultImage = np.zeros_like(img)
+  imgDim = np.shape(img)
+  maxRow,maxCol = imgDim[0], imgDim[1]
 
   ### Find standard deviation of all hits
-  # do I have to do this the dumb way with an interative process?
+  for hit in hitArray:
+    #print hit
+    #print type(hit)
+    #print hit[0], hit[1]
+    # error catch
+    if (hit[0]+maxStdIdxRow < maxRow) and (hit[1]+maxStdIdxCol < maxCol):
+      stdDevKernel = (np.add(hit[0], mfStdIdxs[0]),np.add(hit[1], mfStdIdxs[1]))
+      #print stdDevKernel
+      ROI_values = img[stdDevKernel]
+      ROI_stdDevValue = np.std(ROI_values)
+      # find if the value is below standard deviation threshold
+      if ROI_stdDevValue < paramDict['stdDevThresh']:
+        resultImage[hit[0],hit[1]] = 255
+    else:
+      continue
+ 
 
-  ### Threshold those hits based on a standard deviation threshold
-  # or should I come up with some bs function to where SNR proportional to std dev?
+  ######## PETE RECOMMENDED STUFF
+ 
+  ### construct a kernel based on where the filter is nonzero. This is a transform for std dev
+#  kernel = mf.copy()
+#  kernelIdxs = np.nonzero(kernel)
+#  kernel[kernelIdxs] = 1.
+#  # now we divide out by the number of nonzero pixels
+#  numKernelIdxs = float(np.shape(np.transpose(kernelIdxs))[0])
+#  kernel /= numKernelIdxs
+#
+#  ### Convolve to determine std dev
+#  # ADD IN GPU STUFF
+#  stdDevResult = mF.matchedFilter(demeanedImg,kernel,parsevals=False,demean=paramDict['demeanMF'])
+#  print np.max(stdDevResult)
+#  print np.min(stdDevResult)
+
+  ### Figure out where both conditions are a hit
+  #stdDevHit = np.nonzero(stdDevResult < paramDict['stdDevThresh'])
+  #stdDevHit = (np.subtract(stdDevHit[0],1),np.subtract(stdDevHit[1],1))
+  #stdDevHit = np.transpose(stdDevHit)
+  #simpleHit = np.nonzero(simpleCorr > paramDict['snrThresh'])
+  #simpleHit = (np.subtract(simpleHit[0],1),np.subtract(simpleHit[1],1))
+  #simpleHit = np.transpose(simpleHit)
+
+#  stdDevHit = stdDevResult < paramDict['stdDevThresh']
+  #print np.nonzero(stdDevHit)
+  #print np.shape(stdDevHit)
+  #print stdDevHit
+#  simpleHit = simpleCorr > paramDict['snrThresh']
+  #print np.nonzero(simpleHit)
+  #print np.shape(simpleHit)
+  #print simpleHit
+
+  # now we have to see idxs that are repeated in both arrays
+  #commonHits = set(simpleHit).intersection(stdDevHit)
+  #print commonHits
+
+  #resultIdxs = np.nonzero(stdDevHit and simpleHit)
+
+  #commonHits = np.multiply(stdDevHit, simpleHit)
+  
+  #commonHits = stdDevHit & simpleHit
+
+#  commonHits = np.logical_and(stdDevHit, simpleHit)
+  #print commonHits
+
+  #commonHits = simpleHit
+  #commonHits = stdDevHit
+
+
+  #print np.nonzero(commonHits)
+  #print commonHits
+  #print resultIdxs
+  #print np.max(resultIdxs)
+#  resultImage[commonHits] = 255
+
+  results.snr = resultImage
 
   return results
 

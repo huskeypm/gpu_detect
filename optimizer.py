@@ -152,8 +152,9 @@ def ParamDict(typeDict=None):
     paramDict['gamma'] = .15
     paramDict['snrThresh'] = 22.5#35 
   elif typeDict=='LT':
-    paramDict['filterMode'] = 'simple'
-    paramDict['snrThresh'] = 21
+    paramDict['filterMode'] = 'regionalDeviation'
+    paramDict['snrThresh'] = 19 
+    paramDict['stdDevThresh'] = 0.9
   elif typeDict=='Loss':
     paramDict['inverseSNR'] = True
     paramDict['snrThresh'] = 7.3 

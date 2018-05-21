@@ -258,7 +258,10 @@ def regionalDeviation(inputs,paramDict):
  
   ### Find common hits
   stdDevHits = stdDev < paramDict['stdDevThresh']
-  simpleHits = simpleCorr > paramDict['snrThresh']
+  if paramDict['inverseSNR'] == False:
+    simpleHits = simpleCorr > paramDict['snrThresh']
+  else:
+    simpleHits = simpleCorr < paramDict['snrThresh']
   commonHits = np.multiply(stdDevHits, simpleHits)
 
   ### store in a resulting image with arbitrarily high snr

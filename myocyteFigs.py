@@ -616,14 +616,8 @@ def giveMarkedMyocyte(
   inputs.mfOrig = LTFilter
   if ltThresh != None:
     LTparams['snrThresh'] = ltThresh
-  else:
-    LTparams['snrThresh'] = 15
   if ltGamma != None:
     LTparams['gamma'] = ltGamma
-  else:
-    LTparams['gamma'] = 0.05
-  LTparams['filterMode'] = 'regionalDeviation'
-  LTparams['stdDevThresh'] = .09 # tweaks where we discard hits for having too high std Dev
   LTparams['useGPU'] = useGPU
   LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)#,display=True)
   LTstackedHits = LTresults.stackedHits

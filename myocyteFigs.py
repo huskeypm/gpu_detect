@@ -1230,6 +1230,10 @@ if __name__ == "__main__":
     if(arg=="-minorValidate"):
       minorValidate()
       quit()
+
+    if(arg=="-scoretest"):
+      scoreTest()             
+      quit()
     
 
     ### Figure Generation Routines
@@ -1288,10 +1292,6 @@ if __name__ == "__main__":
 	writeImage = True)            
       quit()
 
-    if(arg=="-scoretest"):
-      scoreTest()             
-      quit()
-
     if(arg=="-testMyocyte"):
       testImage = sys.argv[i+1]
       giveMarkedMyocyte(testImage=testImage,
@@ -1317,11 +1317,10 @@ if __name__ == "__main__":
                         returnAngles=False,
                         writeImage=True,
                         useGPU=True)
+      quit()
 
     ### Additional Arguments
     if(arg=="-tag"):
       tag = sys.argv[i+1]
-
-      quit()
 
   raise RuntimeError("Arguments not understood")

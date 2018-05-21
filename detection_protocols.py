@@ -236,98 +236,34 @@ def regionalDeviation(inputs,paramDict):
   else:
     simpleCorr = sMF.MF(img,mf,useGPU=True)
 
-  ### Find all pixels that are deemed a hit
-  hitArray = np.transpose(np.nonzero(simpleCorr > paramDict['snrThresh']))
 
-  ### Construct kernel that will be used to find std deviation of hit ROI
-  mfShape = np.shape(mf)
-  centerY = int(round(mfShape[0] / 2.))
-  centerX = int(round(mfShape[1] / 2.))
-  # find where mf > 0 to find where to calculate standard deviation in kernel
-  mfStdArray = np.nonzero(mf)
-  # subtract x and y value of the center pixel from these values
-  mfStdIdxs = (np.subtract(mfStdArray[0],centerY),np.subtract(mfStdArray[1],centerX))
-  maxStdIdxRow,maxStdIdxCol = np.max(mfStdArray[0]),np.max(mfStdArray[1])
+  ####### FINAL ITERATION OF CONVOLUTION BASED STD DEV
+  ### Calculation taken from http://matlabtricks.com/post-20/calculate-standard-deviation-case-of-sliding-window
 
-  ### Construct dummy resulting image
+  ### find where mf > 0 to find elements in each window
+  mfStdIdxs = np.nonzero(mf)
+
+  ### construct kernel
+  kernel = np.zeros_like(mf)
+  kernel[mfStdIdxs] = 1.
+
+  ### construct array that contains information on elements in each window
+  n = mF.matchedFilter(np.ones_like(img), kernel,parsevals=False,demean=paramDict['demeanMF'])
+
+  ### Calculate Std Dev
+  s = mF.matchedFilter(img,kernel,parsevals=False,demean=paramDict['demeanMF'])
+  q = np.square(img)
+  q = mF.matchedFilter(q, kernel,parsevals=False,demean=paramDict['demeanMF'])
+  stdDev = np.sqrt( np.divide((q-np.divide(np.square(s),n)),n-1)) 
+ 
+  ### Find common hits
+  stdDevHits = stdDev < paramDict['stdDevThresh']
+  simpleHits = simpleCorr > paramDict['snrThresh']
+  commonHits = np.multiply(stdDevHits, simpleHits)
+
+  ### store in a resulting image with arbitrarily high snr
   resultImage = np.zeros_like(img)
-  imgDim = np.shape(img)
-  maxRow,maxCol = imgDim[0], imgDim[1]
-
-  ### Find standard deviation of all hits
-  for hit in hitArray:
-    #print hit
-    #print type(hit)
-    #print hit[0], hit[1]
-    # error catch
-    if (hit[0]+maxStdIdxRow < maxRow) and (hit[1]+maxStdIdxCol < maxCol):
-      stdDevKernel = (np.add(hit[0], mfStdIdxs[0]),np.add(hit[1], mfStdIdxs[1]))
-      #print stdDevKernel
-      ROI_values = img[stdDevKernel]
-      ROI_stdDevValue = np.std(ROI_values)
-      # find if the value is below standard deviation threshold
-      if ROI_stdDevValue < paramDict['stdDevThresh']:
-        resultImage[hit[0],hit[1]] = 255
-    else:
-      continue
- 
-
-  ######## PETE RECOMMENDED STUFF
- 
-  ### construct a kernel based on where the filter is nonzero. This is a transform for std dev
-#  kernel = mf.copy()
-#  kernelIdxs = np.nonzero(kernel)
-#  kernel[kernelIdxs] = 1.
-#  # now we divide out by the number of nonzero pixels
-#  numKernelIdxs = float(np.shape(np.transpose(kernelIdxs))[0])
-#  kernel /= numKernelIdxs
-#
-#  ### Convolve to determine std dev
-#  # ADD IN GPU STUFF
-#  stdDevResult = mF.matchedFilter(demeanedImg,kernel,parsevals=False,demean=paramDict['demeanMF'])
-#  print np.max(stdDevResult)
-#  print np.min(stdDevResult)
-
-  ### Figure out where both conditions are a hit
-  #stdDevHit = np.nonzero(stdDevResult < paramDict['stdDevThresh'])
-  #stdDevHit = (np.subtract(stdDevHit[0],1),np.subtract(stdDevHit[1],1))
-  #stdDevHit = np.transpose(stdDevHit)
-  #simpleHit = np.nonzero(simpleCorr > paramDict['snrThresh'])
-  #simpleHit = (np.subtract(simpleHit[0],1),np.subtract(simpleHit[1],1))
-  #simpleHit = np.transpose(simpleHit)
-
-#  stdDevHit = stdDevResult < paramDict['stdDevThresh']
-  #print np.nonzero(stdDevHit)
-  #print np.shape(stdDevHit)
-  #print stdDevHit
-#  simpleHit = simpleCorr > paramDict['snrThresh']
-  #print np.nonzero(simpleHit)
-  #print np.shape(simpleHit)
-  #print simpleHit
-
-  # now we have to see idxs that are repeated in both arrays
-  #commonHits = set(simpleHit).intersection(stdDevHit)
-  #print commonHits
-
-  #resultIdxs = np.nonzero(stdDevHit and simpleHit)
-
-  #commonHits = np.multiply(stdDevHit, simpleHit)
-  
-  #commonHits = stdDevHit & simpleHit
-
-#  commonHits = np.logical_and(stdDevHit, simpleHit)
-  #print commonHits
-
-  #commonHits = simpleHit
-  #commonHits = stdDevHit
-
-
-  #print np.nonzero(commonHits)
-  #print commonHits
-  #print resultIdxs
-  #print np.max(resultIdxs)
-#  resultImage[commonHits] = 255
-
+  resultImage[commonHits] = 5 * paramDict['snrThresh']
   results.snr = resultImage
 
   return results

@@ -2,10 +2,17 @@
 python tissue.py -test1
 need to figure out what's different by detect.py vs origin implementation in tissue.y
 
+NOTE: Before running algorithm on user provided images, be sure to run through
+<code>
+python util.py -preprocessImg "IMGNAME" "IMGTWOSARCSIZE" "FILTERTWOSARCSIZE"
+</code>
+Where IMGNAME is the path/name of your image, IMGTWOSARCSIZE is the measured two sarcomere size in pixels of your image, and FILTERTWOSARCSIZE 
+is the default two sarcomere size for the filters used. Default filter size is 25 pixels.
+
 ## MASTER SCRIPT 
 # detect.py 
 To validate:
-python detect.py -validation
+python detect.py -validation 
 
 To run from command line with user-provided images:
 python detect.py -simple myoimages/Sham_11.png myoimages/WTFilter.png 0.01
@@ -84,5 +91,6 @@ python figs.py -paperfigs # generate figures for paper
 ## Other notes
 optimizer.py was copied from spark detection repo, which was design for silica films 
 before commiting code, be sure to run unittest.bash first 
+
 
 

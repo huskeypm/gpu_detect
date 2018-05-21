@@ -518,6 +518,7 @@ def analyzeAllMyo():
   ax.set_xticks(newInd)
   #ax.xaxis.set_tick_params(horizontalalignment='center')
   ax.set_xticklabels(['D', 'M','P','','D','M','P','','D','M','P'])
+  ax.set_ylim([0,1])
   plt.gcf().savefig('MI_BarChart.png')
 
 def analyzeSingleMyo(name,twoSarcSize):
@@ -575,6 +576,7 @@ def giveBarChartfromDict(dictionary,tag):
   ax.set_ylabel('Normalized Content')
   ax.legend(marks)
   ax.set_xticks([])
+  ax.set_ylim([0,1])
   plt.gcf().savefig(tag+'_BarChart.png')
 
 def figAnalysis(
@@ -625,27 +627,6 @@ def figAnalysis(
   ax.set_xticklabels( marks ,rotation=90 )
   if writeImage:
     plt.gcf().savefig(tag+"_content.png") 
-
-def testMFExp():
-    dataSet = Myocyte() 
-    iters = [-20, -15, -10, -5, 0, 5, 10, 15, 20]
-		
-    filter1_filter1Test, filter2_filter1Test = bD.TestFilters(
-      dataSet.filter1TestName, # testData
-      dataSet.filter1Name,                # fusedfilter Name
-      dataSet.filter2Name,              # bulkFilter name
-      #testData = dataSet.filter1TestData,
-      #subsection=dataSet.filter1TestRegion, #[200,400,200,500],   # subsection of testData
-      filter1Thresh = dataSet.filter1Thresh,
-      filter2Thresh = dataSet.filter2Thresh,
-      sigma_n = dataSet.sigma_n,
-      #iters = [optimalAngleFused],
-      iters=iters,
-      useFilterInv=False,
-      penaltyscale=0.,
-      colorHitsOutName="filter1Marked_%f_%f.png"%(dataSet.filter2Thresh,dataSet.filter1Thresh),
-      display=display
-    )
 
 def giveMarkedMyocyte(
       ttFilterName=root+"WTFilter.png",
@@ -1137,9 +1118,9 @@ def validate(testImage=root+"MI_D_78.png",
   print "LT Content:", ltContent
   print "Loss Content:", lossContent
   
-  assert(abs(wtContent - 65014) < 1), "WT validation failed."
-  assert(abs(ltContent - 76830) < 1), "LT validation failed."
-  assert(abs(lossContent - 158317) < 1), "Loss validation failed."
+  assert(abs(wtContent - 64565) < 1), "WT validation failed."
+  assert(abs(ltContent - 65496) < 1), "LT validation failed."
+  assert(abs(lossContent - 161208) < 1), "Loss validation failed."
   print "PASSED!"
 
 # A minor validation function to serve as small tests between commits
@@ -1164,9 +1145,9 @@ def minorValidate(testImage=root+"MI_D_73_annotation.png",
   print "Longitudinal Content", ltContent
   print "Loss Content", lossContent
 
-  val = 6987 
+  val = 18722 
   assert(abs(wtContent - val) < 1),"%f != %f"%(wtContent, val)       
-  val = 15978
+  val = 3669
   assert(abs(ltContent - val) < 1),"%f != %f"%(ltContent, val) 
   val = 1420
   assert(abs(lossContent - val) < 1),"%f != %f"%(lossContent, val)
@@ -1239,10 +1220,19 @@ if __name__ == "__main__":
 
   # Loops over each argument in the command line 
   for i,arg in enumerate(sys.argv):
+
+    ### Validation Routines
     if(arg=="-validate"):
       print "Consider developing a more robust behavior test"
       validate()
       quit()
+
+    if(arg=="-minorValidate"):
+      minorValidate()
+      quit()
+    
+
+    ### Figure Generation Routines
 
     # this function will generate input data for the current fig #3 in the paper 
     if(arg=="-fig3"):               
@@ -1260,9 +1250,11 @@ if __name__ == "__main__":
     if(arg=="-fig6"):               
       fig6()
       quit()
+
     if(arg=="-figS1"):
       figS1()
       quit()
+
     # generates all figs
     if(arg=="-allFigs"):
       fig3()     
@@ -1272,16 +1264,17 @@ if __name__ == "__main__":
       figS1()
       quit()
 
-    if(arg=="-tag"):
-      tag = sys.argv[i+1]
-   
+    if(arg=="-workflowFig"):
+      giveMarkedMyocyte(testImage="./myoimages/MI_D_73_annotation.png",
+                        tag="WorkflowFig",
+                        returnAngles=True,
+                        writeImage=True)
+
+    ### Testing/Optimization Routines
     if(arg=="-roc"): 
       rocData()
       quit()
 	   
-    if(arg=="-testexp"):
-      testMFExp()
-      quit()
     if(arg=="-test"):
       giveMarkedMyocyte(      
         ttFilterName=sys.argv[i+1],
@@ -1294,31 +1287,28 @@ if __name__ == "__main__":
 	tag = tag,
 	writeImage = True)            
       quit()
+
     if(arg=="-scoretest"):
       scoreTest()             
       quit()
-    if(arg=="-minorValidate"):
-      minorValidate()
-      quit()
+
     if(arg=="-testMyocyte"):
       testImage = sys.argv[i+1]
       giveMarkedMyocyte(testImage=testImage,
                         tag="Testing",
                         writeImage=True)
       quit()
-    if(arg=="-workflowFig"):
-      giveMarkedMyocyte(testImage="./myoimages/MI_D_73_annotation.png",
-                        tag="WorkflowFig",
-                        returnAngles=True,
-                        writeImage=True)
+
     if(arg=="-analyzeAllMyo"):
       analyzeAllMyo()
       quit()
+
     if(arg=="-analyzeSingleMyo"):
       name = sys.argv[i+1]
       twoSarcSize = float(sys.argv[i+2])
       analyzeSingleMyo(name,twoSarcSize)
       quit()
+
     if(arg=="-testTissue"):
       name = "testingNotchFilter.png"
       giveMarkedMyocyte(testImage=name,
@@ -1327,30 +1317,10 @@ if __name__ == "__main__":
                         returnAngles=False,
                         writeImage=True,
                         useGPU=True)
-    if(arg=="-testPaster"):
-      # routine to test the output of function that pastes filter onto myocyte
-      # will delete eventually
-      iters = [-25,-20, -15, -10, -5, 0, 5, 10, 15, 20,25]
 
-      SHAMtest = root+"Sham_M_65_processed.png"
-      SHAMtwoSarcSize = 21
-      giveMarkedMyocyte(testImage=SHAMtest,
-                        ImgTwoSarcSize=SHAMtwoSarcSize,
-                        tag="SHAM_Pasted",
-                        iters=iters,
-                        returnPastedFilter=True,
-                        writeImage=True
-                        )
-
-      MItest = root+"MI_D_73_processed.png"
-      MItwoSarcSize = 22
-      giveMarkedMyocyte(testImage=MItest,
-                        ImgTwoSarcSize=MItwoSarcSize,
-                        tag="MI_Pasted",
-                        iters=iters,
-                        returnPastedFilter=True,
-                        writeImage=True
-                        )
+    ### Additional Arguments
+    if(arg=="-tag"):
+      tag = sys.argv[i+1]
 
       quit()
 

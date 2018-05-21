@@ -25,9 +25,7 @@ root = "myoimages/"
 
 ## WT 
 def fig3(): 
-  #testImage = root+"Sham_11_processed.png"
   testImage = root+"Sham_M_65_processed.png"
-  #testImage = root+"Sham_11.png"
   twoSarcSize = 21
 
   rawImg = util.ReadImg(testImage,cvtColor=False)
@@ -36,10 +34,7 @@ def fig3():
   coloredImg, coloredAngles, angleCounts = giveMarkedMyocyte(testImage=testImage,
                         ImgTwoSarcSize=twoSarcSize,
                         returnAngles=True,
-                        #returnAngles=False,
                         iters=iters,
-                        #returnPastedFilter=True,
-                        #writeImage=True)
                         )
   correctColoredAngles = switchBRChannels(coloredAngles)
   correctColoredImg = switchBRChannels(coloredImg)
@@ -85,32 +80,20 @@ def fig3():
   plt.ylabel('Probability')
   plt.gcf().savefig("fig3_histogram.png")
   plt.close()
-
   
 
 ## HF 
 def fig4(): 
-
+  # initial arguments
   filterTwoSarcSize = 25
-
-  #imgName = root+"HF_1.png"
   imgName = root + "HF_1_processed.png"
   twoSarcSize = 21
-
   rawImg = util.ReadImg(imgName)
-
   markedImg = giveMarkedMyocyte(testImage=imgName,ImgTwoSarcSize=twoSarcSize)
 
   # make bar chart for content
   wtContent, ltContent, lossContent = assessContent(markedImg,imgName)
   normedContents = [wtContent, ltContent, lossContent]
-
-  #wtContent, ltContent, lossContent = assessContent(markedImg.copy())
-  #contents = np.asarray([wtContent, ltContent, lossContent])
-  #dims = np.shape(markedImg[:,:,0])
-  #area = float(dims[0]) * float(dims[1])
-  #contents = np.divide(contents, area)
-  #normedContents = contents / np.max(contents)
 
   # generating figure
   width = 0.25
@@ -150,8 +133,6 @@ def fig5():
 
   # Distal, Medial, Proximal
   print "TwoSarcSize argument is deprecated with new preprocssing function. Remove."
-  #DImageName = root+"MI_D_76_processed.png"
-  #DTwoSarcSize = 22
   DImageName = root+"MI_D_73_processed.png"
   DTwoSarcSize = 22
   MImageName = root+"MI_M_45_processed.png"
@@ -270,23 +251,6 @@ def fig6():
   plt.imshow(WTstackedHits)
   plt.title('stacked hits')
   plt.show()
-
-  ### potentially experiment with using the pasting filter function to make smoothing better
-  ### Currently too many hits for this to work
-  # pasting filter sized unit square on image to make smoothing look realistic
-  #threshed = np.zeros_like(WTstackedHits)
-  #threshed[WTstackedHits > 0] = 255
-  #halfFilterSize = 10
-  #result = empty()
-  #result.stackedHits = threshed
-  #smoothed = painter.doLabel(result,dx=halfFilterSize,thresh=254)
-  #print type(smoothed)
-
-  #plt.figure()
-  #plt.imshow(smoothed)
-  #plt.title('smoothed')
-  #plt.show()
-  #quit()
 
   # utilize previously written routine to smooth hits and show WT regions
   import tissue
@@ -407,19 +371,6 @@ def analyzeAllMyo():
      wtC, ltC, lossC = assessContent(markedMyocyte)
      content = np.asarray([wtC, ltC, lossC],dtype=float)
      content /= np.max(content)
-     # utilizing mask to calculate cell area and normalize content from there
-     #mask = cv2.imread(root+name+"_processed_mask.png")
-     #mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
-     #scale = 25. / float(twoSarcSize)
-     #mask = cv2.resize(mask, None, fx=scale,fy=scale, interpolation=cv2.INTER_CUBIC)	
-     #mask[mask != 255] = 0
-     #mask = np.asarray(mask, dtype=float)
-     #mask /= np.max(mask)
-     #cellArea = np.sum(mask)
-     #content = np.divide(content, cellArea)
-
-     # above didn't actually work. I think I would need to paste the filter for each pixel hit to 
-     # accurately do this
 
      # store content in respective dictionary
      if 'Sham' in name:
@@ -437,9 +388,7 @@ def analyzeAllMyo():
   # use function to construct and write bar charts for each content dictionary
   giveBarChartfromDict(Sham,'Sham')
   giveBarChartfromDict(HF,'HF')
-  #giveBarChartfromDict(MI_D,root+'MI_D')
-  #giveBarChartfromDict(MI_M,root+'MI_M')
-  #giveBarChartfromDict(MI_P,root+'MI_P')
+  # manually constructing MI bar chart
   wtAvgs = {}; wtStds = {}; ltAvgs = {}; ltStds = {}; lossAvgs = {}; lossStds = {};
 
   DwtC = []; DltC = []; DlossC = [];
@@ -651,16 +600,16 @@ def giveMarkedMyocyte(
  
   start = time.time()
    
-  #img = util.ReadImg(testImage,renorm=True)
-  # No need to renorm the image since preprocessing should be done already
+  ### Read in preprocessed image
   img = util.ReadImg(testImage,renorm=False)
 
-  # defining inputs in structure to be read by DetectFilter function
+  ### defining inputs to be read by DetectFilter function
   inputs = empty()
-  #inputs.imgOrig = img
   inputs.imgOrig = ReadResizeApplyMask(img,testImage,25,25) # just applies mask
 
-  # WT filtering
+  ### WT filtering
+  ttFilter = util.ReadImg(ttFilterName, renorm=True)
+  inputs.mfOrig = ttFilter
   WTparams = optimizer.ParamDict(typeDict='WT')
   WTparams['covarianceMatrix'] = np.ones_like(img)
   WTparams['mfPunishment'] = util.ReadImg(wtPunishFilterName,renorm=True)
@@ -669,21 +618,13 @@ def giveMarkedMyocyte(
     WTparams['snrThresh'] = ttThresh
   if wtGamma != None:
     WTparams['gamma'] = wtGamma
-  ttFilter = util.ReadImg(ttFilterName, renorm=True)
-  ## Attempting new punishment filter routine
-  #WTparams['mfPunishmentMax'] = np.sum(WTparams['mfPunishment'])
-  #WTparams['snrThresh'] = 74.1
-  ##
-  #WTparams['gamma'] = 3
-
-  # turns out the above worked terribly. Need to play around with this more.
-
-  inputs.mfOrig = ttFilter
   WTresults = bD.DetectFilter(inputs,WTparams,iters,returnAngles=returnAngles)  
   WTstackedHits = WTresults.stackedHits
 
-  # LT filtering
+  ### LT filtering
   LTparams = optimizer.ParamDict(typeDict='LT')
+  LTFilter = util.ReadImg(ltFilterName, renorm = True)
+  inputs.mfOrig = LTFilter
   if ltThresh != None:
     LTparams['snrThresh'] = ltThresh
   else:
@@ -692,27 +633,13 @@ def giveMarkedMyocyte(
     LTparams['gamma'] = ltGamma
   else:
     LTparams['gamma'] = 0.05
-  LTFilter = util.ReadImg(ltFilterName, renorm = True)
-  inputs.mfOrig = LTFilter
-
-  #LTparams['filterMode'] = 'punishmentFilter'
-  #LTparams['mfPunishment'] = util.ReadImg(ltPunishFilterName,renorm=True)
-  #LTparams['covarianceMatrix'] = np.ones_like(inputs.imgOrig)
-
-  #LTparams['filterMode'] = 'simple'  
-  #LTiters = [-10,-5,0,5,10]
-
-  # tyring out new standard deviation filter detection
   LTparams['filterMode'] = 'regionalDeviation'
   LTparams['stdDevThresh'] = .09 # tweaks where we discard hits for having too high std Dev
-  
-
   LTparams['useGPU'] = useGPU
-
   LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)#,display=True)
   LTstackedHits = LTresults.stackedHits
 
-  # Loss filtering
+  ### Loss filtering
   Lossparams = optimizer.ParamDict(typeDict='Loss')
   Lossparams['useGPU'] = useGPU
   Lossiters = [0, 45] # don't need many rotations for loss filtering
@@ -725,30 +652,30 @@ def giveMarkedMyocyte(
  
   cI = util.ReadImg(testImage,cvtColor=False)
 
-  ### Must subtract 1 from the image since all hits are marked 255 and orig img is normed to 255
+  # Must subtract 1 from the image since all hits are marked 255 and orig img is normed to 255
   cI -= 1
-  ###
+  
 
-  # Marking superthreshold hits for loss filter
+  ### Marking superthreshold hits for loss filter
   LossstackedHits[LossstackedHits != 0] = 255
   LossstackedHits = np.asarray(LossstackedHits, dtype='uint8')
 
-  # applying a loss mask to attenuate false positives from WT and Longitudinal filter
+  ### applying a loss mask to attenuate false positives from WT and Longitudinal filter
   WTstackedHits[LossstackedHits == 255] = 0
   LTstackedHits[LossstackedHits == 255] = 0
 
-  # marking superthreshold hits for longitudinal filter
+  ### marking superthreshold hits for longitudinal filter
   LTstackedHits[LTstackedHits != 0] = 255
   LTstackedHits = np.asarray(LTstackedHits, dtype='uint8')
 
-  # masking WT response with LT mask so there is no overlap in the markings
+  ### masking WT response with LT mask so there is no overlap in the markings
   WTstackedHits[LTstackedHits == 255] = 0
 
-  # marking superthreshold hits for WT filter
+  ### marking superthreshold hits for WT filter
   WTstackedHits[WTstackedHits != 0] = 255
   WTstackedHits = np.asarray(WTstackedHits, dtype='uint8')
 
-  # apply preprocessed masks
+  ### apply preprocessed masks
   wtMasked = ReadResizeApplyMask(WTstackedHits,testImage,ImgTwoSarcSize,
                                  filterTwoSarcSize=ImgTwoSarcSize)
   ltMasked = ReadResizeApplyMask(LTstackedHits,testImage,ImgTwoSarcSize,
@@ -757,32 +684,29 @@ def giveMarkedMyocyte(
                                    filterTwoSarcSize=ImgTwoSarcSize)
 
   if not returnPastedFilter:
-    # create holders for marking channels
+    ### create holders for marking channels
     WTcopy = cI[:,:,0]
     LTcopy = cI[:,:,1]
     Losscopy = cI[:,:,2]
 
-    # color corrresponding channels
+    ### color corrresponding channels
     WTcopy[wtMasked == 255] = 255
     LTcopy[ltMasked == 255] = 255
     Losscopy[lossMasked == 255] = 255
     if writeImage:
-      #write output image
+      ### write output image
       cv2.imwrite(tag+"output.png",cI)
 
   if returnPastedFilter:
     # exploiting architecture of painter function to mark hits for me
     Lossholder = empty()
-    #Lossholder.stackedHits = Losscopy
     Lossholder.stackedHits = lossMasked
     LTholder = empty()
-    #LTholder.stackedHits = LTcopy
     LTholder.stackedHits = ltMasked
     WTholder = empty()
-    #WTholder.stackedHits = WTcopy
     WTholder.stackedHits = wtMasked
 
-    # we want to mark WT last since that should be the most stringent
+    ### we want to mark WT last since that should be the most stringent
     # Opting to mark Loss, then Long, then WT
     halfCellSizeLoss = 5 # should think of how to automate
     labeledLoss = painter.doLabel(Lossholder,dx=halfCellSizeLoss,thresh=254)
@@ -797,7 +721,6 @@ def giveMarkedMyocyte(
     Lossmask = labeledLoss.copy()
 
     WTmask[labeledLoss] = False
-    #labeledLT[labeledLoss] = False
     WTmask[labeledLT] = False
     LTmask[labeledLoss] = False
 
@@ -809,7 +732,7 @@ def giveMarkedMyocyte(
     cI[:,:,0][WTmask] = 255
   
     if writeImage:
-      # write outputs	  
+      ### write outputs	  
       cv2.imwrite(tag+"_output.png",cI)       
 
   if returnAngles:
@@ -818,7 +741,7 @@ def giveMarkedMyocyte(
     coloredAnglesMasked = ReadResizeApplyMask(coloredAngles,testImage,
                                               ImgTwoSarcSize,
                                               filterTwoSarcSize=ImgTwoSarcSize)
-    # mask the container holding the angles
+    ### mask the container holding the angles
     stackedAngles = np.add(WTresults.stackedAngles, 1)
     stackedAngles = ReadResizeApplyMask(stackedAngles,testImage,
                                             ImgTwoSarcSize,
@@ -831,7 +754,7 @@ def giveMarkedMyocyte(
       for j in range(dims[1]):
         rotArg = stackedAngles[i,j]
         if rotArg != -1:
-          # indicates this is a hit
+          ### indicates this is a hit
           angleCounts.append(iters[rotArg])
 
     if writeImage:

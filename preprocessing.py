@@ -112,7 +112,8 @@ def resizeToFilterSize(img,filterTwoSarcomereSize,fileName):
   bigSum = np.sum(psd_Big,axis=0)
 
   ### 3. Find peak value of periodogram and calculate striation size
-  imgTwoSarcomereSize = np.argmax(bigSum)
+  striationSize = 1. / fBig[np.argmax(bigSum)]
+  imgTwoSarcomereSize = int(round(2 * striationSize))
   print "Two Sarcomere size:", imgTwoSarcomereSize,"Pixels per Two Sarcomeres"
 
   ### 4. Using peak value, resize the image

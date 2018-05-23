@@ -18,6 +18,14 @@ pygame.init() # initializes pygame modules
 ###############################################################################
 
 def reorient(img):
+
+  '''
+  will likely wind up sticking another subsection selection box here for the
+  reorientation. I think I'll keep them as two different selections since
+  when the myocyte is oriented strangely it can be hard to get a large enough
+  subsection for the resizing portion without including some membrane.
+  '''
+
   return img
 
 ###############################################################################

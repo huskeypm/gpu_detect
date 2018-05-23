@@ -19,6 +19,7 @@ import util
 import optimizer
 import painter
 import time
+import os
 class empty:pass
 
 root = "myoimages/"
@@ -341,41 +342,50 @@ def figS1():
   
 
 def analyzeAllMyo():
-  root = "/home/AD/dfco222/Desktop/LouchData/processedImgs/"
-  twoSarcSizeDict = {'Sham_P_23':21, 'Sham_M_65':21, 'Sham_D_100':20, 'Sham_23':22,
-                      'Sham_11':21, 'MI_P_8':21, 'MI_P_5':21, 'MI_P_16':21, 'MI_M_46':22,
-                      'MI_M_45':21, 'MI_M_44':21, 'HF_1':21, 'HF_13':21,'MI_D_78':22,
-                      'MI_D_76':21, 'MI_D_73':22,
-                      'HF_5':21 
-                       }
+  root = "/home/AD/dfco222/Desktop/LouchData/processedImgs_May23/"
+  #twoSarcSizeDict = {'Sham_P_23':21, 'Sham_M_65':21, 'Sham_D_100':20, 'Sham_23':22,
+  #                    'Sham_11':21, 'MI_P_8':21, 'MI_P_5':21, 'MI_P_16':21, 'MI_M_46':22,
+  #                    'MI_M_45':21, 'MI_M_44':21, 'HF_1':21, 'HF_13':21,'MI_D_78':22,
+  #                    'MI_D_76':21, 'MI_D_73':22,
+  #                    'HF_5':21 
+  #                     }
   ### instantiate dicitionary to hold content values
   Sham = {}; MI_D = {}; MI_M = {}; MI_P = {}; HF = {};
-  for name,twoSarcSize in twoSarcSizeDict.iteritems():
-     print name
-     ### iterate through names and mark the images
-     realName = name+"_processed.png"
-     markedMyocyte = giveMarkedMyocyte(testImage=root+realName,
-                                       ImgTwoSarcSize=twoSarcSize,
+  #for name,twoSarcSize in twoSarcSizeDict.iteritems():
+  #   print name
+  #   ### iterate through names and mark the images
+  #   realName = name+"_processed.png"
+  #   markedMyocyte = giveMarkedMyocyte(testImage=root+realName,
+  #                                     ImgTwoSarcSize=twoSarcSize,
+  #                                     tag=name,
+  #                                     writeImage=True,
+  #                                     returnAngles=False)
+
+  for name in os.listdir(root):
+    print name
+    ### iterate through names and mark the images
+    markedMyocyte = giveMarkedMyocyte(testImage=root+name,
                                        tag=name,
                                        writeImage=True,
                                        returnAngles=False)
-     ### assess content
-     wtC, ltC, lossC = assessContent(markedMyocyte)
-     content = np.asarray([wtC, ltC, lossC],dtype=float)
-     content /= np.max(content)
 
-     ### store content in respective dictionary
-     if 'Sham' in name:
-       Sham[name] = content
-     elif 'HF' in name:
-       HF[name] = content
-     elif 'MI' in name:
-       if '_D' in name:
-         MI_D[name] = content
-       elif '_M' in name:
-         MI_M[name] = content
-       elif '_P' in name:
-         MI_P[name] = content
+    ### assess content
+    wtC, ltC, lossC = assessContent(markedMyocyte)
+    content = np.asarray([wtC, ltC, lossC],dtype=float)
+    content /= np.max(content)
+
+    ### store content in respective dictionary
+    if 'Sham' in name:
+      Sham[name] = content
+    elif 'HF' in name:
+      HF[name] = content
+    elif 'MI' in name:
+      if '_D' in name:
+        MI_D[name] = content
+      elif '_M' in name:
+        MI_M[name] = content
+      elif '_P' in name:
+        MI_P[name] = content
 
   ### use function to construct and write bar charts for each content dictionary
   giveBarChartfromDict(Sham,'Sham')

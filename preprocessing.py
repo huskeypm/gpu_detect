@@ -101,7 +101,7 @@ def resizeToFilterSize(img,filterTwoSarcomereSize,fileName):
 
   ### 1. Select subsection of image that exhibits highly conserved network of TTs
   subsection = giveSubsection(fileName)#,dtype=np.float32)
-  subsection = np.array(subsection.convert("L"),dtype=float)
+  subsection = np.array(subsection.convert("F"))
 
   # best to normalize the subsection for display purposes
   subsection /= np.max(subsection)

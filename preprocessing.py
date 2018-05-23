@@ -115,6 +115,9 @@ def resizeToFilterSize(img,filterTwoSarcomereSize,fileName):
   striationSize = 1. / fBig[np.argmax(bigSum)]
   imgTwoSarcomereSize = int(round(2 * striationSize))
   print "Two Sarcomere size:", imgTwoSarcomereSize,"Pixels per Two Sarcomeres"
+  if imgTwoSarcomereSize > 50:
+    print "WARNING: Image likely failed to be properly resized. Manual resizing\
+           may be necessary!!!!!"
 
   ### 4. Using peak value, resize the image
   scale = float(filterTwoSarcomereSize) / float(imgTwoSarcomereSize)

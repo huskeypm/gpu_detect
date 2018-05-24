@@ -10,6 +10,8 @@ from scipy import signal
 import pygame, sys
 from PIL import Image
 pygame.init() # initializes pygame modules
+from sklearn.decomposition import PCA
+import imutils
 
 ###############################################################################
 ###
@@ -26,7 +28,16 @@ def reorient(img):
   subsection for the resizing portion without including some membrane.
   '''
 
-  return img
+  ### Use principle component analysis to find major axis of img
+  pca = PCA(n_components=2)
+  pca.fit(img)
+  majorAxDirection = pca.explained_variance_
+  yAx = np.array([0,1])
+  degreeOffCenter = (180./np.pi) * np.arccos(np.dot(yAx,majorAxDirection)/\
+                    (np.linalg.norm(majorAxDirection)))
+  ### Rotate image
+  rotated = imutils.rotate_bound(img,degreeOffCenter)
+  return rotated
 
 ###############################################################################
 ###

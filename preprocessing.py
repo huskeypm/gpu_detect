@@ -15,6 +15,15 @@ import imutils
 
 ###############################################################################
 ###
+### FFT Filtering Routines
+###
+###############################################################################
+
+
+
+
+###############################################################################
+###
 ###  Reorientation Routines
 ###
 ###############################################################################
@@ -35,8 +44,10 @@ def reorient(img):
   yAx = np.array([0,1])
   degreeOffCenter = (180./np.pi) * np.arccos(np.dot(yAx,majorAxDirection)/\
                     (np.linalg.norm(majorAxDirection)))
+  print degreeOffCenter
   ### Rotate image
-  rotated = imutils.rotate_bound(img,degreeOffCenter)
+  rotated = imutils.rotate_bound(img,-degreeOffCenter)
+  #rotated = imutils.rotate(img,degreeOffCenter)
   return rotated
 
 ###############################################################################
@@ -75,8 +86,9 @@ def displayImage(screen, px, topleft, prior):
     # return current box extents
     return (x, y, width, height)
 
-def setup(path):
-    px = pygame.image.load(path)
+def setup(array):
+    #px = pygame.image.load(path)
+    px = pygame.surfarray.make_surface(array)
     screen = pygame.display.set_mode( px.get_rect()[2:] )
     screen.blit(px, px.get_rect())
     pygame.display.flip()
@@ -97,10 +109,10 @@ def mainLoop(screen, px):
             prior = displayImage(screen, px, topleft, prior)
     return ( topleft + bottomright )
 
-def giveSubsection(inputFile):
-    input_loc = inputFile
-    output_loc = 'out.png'
-    screen, px = setup(input_loc)
+def giveSubsection(array):
+    # pygame has weird indexing
+    newArray = np.swapaxes(array,0,1)
+    screen, px = setup(newArray)
     left, upper, right, lower = mainLoop(screen, px)
 
     # ensure output rect always has positive width, height
@@ -108,9 +120,8 @@ def giveSubsection(inputFile):
         left, right = right, left
     if lower < upper:
         lower, upper = upper, lower
-    im = Image.open(input_loc)
-    subsection = im.crop(( left, upper, right, lower))
-    pygame.display.quit()
+    subsection = array.copy()[upper:lower,left:right]
+    subsection = np.asarray(subsection, dtype=np.float64)
     return subsection
 
 def resizeToFilterSize(img,filterTwoSarcomereSize,fileName):
@@ -119,8 +130,7 @@ def resizeToFilterSize(img,filterTwoSarcomereSize,fileName):
   '''
 
   ### 1. Select subsection of image that exhibits highly conserved network of TTs
-  subsection = giveSubsection(fileName)#,dtype=np.float32)
-  subsection = np.array(subsection.convert("F"))
+  subsection = giveSubsection(img)#,dtype=np.float32)
 
   # best to normalize the subsection for display purposes
   subsection /= np.max(subsection)

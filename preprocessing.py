@@ -28,26 +28,98 @@ import imutils
 ###
 ###############################################################################
 
+def setup(array):
+    #px = pygame.image.load(path)
+    px = pygame.surfarray.make_surface(array)
+    screen = pygame.display.set_mode( px.get_rect()[2:] )
+    screen.blit(px, px.get_rect())
+    pygame.display.flip()
+    return screen, px
+
+def displayImageLine(screen, px, topleft, prior):
+    # ensure that the rect always has positive width, height
+    x, y = topleft
+    xNew = pygame.mouse.get_pos()[0]
+    yNew = pygame.mouse.get_pos()[1]
+    width = xNew - x
+    height = yNew - y
+    if width < 0:
+        x += width
+        width = abs(width)
+    if height < 0:
+        y += height
+        height = abs(height)
+
+    # eliminate redundant drawing cycles (when mouse isn't moving)
+    current = x, y, width, height
+    if not (width and height):
+        return current
+    if current == prior:
+        return current
+    
+    # draw line on the image
+    red = (255, 0, 0)
+    startPoint = topleft
+    endPoint = (xNew,yNew)
+    screen.blit(px,px.get_rect())
+    pygame.draw.line(screen,red,startPoint,endPoint)
+    pygame.display.flip()
+
+    # return current box extents
+    return (x, y, width, height)
+
+def mainLoopLine(screen, px):
+    topleft = bottomright = prior = None
+    n=0
+    while n!=1:
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONUP:
+                if not topleft:
+                    topleft = event.pos
+                else:
+                    bottomright = event.pos
+                    n=1
+        if topleft:
+            prior = displayImageLine(screen, px, topleft, prior)
+    return ( topleft + bottomright )
+
+def giveSubsectionLine(array):
+    # pygame has weird indexing
+    newArray = np.swapaxes(array,0,1)
+    screen, px = setup(newArray)
+    pygame.display.set_caption("Draw a Line Orthogonal to Transverse Tubules")
+    left, upper, right, lower = mainLoopLine(screen, px)
+    pygame.display.quit()
+    
+    directionVector = (right-left,upper-lower)
+    return directionVector
+
 def reorient(img):
 
   '''
-  will likely wind up sticking another subsection selection box here for the
-  reorientation. I think I'll keep them as two different selections since
-  when the myocyte is oriented strangely it can be hard to get a large enough
-  subsection for the resizing portion without including some membrane.
+  Function to reorient the myocyte based on a user selected line that is
+  orthogonal to the TTs 
   '''
 
-  ### Use principle component analysis to find major axis of img
-  pca = PCA(n_components=2)
-  pca.fit(img)
-  majorAxDirection = pca.explained_variance_
-  yAx = np.array([0,1])
-  degreeOffCenter = (180./np.pi) * np.arccos(np.dot(yAx,majorAxDirection)/\
-                    (np.linalg.norm(majorAxDirection)))
-  print degreeOffCenter
-  ### Rotate image
-  rotated = imutils.rotate_bound(img,-degreeOffCenter)
-  #rotated = imutils.rotate(img,degreeOffCenter)
+  ### get direction vector from line drawn by user
+  dVect = giveSubsectionLine(img)
+
+  ### we want rotation < 90 deg so we ensure correct axis
+  if dVect[0] >= 0:
+    xAx = [1,0]
+  else:
+    xAx[-1,0]
+
+  ### compute degrees off center from the direction vector
+  dOffCenter = (180./np.pi) * np.arccos(np.dot(xAx,dVect)/np.linalg.norm(dVect))
+
+  ### ensure directionality is correct 
+  if dVect[1] <= 0:
+    dOffCenter *= -1
+
+  ### rotate image
+  rotated = imutils.rotate_bound(img,dOffCenter)
+
   return rotated
 
 ###############################################################################
@@ -86,14 +158,6 @@ def displayImage(screen, px, topleft, prior):
     # return current box extents
     return (x, y, width, height)
 
-def setup(array):
-    #px = pygame.image.load(path)
-    px = pygame.surfarray.make_surface(array)
-    screen = pygame.display.set_mode( px.get_rect()[2:] )
-    screen.blit(px, px.get_rect())
-    pygame.display.flip()
-    return screen, px
-
 def mainLoop(screen, px):
     topleft = bottomright = prior = None
     n=0
@@ -113,6 +177,7 @@ def giveSubsection(array):
     # pygame has weird indexing
     newArray = np.swapaxes(array,0,1)
     screen, px = setup(newArray)
+    pygame.display.set_caption("Draw a Rectangle Around Several Conserved Transverse Tubule Striations")
     left, upper, right, lower = mainLoop(screen, px)
 
     # ensure output rect always has positive width, height
@@ -144,9 +209,9 @@ def resizeToFilterSize(img,filterTwoSarcomereSize,fileName):
   striationSize = 1. / fBig[np.argmax(bigSum)]
   imgTwoSarcomereSize = int(round(2 * striationSize))
   print "Two Sarcomere size:", imgTwoSarcomereSize,"Pixels per Two Sarcomeres"
-  if imgTwoSarcomereSize > 50:
-    print "WARNING: Image likely failed to be properly resized. Manual resizing\
-           may be necessary!!!!!"
+  if imgTwoSarcomereSize > 70 or imgTwoSarcomereSize < 10:
+    print "WARNING: Image likely failed to be properly resized. Manual resizing",\
+           "may be necessary!!!!!"
 
   ### 4. Using peak value, resize the image
   scale = float(filterTwoSarcomereSize) / float(imgTwoSarcomereSize)

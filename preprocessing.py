@@ -187,6 +187,7 @@ def giveSubsection(array):
         lower, upper = upper, lower
     subsection = array.copy()[upper:lower,left:right]
     subsection = np.asarray(subsection, dtype=np.float64)
+    pygame.display.quit()
     return subsection
 
 def resizeToFilterSize(img,filterTwoSarcomereSize,fileName):

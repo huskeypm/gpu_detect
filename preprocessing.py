@@ -116,6 +116,7 @@ def reorient(img):
   ### ensure directionality is correct 
   if dVect[1] <= 0:
     dOffCenter *= -1
+  print "Image is",dOffCenter,"degrees off center"
 
   ### rotate image
   rotated = imutils.rotate_bound(img,dOffCenter)
@@ -190,7 +191,7 @@ def giveSubsection(array):
     pygame.display.quit()
     return subsection
 
-def resizeToFilterSize(img,filterTwoSarcomereSize,fileName):
+def resizeToFilterSize(img,filterTwoSarcomereSize):
   '''
   Function to semi-automate the resizing of the image based on the filter
   '''
@@ -205,6 +206,23 @@ def resizeToFilterSize(img,filterTwoSarcomereSize,fileName):
   fBig, psd_Big = signal.periodogram(subsection)
   # finding sum, will be easier to identify striation length with singular dimensionality
   bigSum = np.sum(psd_Big,axis=0)
+
+  ### 3. Mask out the noise in the subsection periodogram
+  # NOTE: These are imposed assumptions on the resizing routine
+  maxStriationSize = 50.
+  minStriationSize = 5.
+  minPeriodogramValue = 1. / maxStriationSize
+  maxPeriodogramValue = 1. / minStriationSize
+  bigSum[fBig < minPeriodogramValue] = 0.
+  bigSum[fBig > maxPeriodogramValue] = 0.
+
+  display = True
+  if display:
+    import matplotlib.pyplot as plt
+    plt.figure()
+    plt.plot(fBig,bigSum)
+    plt.title("Collapsed Periodogram of Subsection")
+    plt.show()
 
   ### 3. Find peak value of periodogram and calculate striation size
   striationSize = 1. / fBig[np.argmax(bigSum)]
@@ -243,13 +261,15 @@ def preprocess(fileName,filterTwoSarcomereSize):
   img = util.ReadImg(fileName)
 
   img = reorient(img)
-  img = resizeToFilterSize(img,filterTwoSarcomereSize,fileName)
+  img = resizeToFilterSize(img,filterTwoSarcomereSize)
   img = applyCLAHE(img,filterTwoSarcomereSize)
 
   # write file
   name,fileType = fileName[:-4],fileName[-4:]
   newName = name+"_processed_new"+fileType
   cv2.imwrite(newName,img)
+
+  return img
 
 ###############################################################################
 ###

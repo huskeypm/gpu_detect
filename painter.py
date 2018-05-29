@@ -268,9 +268,11 @@ def paintME(myImg, myFilter1,  threshold = 190, cropper=[24,129,24,129],iters = 
 # Basically just finds a 'unit cell' sized area around each detection 
 # for the purpose of interpolating the data 
 from scipy import signal
-def doLabel(result,dx=10,thresh=0):
+def doLabel(result,dx=10,dy=None,thresh=0):
+    if dy == None:
+      dy = dx
     img =result.stackedHits > thresh
-    kernel = np.ones((dx,dx),np.float32)/(dx*dx)
+    kernel = np.ones((dy,dx),np.float32)/(dy*dx)
     
     filtered = signal.convolve2d(img, kernel, mode='same') / np.sum(kernel)
 

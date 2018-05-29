@@ -22,7 +22,8 @@ import time
 import os
 class empty:pass
 
-root = "myoimages/"
+#root = "myoimages/"
+root = "/net/share/dfco222/data/TT/LouchData/processed/"
 
 ## WT 
 def fig3(): 
@@ -577,12 +578,12 @@ def figAnalysis(
     plt.gcf().savefig(tag+"_content.png") 
 
 def giveMarkedMyocyte(
-      ttFilterName=root+"WTFilter.png",
-      ltFilterName=root+"newLTfilter.png",
-      lossFilterName=root+"LossFilter.png",
-      wtPunishFilterName=root+"WTPunishmentFilter.png",
-      ltPunishFilterName=root+"newLTPunishmentFilter.png",
-      testImage=root+"MI_D_73_annotation.png",
+      ttFilterName="./myoimages/WTFilter.png",
+      ltFilterName="./myoimages/newLTfilter.png",
+      lossFilterName="./myoimages/LossFilter.png",
+      wtPunishFilterName="./myoimages/WTPunishmentFilter.png",
+      ltPunishFilterName="./myoimages/newLTPunishmentFilter.png",
+      testImage="./myoimages/MI_D_73_annotation.png",
       ImgTwoSarcSize=None,
       tag = "default_",
       writeImage = False,
@@ -621,6 +622,7 @@ def giveMarkedMyocyte(
   WTstackedHits = WTresults.stackedHits
 
   ### LT filtering
+  ltFilterName = "./myoimages/LongitudinalFilter.png"
   LTparams = optimizer.ParamDict(typeDict='LT')
   LTFilter = util.ReadImg(ltFilterName, renorm = True)
   inputs.mfOrig = LTFilter
@@ -703,8 +705,9 @@ def giveMarkedMyocyte(
     # Opting to mark Loss, then Long, then WT
     halfCellSizeLoss = 5 # should think of how to automate
     labeledLoss = painter.doLabel(Lossholder,dx=halfCellSizeLoss,thresh=254)
-    halfCellSizeLT = 10
-    labeledLT = painter.doLabel(LTholder,dx=halfCellSizeLT,thresh=254)
+    LTx = 7
+    LTy = 2
+    labeledLT = painter.doLabel(LTholder,dx=LTx,dy=LTy,thresh=254)
     halfCellSizeWT = 10
     labeledWT = painter.doLabel(WTholder,dx=halfCellSizeWT,thresh=254)
 
@@ -719,9 +722,11 @@ def giveMarkedMyocyte(
 
     LTmask[WTmask] = False # prevents double marking of WT and LT
 
-    cI[:,:,2][Lossmask] = 255
-    cI[:,:,1][LTmask] = 255
-    cI[:,:,0][WTmask] = 255
+    alpha = 1.0
+
+    cI[:,:,2][Lossmask] = int(round(alpha * 255))
+    cI[:,:,1][LTmask] = int(round(alpha * 255))
+    cI[:,:,0][WTmask] = int(round(alpha * 255))
   
     if writeImage:
       ### write outputs	  

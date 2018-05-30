@@ -272,7 +272,7 @@ def doLabel(result,dx=10,dy=None,thresh=0):
     if dy == None:
       dy = dx
     img =result.stackedHits > thresh
-    kernel = np.ones((dy,dx),np.float32)/(dy*dx)
+    kernel = np.ones((dy,dx),np.float32)/(float(dy*dx))
     
     filtered = signal.convolve2d(img, kernel, mode='same') / np.sum(kernel)
 
@@ -284,6 +284,7 @@ def doLabel(result,dx=10,dy=None,thresh=0):
     labeled = filtered > 0
     plt.imshow(labeled)
     plt.tight_layout()
+    #plt.show()
     
     return labeled
 

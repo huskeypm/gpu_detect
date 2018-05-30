@@ -155,11 +155,11 @@ def ParamDict(typeDict=None):
     paramDict['filterMode'] = 'regionalDeviation'
     #paramDict['snrThresh'] = 19 
     #paramDict['stdDevThresh'] = 0.9
-    paramDict['snrThresh'] = 3.25 
-    paramDict['stdDevThresh'] = 0.085
+    paramDict['snrThresh'] = 3.75 
+    paramDict['stdDevThresh'] = 0.08
   elif typeDict=='Loss':
     paramDict['inverseSNR'] = True
-    paramDict['snrThresh'] = 7.3 
+    paramDict['snrThresh'] = 3.5 
     #paramDict['useGPU'] = True
   return paramDict
 

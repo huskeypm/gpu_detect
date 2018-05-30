@@ -361,10 +361,9 @@ def SaveSimpleLongFilter():
   cv2.imwrite("./myoimages/simpleLTPunishmentfilter.png",punish)
 
 def SaveFixedLossFilter():
-  #img = np.zeros((12,12),dtype='uint8')
-  #img[2:10,2:10] = 255
-  img = np.zeros((14,14,),dtype='uint8')
-  img[2:12,2:12] = 255
+  dim = 12
+  img = np.zeros((dim+2,dim+2,),dtype='uint8')
+  img[2:-2,2:-2] = 255
   cv2.imwrite(root+"LossFilter.png",img)
 
 def SaveFixedPunishmentFilter(LongitudinalFilterName=root+"LongFilter.png",

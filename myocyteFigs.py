@@ -343,7 +343,8 @@ def figS1():
   
 
 def analyzeAllMyo():
-  root = "/home/AD/dfco222/Desktop/LouchData/processedImgs_May23/"
+  #root = "/home/AD/dfco222/Desktop/LouchData/processedImgs_May23/"
+  root = "/net/share/dfco222/data/TT/LouchData/processed/"
   #twoSarcSizeDict = {'Sham_P_23':21, 'Sham_M_65':21, 'Sham_D_100':20, 'Sham_23':22,
   #                    'Sham_11':21, 'MI_P_8':21, 'MI_P_5':21, 'MI_P_16':21, 'MI_M_46':22,
   #                    'MI_M_45':21, 'MI_M_44':21, 'HF_1':21, 'HF_13':21,'MI_D_78':22,
@@ -577,6 +578,55 @@ def figAnalysis(
   if writeImage:
     plt.gcf().savefig(tag+"_content.png") 
 
+def markPastedFilters(
+      lossMasked, ltMasked, wtMasked, cI,
+      lossSize=12, LTx=14, LTy=3, wtSize=14
+      ):
+  '''
+  Given masked stacked hits for the 3 filters and a doctored colored image, 
+  function will paste filter sized boxes around the characterized regions
+  and return the colored image with filter sized regions colored.
+
+  NOTE: Colored image was read in (not grayscale) and 1 was subtracted from
+  the image. This was necessary for the thresholding to work with the painter
+  function
+  '''
+  # exploiting architecture of painter function to mark hits for me
+  Lossholder = empty()
+  Lossholder.stackedHits = lossMasked
+  LTholder = empty()
+  LTholder.stackedHits = ltMasked
+  WTholder = empty()
+  WTholder.stackedHits = wtMasked
+
+  ### we want to mark WT last since that should be the most stringent
+  # Opting to mark Loss, then Long, then WT
+  halfCellSizeLoss = 12 # should think of how to automate
+  labeledLoss = painter.doLabel(Lossholder,dx=halfCellSizeLoss,thresh=254)
+  LTx = 14
+  LTy = 3
+  labeledLT = painter.doLabel(LTholder,dx=LTx,dy=LTy,thresh=254)
+  halfCellSizeWT = 14
+  labeledWT = painter.doLabel(WTholder,dx=halfCellSizeWT,thresh=254)
+
+  ### perform masking
+  WTmask = labeledWT.copy()
+  LTmask = labeledLT.copy()
+  Lossmask = labeledLoss.copy()
+
+  WTmask[labeledLoss] = False
+  WTmask[labeledLT] = False
+  LTmask[labeledLoss] = False
+  LTmask[WTmask] = False # prevents double marking of WT and LT
+
+  alpha = 1.0
+  cI[:,:,2][Lossmask] = int(round(alpha * 255))
+  cI[:,:,1][LTmask] = int(round(alpha * 255))
+  cI[:,:,0][WTmask] = int(round(alpha * 255))
+
+  return cI
+
+
 def giveMarkedMyocyte(
       ttFilterName="./myoimages/WTFilter.png",
       ltFilterName="./myoimages/newLTfilter.png",
@@ -648,8 +698,9 @@ def giveMarkedMyocyte(
   cI = util.ReadImg(testImage,cvtColor=False)
 
   # Must subtract 1 from the image since all hits are marked 255 and orig img is normed to 255
+  # have to be careful since uint8 format means that 0 - 1 = 255
+  cI[cI == 0] = 1
   cI -= 1
-  
 
   ### Marking superthreshold hits for loss filter
   LossstackedHits[LossstackedHits != 0] = 255
@@ -693,40 +744,41 @@ def giveMarkedMyocyte(
       cv2.imwrite(tag+"output.png",cI)
 
   if returnPastedFilter:
+    cI = markPastedFilters(lossMasked, ltMasked, wtMasked, cI)
     # exploiting architecture of painter function to mark hits for me
-    Lossholder = empty()
-    Lossholder.stackedHits = lossMasked
-    LTholder = empty()
-    LTholder.stackedHits = ltMasked
-    WTholder = empty()
-    WTholder.stackedHits = wtMasked
+    #Lossholder = empty()
+    #Lossholder.stackedHits = lossMasked
+    #LTholder = empty()
+    #LTholder.stackedHits = ltMasked
+    #WTholder = empty()
+    #WTholder.stackedHits = wtMasked
 
     ### we want to mark WT last since that should be the most stringent
     # Opting to mark Loss, then Long, then WT
-    halfCellSizeLoss = 5 # should think of how to automate
-    labeledLoss = painter.doLabel(Lossholder,dx=halfCellSizeLoss,thresh=254)
-    LTx = 7
-    LTy = 2
-    labeledLT = painter.doLabel(LTholder,dx=LTx,dy=LTy,thresh=254)
-    halfCellSizeWT = 10
-    labeledWT = painter.doLabel(WTholder,dx=halfCellSizeWT,thresh=254)
+    #halfCellSizeLoss = 12 # should think of how to automate
+    #labeledLoss = painter.doLabel(Lossholder,dx=halfCellSizeLoss,thresh=254)
+    #LTx = 14
+    #LTy = 3
+    #labeledLT = painter.doLabel(LTholder,dx=LTx,dy=LTy,thresh=254)
+    #halfCellSizeWT = 14
+    #labeledWT = painter.doLabel(WTholder,dx=halfCellSizeWT,thresh=254)
 
     ### perform masking
-    WTmask = labeledWT.copy()
-    LTmask = labeledLT.copy()
-    Lossmask = labeledLoss.copy()
+    #WTmask = labeledWT.copy()
+    #LTmask = labeledLT.copy()
+    #Lossmask = labeledLoss.copy()
 
-    WTmask[labeledLoss] = False
-    WTmask[labeledLT] = False
-    LTmask[labeledLoss] = False
+    #WTmask[labeledLoss] = False
+    #WTmask[labeledLT] = False
+    #LTmask[labeledLoss] = False
 
-    LTmask[WTmask] = False # prevents double marking of WT and LT
+    #LTmask[WTmask] = False # prevents double marking of WT and LT
 
-    alpha = 1.0
+    #alpha = 1.0
 
-    cI[:,:,2][Lossmask] = int(round(alpha * 255))
-    cI[:,:,1][LTmask] = int(round(alpha * 255))
-    cI[:,:,0][WTmask] = int(round(alpha * 255))
+    #cI[:,:,2][Lossmask] = int(round(alpha * 255))
+    #cI[:,:,1][LTmask] = int(round(alpha * 255))
+    #cI[:,:,0][WTmask] = int(round(alpha * 255))
   
     if writeImage:
       ### write outputs	  

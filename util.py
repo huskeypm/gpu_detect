@@ -1,6 +1,7 @@
 import matplotlib.pylab as plt 
 import numpy as np 
 import cv2
+import scipy.signal as sig
 
 import imutils
 
@@ -51,23 +52,6 @@ def CalcX(
     X[i,:]=Xif
   return X  
 
-#def TestFilter(
-#  H, # MACE filter
-#  I  # test img
-#):
-#    print "DEPREACATE THIS FUNCTION" 
-#    #R = fftp.ifftshift(fftp.ifft2(I*conj(H)));
-#    icH = I * np.conj(H)
-#    R = fftp.ifftshift ( fftp.ifft2(icH) ) 
-#    #R = fftp.ifft2(icH) 
-#
-#    daMax = np.max(np.real(R))
-#    print "Response %e"%( daMax )
-#    #myplot(R)
-#    return R,daMax
-
-# renormalizes images to exist from 0-255
-# rescale/renomalize image 
 def renorm(img,scale=255):
     img = img-np.min(img)
     img/= np.max(img)
@@ -112,11 +96,6 @@ def ApplyCLAHE(grayImgList, tileGridSize, clipLimit=2.0, plot=False):
     clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
     clahedImage = clahe.apply(grayImgList) # stupid hack
     return clahedImage
-    #clahedimages = []
-    #for i,img in enumerate(grayImgList):
-    #    clahedImage = clahe.apply(img)
-    #    clahedimages.append(clahedImage)
-    #return clahedimages
 
 # function to take raw myocyte png name, read, resize, renorm, CLAHE, save output
 def preprocessPNG(imgName, twoSarcSize, filterTwoSarcSize):
@@ -129,7 +108,7 @@ def preprocessPNG(imgName, twoSarcSize, filterTwoSarcSize):
   name, filetype = imgName[:-4], imgName[-4:]
   cv2.imwrite(name+'_processed'+filetype,clahed)
   
-# # Generating filters
+### Generating filters
 def GenerateWTFilter(WTFilterRoot=root+"/filterImgs/WT/", filterTwoSarcSize=25):
   WTFilterImgs = []
   import os
@@ -349,16 +328,31 @@ def SaveWeirdLongFilter():
   cv2.imwrite("./myoimages/weirdLTfilter.png", filt)
   cv2.imwrite("./myoimages/weirdLTPunishmentfilter.png", punish)
 
-def SaveSimpleLongFilter():
-  filt = np.zeros((6,7),dtype='uint8')
-  filt[1:-1,1:-1] = 255
+def saveGaussLongFilter():
+  ### Take Some Measurements of LT Growths in Real Myocytes
+  height = 3 # pixels
+  width = 15 # pixels
+  
+  ### Make Gaussian for Filter
+  std = 4
+  squish = 1.2
+  gauss = sig.gaussian(width,std)
+  gauss /= squish
+  gauss += (1 - 1./squish)
 
-  punish = np.zeros((17, 6), dtype='uint8')
-  punish[1:5,1:-1] = 255
-  punish[12:16, 1:-1] = 255
+  ### Generate Filter
+  LTfilter = np.zeros((height+1,width+2))
+  imgDim = np.shape(LTfilter)
+  cY,cX = int(round(imgDim[0]/2.)),int(round(imgDim[1]/2.))
+  loc = 1
+  while loc < height:
+    LTfilter[loc,1:-1] = gauss
+    loc += 1
 
-  cv2.imwrite("./myoimages/simpleLTfilter.png",filt)
-  cv2.imwrite("./myoimages/simpleLTPunishmentfilter.png",punish)
+  ### Save in CV2 Friendly Format
+  LTfilter *= 255
+  LTfilter = np.asarray(LTfilter,np.uint8)
+  cv2.imwrite("./myoimages/LongitudinalFilter.png",LTfilter)
 
 def SaveFixedLossFilter():
   dim = 12
@@ -554,6 +548,7 @@ if __name__ == "__main__":
     if(arg=="-genWT"):
       SaveFixedWTFilter()
     elif(arg=="-genLong"):
+      print "WARNING: DEPRECATED. Use -genGaussLongFilter"
       SaveFixedLongFilter()
     elif(arg=="-genLoss"):
       SaveFixedLossFilter()
@@ -562,6 +557,7 @@ if __name__ == "__main__":
     elif(arg=="-genAllMyo"): 
       SaveAllMyo()
     elif(arg=="-preprocess"):
+      print "WARNING THIS IS DEPRECATED. USE PREPROCESSING.PY FILE NOW!!!!!"
       imgName = sys.argv[i+1]
       imgTwoSarcSize = float(sys.argv[i+2])
       try:
@@ -571,10 +567,15 @@ if __name__ == "__main__":
       preprocessPNG(imgName, imgTwoSarcSize, filterTwoSarcSize)
       quit()
     elif(arg=="-genWeirdLong"):
+      print "WARNING: DEPRECATED. Use -genGaussLongFilter"
       SaveWeirdLongFilter()
       quit()
     elif(arg=="-genSimpleLong"):
+      print "WARNING: DEPRECATED. Use -genGaussLongFilter"
       SaveSimpleLongFilter()
+      quit()
+    elif(arg=="-genGaussLong"):
+      saveGaussLongFilter()
       quit()
 
     elif(i>0):

@@ -11,8 +11,32 @@ import bankDetect as bD
 import numpy as np
 import matplotlib.pylab as plt
 import util
+import painter
 
 class empty():pass
+
+def measureFilterDimensions(grayFilter):
+  '''
+  Measures where the filter has any data and returns a minimum bounding
+  rectangle around the filter. To be used in conjunction with the 
+  pasteFilters flag in DataSet
+  '''
+  filtery,filterx = np.shape(grayFilter)
+
+  collapsedRows = np.sum(grayFilter,0)
+  leftPadding = np.argmax(collapsedRows>0)
+  rightPadding = np.argmax(collapsedRows[::-1]>0)
+  numRows = filtery - leftPadding - rightPadding
+
+  collapsedCols = np.sum(grayFilter,1)
+  topPadding = np.argmax(collapsedCols>0)
+  bottomPadding = np.argmax(collapsedCols[::-1]>0)
+  numCols = filterx - topPadding - bottomPadding
+
+  print "filter y,x:",numRows,numCols
+
+  return numRows, numCols
+
 
 ##
 ## dataset for param optimziation 
@@ -43,7 +67,8 @@ class DataSet:
     filter2Thresh=1050.,
     sigma_n = 1.,
     penaltyscale = 1., # TODO remove me 
-    useFilterInv = False  # need to antiquate this   
+    useFilterInv = False,  # need to antiquate this   
+    pasteFilters = False
     ): 
 
     self.root = root 
@@ -67,6 +92,7 @@ class DataSet:
     self.sigma_n = sigma_n
     self.useFilterInv = useFilterInv 
     self.penaltyscale = penaltyscale
+    self.pasteFilters = pasteFilters
 
 ##
 ## Has some logic for processing cropped data and data with multiple channels
@@ -122,11 +148,13 @@ def SetupTests(dataSet):
   #print dataSet.filter1Name
   filter1Filter = cv2.imread(dataSet.filter1Name)
   dataSet.filter1Data   = cv2.cvtColor(filter1Filter, cv2.COLOR_BGR2GRAY)
+  dataSet.filter1y,dataSet.filter1x = measureFilterDimensions(dataSet.filter1Data)
   dataSet.filter1Data = util.renorm(np.array(dataSet.filter1Data,dtype=float),scale=1.)
 
   filter2Filter = cv2.imread(dataSet.filter2Name)
   dataSet.filter2Data   = cv2.cvtColor(filter2Filter, cv2.COLOR_BGR2GRAY)
   dataSet.filter2Data = util.renorm(np.array(dataSet.filter2Data,dtype=float),scale=1.)
+  dataSet.filter2y,dataSet.filter2x = measureFilterDimensions(dataSet.filter2Data)
 
 def ParamDict(typeDict=None):
   print "WILL MAKE INTO CLASS LATER"
@@ -289,7 +317,12 @@ def TestParams_Single(
       
       paramDict = paramDict    
     )        
-     
+    
+    if dataSet.pasteFilters:
+      hits = painter.doLabel(filter1_filter1Test, dx=dataSet.filter1x,dy=dataSet.filter1y,thresh=0)
+    else:
+      hits = filter1_filter1Test.stackedHits
+
     # assess score for ROC  
     filter1PS, filter1NS= ScoreOverlap_SingleFilter(
         filter1_filter1Test.stackedHits,
@@ -419,7 +452,7 @@ def AnalyzePerformanceData(dfOrig,tag='filter1',label=None,normalize=False,roc=T
     ax1.scatter(df[threshID], dfPS,label=label+"/positive",c='b')
     ax1.scatter(df[threshID], dfNS,label=label+"/negative",c='r')
     ax1.set_ylabel("Normalized rate") 
-    ax1.set_xlabel("threshold") 
+    ax1.set_xlabel("Threshold") 
     ax1.set_ylim([0,1]) 
     ax1.set_xlim(xmin=0)
     ax1.legend(loc=0)
@@ -529,6 +562,7 @@ def Assess_Single(
   ['filter1Thresh','filter1PS','filter1NS'])
   
   # iterate of thresholds
+  print "Threshold, Positive Score, Negative Score"
   for i,filter1Thresh in enumerate(filter1Threshes):
         # set params 
         dataSet.filter1Thresh=filter1Thresh

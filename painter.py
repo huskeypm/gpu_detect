@@ -10,30 +10,10 @@ import matchedFilter as mF
 import imutils
 from imtools import *
 from matplotlib import cm
-
-#def padWithZeros(array, padwidth, iaxis, kwargs):
-#    array[:padwidth[0]] = 0
-#    array[-padwidth[1]:]= 0
-#    return array
-
-
+import detection_protocols as dps
 
 class empty:pass
 
-
-#def PadRotate(myFilter1,val):
-#  dims = np.shape(myFilter1)
-#  diff = np.min(dims)
-#  paddedFilter = np.lib.pad(myFilter1,diff,padWithZeros)
-#  rotatedFilter = imutils.rotate(paddedFilter,-val)
-#  rF = np.copy(rotatedFilter)
-
-#  return rF
-
-
-
-
-import detection_protocols as dps
 ##
 ## Performs matched filtering over desired angles
 ##
@@ -72,7 +52,6 @@ def correlateThresher(
     #print np.max(inputs.demeanedImg)
     #print np.min(inputs.demeanedImg)
     for i, angle in enumerate(iters):
-      print angle
       result = empty()
       # copy of original image 
 

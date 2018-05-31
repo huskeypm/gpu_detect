@@ -200,22 +200,22 @@ def resizeToFilterSize(img,filterTwoSarcomereSize):
   subsection = giveSubsection(img)#,dtype=np.float32)
 
   ### 1.5 Attempting simple thresholding based on subsection as well
-  print np.max(img)
-  img[img > 0.3 * np.max(subsection)] = 0.3 * np.max(subsection)
+  #print np.max(img)
+  #img[img > 0.3 * np.max(subsection)] = 0.3 * np.max(subsection)
   #img[img > 1.5 * np.mean(subsection)] = np.mean(subsection)
   #img[img < 0.05 * np.max(subsection)] = 0.05 * np.max(subsection)
-  print np.max(img)
-  print np.min(img)
-  img -= np.min(img)
-  img = np.float64(img)
-  img /= np.max(img)
-  img *= 255
-  img = np.uint8(img)
+  #print np.max(img)
+  #print np.min(img)
+  #img -= np.min(img)
+  #img = np.float64(img)
+  #img /= np.max(img)
+  #img *= 255
+  #img = np.uint8(img)
 
-  import matplotlib.pyplot as plt
-  plt.figure()
-  plt.imshow(img,cmap='gray')
-  plt.show()
+  #import matplotlib.pyplot as plt
+  #plt.figure()
+  #plt.imshow(img,cmap='gray')
+  #plt.show()
 
   # best to normalize the subsection for display purposes
   subsection /= np.max(subsection)

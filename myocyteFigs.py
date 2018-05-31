@@ -745,40 +745,6 @@ def giveMarkedMyocyte(
 
   if returnPastedFilter:
     cI = markPastedFilters(lossMasked, ltMasked, wtMasked, cI)
-    # exploiting architecture of painter function to mark hits for me
-    #Lossholder = empty()
-    #Lossholder.stackedHits = lossMasked
-    #LTholder = empty()
-    #LTholder.stackedHits = ltMasked
-    #WTholder = empty()
-    #WTholder.stackedHits = wtMasked
-
-    ### we want to mark WT last since that should be the most stringent
-    # Opting to mark Loss, then Long, then WT
-    #halfCellSizeLoss = 12 # should think of how to automate
-    #labeledLoss = painter.doLabel(Lossholder,dx=halfCellSizeLoss,thresh=254)
-    #LTx = 14
-    #LTy = 3
-    #labeledLT = painter.doLabel(LTholder,dx=LTx,dy=LTy,thresh=254)
-    #halfCellSizeWT = 14
-    #labeledWT = painter.doLabel(WTholder,dx=halfCellSizeWT,thresh=254)
-
-    ### perform masking
-    #WTmask = labeledWT.copy()
-    #LTmask = labeledLT.copy()
-    #Lossmask = labeledLoss.copy()
-
-    #WTmask[labeledLoss] = False
-    #WTmask[labeledLT] = False
-    #LTmask[labeledLoss] = False
-
-    #LTmask[WTmask] = False # prevents double marking of WT and LT
-
-    #alpha = 1.0
-
-    #cI[:,:,2][Lossmask] = int(round(alpha * 255))
-    #cI[:,:,1][LTmask] = int(round(alpha * 255))
-    #cI[:,:,0][WTmask] = int(round(alpha * 255))
   
     if writeImage:
       ### write outputs	  
@@ -819,7 +785,34 @@ def giveMarkedMyocyte(
   print "Total Elapsed Time: {}s".format(tElapsed)
   return cI 
 
+def setupAnnotatedImage(annotatedName, baseImageName):
+  '''
+  Function to be used in conjunction with Myocyte().
+  Uses the markPastedFilters() function to paste filters onto the annotated image.
+  This is so we don't have to generate a new annotated image everytime we 
+  change filter sizes.
+  '''
+  ### Read in images
+  baseImage = util.ReadImg(baseImageName,cvtColor=False)
+  markedImage = util.ReadImg(annotatedName, cvtColor=False)
+  
+  ### Preprare base image for markPastedFilters function
+  baseImage[baseImage == 0] = 1
+  baseImage -= 1
 
+  ### Divide up channels of markedImage to represent hits
+  wtHits, ltHits = markedImage[:,:,0],markedImage[:,:,1]
+  # loss is already adequately marked so we don't want it ran through the routine
+  lossHits = np.zeros_like(wtHits)
+  coloredImage = markPastedFilters(lossHits,ltHits,wtHits,baseImage)
+  # add back in the loss hits
+  coloredImage[:,:,2] = markedImage[:,:,2]  
+
+  ### Save image to run with optimizer routines
+  newName = annotatedName[:-4]+"_pasted"+annotatedName[-4:]
+  cv2.imwrite(newName,coloredImage)
+
+  return newName
 ##
 ## Defines dataset for myocyte (MI) 
 ##
@@ -828,10 +821,13 @@ def Myocyte():
     root = "myoimages/"
 
     # name of data used for testing algorithm 
-    filter1TestName = root + 'MI_D_73_annotation.png'
+    #filter1TestName = root + 'MI_D_73_annotation.png'
+    filter1TestName = root + "MI_D_73_annotated_May30.png"
     # version of filter1TestName marked 'white' where you expect to get hits for filter1
     # or by marking 'positive' channel 
-    filter1PositiveTest = root+"MI_D_73_annotation_channels.png"
+    #filter1PositiveTest = root+"MI_D_73_annotation_channels.png"
+    filter1PositiveTest = root + "MI_D_73_annotated_channels_May30.png"
+    filter1PositiveTest = setupAnnotatedImage(filter1PositiveTest,filter1TestName)
 
     dataSet = optimizer.DataSet(
         root = root,
@@ -852,6 +848,10 @@ def Myocyte():
         filter2Thresh=0.38 
     )
 
+
+    # flag to paste filters on the myocyte to smooth out results
+    dataSet.pasteFilters = True
+
     return dataSet
 
 
@@ -861,6 +861,7 @@ def rocData():
   # rotation angles
   iters = [-25,-20,-15,-10,-5,0,5,10,15,20,25]
 
+  root = "./myoimages/"
 
   ## Testing TT first 
   dataSet.filter1PositiveChannel= 0
@@ -877,29 +878,15 @@ def rocData():
         filter1Label = dataSet.filter1Label,
         f1ts = np.linspace(15,45,15),
         iters=iters,
-        display=False
         )
 
   ## Testing LT now
   dataSet.filter1PositiveChannel=1
   dataSet.filter1Label = "LT"
-  #dataSet.filter1Name = root+'LongFilter.png'
-  # opting to test H filter now
-  #dataSet.filter1Name = root+'newLTfilter.png'
-  dataSet.filter1Name = root+'simpleLTfilter.png'
+  dataSet.filter1Name = root+'LongitudinalFilter.png'
   optimizer.SetupTests(dataSet)
   paramDict = optimizer.ParamDict(typeDict='LT')  
 
-  paramDict['filterMode'] = 'punishmentFilter'
-  #paramDict['mfPunishment'] = util.ReadImg(root+"newLTPunishmentFilter.png",renorm=True)
-  #paramDict['gamma'] = 0.05 
-  paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
-
-  # new longitudinal simple filtering
-  paramDict['mfPunishment'] = util.ReadImg(root+"simpleLTPunishmentfilter.png",renorm=True)
-  paramDict['gamma'] = 0.25
-
-  
   optimizer.GenFigROC_TruePos_FalsePos(
         dataSet,
         paramDict,
@@ -908,7 +895,6 @@ def rocData():
         #f1ts = np.linspace(18,28,10),
         f1ts = np.linspace(0.1, 10, 15),
         iters=iters
-        #display=True
       )
 
   ## Testing Loss
@@ -925,7 +911,6 @@ def rocData():
          filter1Label = dataSet.filter1Label,
          f1ts = np.linspace(4,15,11),
          iters=lossIters,
-         display=True
        )
 
 
@@ -1068,6 +1053,32 @@ def assessContent(markedImg,imgName=None):
     lossContent /= cellArea
 
   return wtContent, ltContent, lossContent
+
+def minDistanceROC(dataSet,paramDict,param1Range,param2Range,
+                   param1="snrThresh",
+                   param2="stdDevThresh",
+                   FPthresh=0.1,
+                   iters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
+                   ):
+  '''
+  Function that will calculate the minimum distance to the perfect detection point
+  (0,1) on a ROC curve and return those parameters.
+  '''
+  perfectDetection = (0,1)
+
+  distanceStorage = np.ones_like((p1,p2),dtype=np.float32)
+  for i,p1 in enumerate(param1Range):
+    paramDict[param1] = p1
+    for j,p2 in enumerate(param2Range):
+      paramDict[param2] = p2
+      posScore,negScore = TestParams_Single(dataSet,paramDict,iters=iters)
+      if negScore < FPthresh:
+        distanceFromPerfect = np.sqrt((perfectDetection[0]-negScore)**2 +\
+                                      (perfectDetection[1]-posScore)**2)
+        perfectDetection[i,j] = distanceFromPerfect
+
+  optimumP1,optimumP2 = np.unravel_index(distanceStorage.argmin(), distanceStorage.shape)
+  print optimumP1, optimumP2
 
 # function to validate that code has not changed since last commit
 def validate(testImage=root+"MI_D_78.png",

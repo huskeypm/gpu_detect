@@ -28,6 +28,11 @@ def ReadImg(fileName,cvtColor=True,renorm=False,bound=False):
     	img = img / np.float(np.amax(img))
     return img  
 
+def LoadFilter(fileName):
+  filterImg = ReadImg(fileName,cvtColor=True)
+  filterImg /= np.float(np.sum(filterImg))
+  return filterImg
+
 import scipy.fftpack as fftp
 
 # Prepare matrix of vectorized of FFT'd images

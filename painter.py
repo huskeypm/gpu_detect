@@ -38,7 +38,8 @@ def correlateThresher(
       clahe99 = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(16,16))
       img = clahe99.apply(myImg)
 
-    filterRef = util.renorm(np.array(inputs.mfOrig,dtype=float),scale=1.)
+    #filterRef = util.renorm(np.array(inputs.mfOrig,dtype=float),scale=1.)
+    filterRef = inputs.mfOrig.copy()
     
     ##
     ## Iterate over all filter rotations desired 
@@ -57,8 +58,18 @@ def correlateThresher(
 
       # pad/rotate 
       params['angle'] = angle
+      #import matplotlib.pyplot as plt
+      #plt.figure()
+      #plt.imshow(filterRef)
+      #plt.colorbar()
+      #plt.show()
       rFN = util.PadRotate(filterRef,angle)  
       inputs.mf = rFN  
+      #plt.figure()
+      #plt.imshow(rFN)
+      #plt.colorbar()
+      #plt.show()
+      #quit()
       
       # matched filtering 
       result = dps.FilterSingle(inputs,params)      

@@ -29,8 +29,8 @@ def ReadImg(fileName,cvtColor=True,renorm=False,bound=False):
     return img  
 
 def LoadFilter(fileName):
-  filterImg = ReadImg(fileName,cvtColor=True)
-  filterImg /= np.float(np.sum(filterImg))
+  filterImg = ReadImg(fileName,cvtColor=True,renorm=True)
+  #filterImg = filterImg.astype(np.float64) /  np.float(np.sum(filterImg))
   return filterImg
 
 import scipy.fftpack as fftp

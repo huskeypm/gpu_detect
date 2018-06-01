@@ -178,6 +178,12 @@ def punishmentFilter(
     ######
     snr = results.corr / (cM + gamma * results.corrPunishment)
 
+    #import matplotlib.pyplot as plt
+    #plt.figure()
+    #plt.imshow(mf)
+    #plt.colorbar()
+    #plt.show()
+
     #print "SNR Max:", np.max(snr)
 
     #results = empty()

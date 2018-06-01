@@ -98,7 +98,7 @@ class DataSet:
 ## Has some logic for processing cropped data and data with multiple channels
 ## Todo: prolly should load filters here too and remove the IO from bankDetect
 ##
-def SetupTests(dataSet):
+def SetupTests(dataSet,meanFilter=False):
   
   #filter1/, designate channel
   def LoadFilterData(testDataName, subsection, # may be None
@@ -112,7 +112,7 @@ def SetupTests(dataSet):
     if isinstance(subsection, (list, tuple, np.ndarray)):
       testData = testData[
         subsection[0]:subsection[1],subsection[2]:subsection[3]]
-  
+
     ## positive test
     # use a specific channel 
     truthData = cv2.imread(truthName) 
@@ -146,14 +146,20 @@ def SetupTests(dataSet):
 
   # load filters
   #print dataSet.filter1Name
-  filter1Filter = cv2.imread(dataSet.filter1Name)
-  dataSet.filter1Data   = cv2.cvtColor(filter1Filter, cv2.COLOR_BGR2GRAY)
+  if meanFilter:
+    dataSet.filter1Data = util.LoadFilter(dataSet.filter1Name)
+  else:
+    filter1Filter = cv2.imread(dataSet.filter1Name)
+    dataSet.filter1Data   = cv2.cvtColor(filter1Filter, cv2.COLOR_BGR2GRAY)
+    dataSet.filter1Data = util.renorm(np.array(dataSet.filter1Data,dtype=float),scale=1.)
   dataSet.filter1y,dataSet.filter1x = measureFilterDimensions(dataSet.filter1Data)
-  dataSet.filter1Data = util.renorm(np.array(dataSet.filter1Data,dtype=float),scale=1.)
 
-  filter2Filter = cv2.imread(dataSet.filter2Name)
-  dataSet.filter2Data   = cv2.cvtColor(filter2Filter, cv2.COLOR_BGR2GRAY)
-  dataSet.filter2Data = util.renorm(np.array(dataSet.filter2Data,dtype=float),scale=1.)
+  if meanFilter:
+    dataSet.filter2Data = util.LoadFilter(dataSet.filter2Name)
+  else:
+    filter2Filter = cv2.imread(dataSet.filter2Name)
+    dataSet.filter2Data   = cv2.cvtColor(filter2Filter, cv2.COLOR_BGR2GRAY)
+    dataSet.filter2Data = util.renorm(np.array(dataSet.filter2Data,dtype=float),scale=1.)
   dataSet.filter2y,dataSet.filter2x = measureFilterDimensions(dataSet.filter2Data)
 
 def ParamDict(typeDict=None):
@@ -179,15 +185,20 @@ def ParamDict(typeDict=None):
     print "Be sure to update ParamDict constructor once params are optimized"
     paramDict['gamma'] = .15
     paramDict['snrThresh'] = 22.5#35 
+    #paramDict['gamma'] = 11.7
+    #paramDict['snrThresh'] = .061813
   elif typeDict=='LT':
     paramDict['filterMode'] = 'regionalDeviation'
     #paramDict['snrThresh'] = 19 
     #paramDict['stdDevThresh'] = 0.9
-    paramDict['snrThresh'] = 3.75 
+
+    #paramDict['snrThresh'] = 3.75 
+    paramDict['snrThresh'] = 10000
     paramDict['stdDevThresh'] = 0.08
   elif typeDict=='Loss':
     paramDict['inverseSNR'] = True
-    paramDict['snrThresh'] = 3.5 
+    #paramDict['snrThresh'] = 3.5 
+    paramDict['snrThresh'] = 0
     #paramDict['useGPU'] = True
   return paramDict
 
@@ -206,7 +217,6 @@ def ScoreOverlap_SingleFilter(
     # debug
     #truthMarked = np.zeros_like(truthMarked); truthMarked[0:20,:]=1.
     #display=True
-
     # positive hits 
     masked = np.array(hits > 0, dtype=np.float)
     positiveScoreOverlapImg = truthMarked*masked
@@ -317,7 +327,7 @@ def TestParams_Single(
       
       paramDict = paramDict    
     )        
-    
+    dataSet.pasteFilters = False
     if dataSet.pasteFilters:
       hits = painter.doLabel(filter1_filter1Test, dx=dataSet.filter1x,dy=dataSet.filter1y,thresh=0)
     else:

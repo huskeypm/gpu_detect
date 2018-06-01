@@ -232,9 +232,9 @@ def fig6():
   ### setup WT parameters
   WTparams = optimizer.ParamDict(typeDict='WT')
   WTparams['covarianceMatrix'] = np.ones_like(img)
-  WTparams['mfPunishment'] = util.ReadImg("./myoimages/WTPunishmentFilter.png",renorm=True)
+  WTparams['mfPunishment'] = util.LoadFilter("./myoimages/WTPunishmentFilter.png")
   WTparams['useGPU'] = False # for now
-  ttFilter = util.ReadImg(ttFilterName, renorm=True)
+  ttFilter = util.LoadFilter(ttFilterName)
   inputs.mfOrig = ttFilter
 
   ### obtain super threshold filter hits
@@ -658,11 +658,11 @@ def giveMarkedMyocyte(
   inputs.imgOrig = ReadResizeApplyMask(img,testImage,25,25) # just applies mask
 
   ### WT filtering
-  ttFilter = util.ReadImg(ttFilterName, renorm=True)
+  ttFilter = util.LoadFilter(ttFilterName)
   inputs.mfOrig = ttFilter
   WTparams = optimizer.ParamDict(typeDict='WT')
   WTparams['covarianceMatrix'] = np.ones_like(img)
-  WTparams['mfPunishment'] = util.ReadImg(wtPunishFilterName,renorm=True)
+  WTparams['mfPunishment'] = util.LoadFilter(wtPunishFilterName)
   WTparams['useGPU'] = useGPU
   if ttThresh != None:
     WTparams['snrThresh'] = ttThresh
@@ -674,7 +674,7 @@ def giveMarkedMyocyte(
   ### LT filtering
   ltFilterName = "./myoimages/LongitudinalFilter.png"
   LTparams = optimizer.ParamDict(typeDict='LT')
-  LTFilter = util.ReadImg(ltFilterName, renorm = True)
+  LTFilter = util.LoadFilter(ltFilterName)
   inputs.mfOrig = LTFilter
   if ltThresh != None:
     LTparams['snrThresh'] = ltThresh
@@ -688,7 +688,7 @@ def giveMarkedMyocyte(
   Lossparams = optimizer.ParamDict(typeDict='Loss')
   Lossparams['useGPU'] = useGPU
   Lossiters = [0, 45] # don't need many rotations for loss filtering
-  LossFilter = util.ReadImg(lossFilterName, renorm = True)
+  LossFilter = util.LoadFilter(lossFilterName)
   inputs.mfOrig =  LossFilter
   if lossThresh != None:
     Lossparams['snrThresh'] = lossThresh
@@ -793,18 +793,20 @@ def setupAnnotatedImage(annotatedName, baseImageName):
   change filter sizes.
   '''
   ### Read in images
-  baseImage = util.ReadImg(baseImageName,cvtColor=False)
+  #baseImage = util.ReadImg(baseImageName,cvtColor=False)
   markedImage = util.ReadImg(annotatedName, cvtColor=False)
   
   ### Preprare base image for markPastedFilters function
-  baseImage[baseImage == 0] = 1
-  baseImage -= 1
+  #baseImage[baseImage == 0] = 1
+  #baseImage -= 1
 
   ### Divide up channels of markedImage to represent hits
   wtHits, ltHits = markedImage[:,:,0],markedImage[:,:,1]
+  wtHits[wtHits > 0] = 255
+  ltHits[ltHits > 0] = 255
   # loss is already adequately marked so we don't want it ran through the routine
   lossHits = np.zeros_like(wtHits)
-  coloredImage = markPastedFilters(lossHits,ltHits,wtHits,baseImage)
+  coloredImage = markPastedFilters(lossHits,ltHits,wtHits,markedImage)
   # add back in the loss hits
   coloredImage[:,:,2] = markedImage[:,:,2]  
 
@@ -821,13 +823,13 @@ def Myocyte():
     root = "myoimages/"
 
     # name of data used for testing algorithm 
-    #filter1TestName = root + 'MI_D_73_annotation.png'
-    filter1TestName = root + "MI_D_73_annotated_May30.png"
+    filter1TestName = root + 'MI_D_73_annotation.png'
+    #filter1TestName = root + "MI_D_73_annotated_May30.png"
     # version of filter1TestName marked 'white' where you expect to get hits for filter1
     # or by marking 'positive' channel 
-    #filter1PositiveTest = root+"MI_D_73_annotation_channels.png"
-    filter1PositiveTest = root + "MI_D_73_annotated_channels_May30.png"
-    filter1PositiveTest = setupAnnotatedImage(filter1PositiveTest,filter1TestName)
+    filter1PositiveTest = root+"MI_D_73_annotation_channels.png"
+    #filter1PositiveTest = root + "MI_D_73_annotated_channels_May30.png"
+    #filter1PositiveTest = setupAnnotatedImage(filter1PositiveTest,filter1TestName)
 
     dataSet = optimizer.DataSet(
         root = root,
@@ -867,33 +869,32 @@ def rocData():
   dataSet.filter1PositiveChannel= 0
   dataSet.filter1Label = "TT"
   dataSet.filter1Name = root+'WTFilter.png'
-  optimizer.SetupTests(dataSet)
+  optimizer.SetupTests(dataSet,meanFilter=True)
   paramDict = optimizer.ParamDict(typeDict='WT')
   paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
-  paramDict['mfPunishment'] = util.ReadImg(root+"WTPunishmentFilter.png",renorm=True)
+  paramDict['mfPunishment'] = util.LoadFilter(root+"WTPunishmentFilter.png")
   
   optimizer.GenFigROC_TruePos_FalsePos(
         dataSet,
         paramDict,
         filter1Label = dataSet.filter1Label,
-        f1ts = np.linspace(15,45,15),
+  #      f1ts = np.linspace(0.13,0.35,15),
+        f1ts = np.linspace(15,30, 30),
         iters=iters,
         )
-
+  quit()
   ## Testing LT now
   dataSet.filter1PositiveChannel=1
   dataSet.filter1Label = "LT"
   dataSet.filter1Name = root+'LongitudinalFilter.png'
-  optimizer.SetupTests(dataSet)
+  optimizer.SetupTests(dataSet,meanFilter=True)
   paramDict = optimizer.ParamDict(typeDict='LT')  
 
   optimizer.GenFigROC_TruePos_FalsePos(
         dataSet,
         paramDict,
         filter1Label = dataSet.filter1Label,
-        #f1ts = np.linspace(10,25,10),
-        #f1ts = np.linspace(18,28,10),
-        f1ts = np.linspace(0.1, 10, 15),
+        f1ts = np.linspace(0.1, 0.5, 15),
         iters=iters
       )
 
@@ -901,7 +902,7 @@ def rocData():
   dataSet.filter1PositiveChannel = 2
   dataSet.filter1Label = "Loss"
   dataSet.filter1Name = root+"LossFilter.png"
-  optimizer.SetupTests(dataSet)
+  optimizer.SetupTests(dataSet,meanFilter=True)
   paramDict = optimizer.ParamDict(typeDict='Loss')
   lossIters = [0,45]
 
@@ -909,7 +910,7 @@ def rocData():
          dataSet,
          paramDict,
          filter1Label = dataSet.filter1Label,
-         f1ts = np.linspace(4,15,11),
+         f1ts = np.linspace(0.01,0.2,15),
          iters=lossIters,
        )
 
@@ -922,7 +923,7 @@ def myocyteROC(data, myoName,
                threshes = np.linspace(5,30,10),
                iters=[-25,-20,-15,-10,-5,0,5,10,15,20,25]
                ):
-
+  # TODO: Fix thresholds so < 1
   ### WT
   # setup WT data in class structure
   data.filter1PositiveChannel= 0
@@ -931,7 +932,7 @@ def myocyteROC(data, myoName,
   optimizer.SetupTests(data)
   WTparams = optimizer.ParamDict(typeDict='WT')
   WTparams['covarianceMatrix'] = np.ones_like(data.filter1TestData)
-  WTparams['mfPunishment'] = util.ReadImg(root+"WTPunishmentFilter.png",renorm=True)
+  WTparams['mfPunishment'] = util.LoadFilter(root+"WTPunishmentFilter.png")
 
   # write filter performance data for WT into hdf5 file
   optimizer.Assess_Single(data, 
@@ -1066,19 +1067,58 @@ def minDistanceROC(dataSet,paramDict,param1Range,param2Range,
   '''
   perfectDetection = (0,1)
 
-  distanceStorage = np.ones_like((p1,p2),dtype=np.float32)
+  distanceStorage = np.ones((len(param1Range),len(param2Range)),dtype=np.float32)
   for i,p1 in enumerate(param1Range):
     paramDict[param1] = p1
     for j,p2 in enumerate(param2Range):
       paramDict[param2] = p2
-      posScore,negScore = TestParams_Single(dataSet,paramDict,iters=iters)
+      print "Param 1:",p1
+      print "Param 2:",p2
+      # having to manually assign the thresholds due to structure of TestParams function
+      if param1 == "snrThresh":
+        dataSet.filter1Thresh = p1
+      elif param2 == "snrThresh":
+        dataSet.filter1Thresh = p2
+      posScore,negScore = optimizer.TestParams_Single(dataSet,paramDict,iters=iters)
       if negScore < FPthresh:
-        distanceFromPerfect = np.sqrt((perfectDetection[0]-negScore)**2 +\
-                                      (perfectDetection[1]-posScore)**2)
-        perfectDetection[i,j] = distanceFromPerfect
+        distanceFromPerfect = np.sqrt(((perfectDetection[0]-negScore)**2 +\
+                                      (perfectDetection[1]-posScore)**2))
+        distanceStorage[i,j] = distanceFromPerfect
 
-  optimumP1,optimumP2 = np.unravel_index(distanceStorage.argmin(), distanceStorage.shape)
+  idx = np.unravel_index(distanceStorage.argmin(), distanceStorage.shape)
+  optP1idx,optP2idx = idx[0],idx[1]
+  optimumP1 = param1Range[optP1idx]
+  optimumP2 = param2Range[optP2idx]
+
+  print "Minimum Distance to Perfect Detection:",distanceStorage.min()
   print optimumP1, optimumP2
+  return optimumP1, optimumP2, distanceStorage
+
+def optimizeWT():
+  root = "./myoimages/"
+  dataSet = Myocyte()
+  dataSet.filter1PositiveChannel= 0
+  dataSet.filter1Label = "TT"
+  dataSet.filter1Name = root+'WTFilter.png'
+  optimizer.SetupTests(dataSet,meanFilter=True)
+  print dataSet.pasteFilters
+
+  paramDict = optimizer.ParamDict(typeDict='WT')
+  paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
+  paramDict['mfPunishment'] = util.LoadFilter(root+"WTPunishmentFilter.png") 
+  snrThreshRange = np.linspace(0.01, 0.15, 35)
+  gammaRange = np.linspace(4., 25., 35)
+
+  optimumSNRthresh, optimumGamma, distToPerfect= minDistanceROC(dataSet,paramDict,
+                                                  snrThreshRange,gammaRange,
+                                                  param1="snrThresh",
+                                                  param2="gamma", FPthresh=1.)
+
+  plt.figure()
+  plt.imshow(distToPerfect)
+  plt.title("Distance to Perfect Detection")
+  plt.colorbar()
+  plt.show()
 
 # function to validate that code has not changed since last commit
 def validate(testImage=root+"MI_D_78.png",
@@ -1260,6 +1300,10 @@ if __name__ == "__main__":
     ### Testing/Optimization Routines
     if(arg=="-roc"): 
       rocData()
+      quit()
+
+    if(arg=="-optimizeWT"):
+      optimizeWT()
       quit()
 	   
     if(arg=="-test"):

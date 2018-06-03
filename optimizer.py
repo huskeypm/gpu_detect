@@ -182,24 +182,20 @@ def ParamDict(typeDict=None):
     paramDict['doCLAHE'] = True
   elif typeDict=='WT':
     paramDict['filterMode'] = 'punishmentFilter'
-    print "Be sure to update ParamDict constructor once params are optimized"
+    # optimized as of June 2, 2018
     paramDict['gamma'] = .75
     paramDict['snrThresh'] = 6.874 
-    #paramDict['gamma'] = 11.7
-    #paramDict['snrThresh'] = .061813
   elif typeDict=='LT':
     paramDict['filterMode'] = 'regionalDeviation'
-    #paramDict['snrThresh'] = 19 
-    #paramDict['stdDevThresh'] = 0.9
-
-    #paramDict['snrThresh'] = 3.75 
-    paramDict['snrThresh'] = 10000
-    paramDict['stdDevThresh'] = 0.08
+    # optimized as of June 3, 2018 
+    paramDict['snrThresh'] = 4.0 
+    paramDict['stdDevThresh'] = 0.15
   elif typeDict=='Loss':
+    # optimized as of XXX
+    paramDict['filterMode'] = 'regionalDeviation'
     paramDict['inverseSNR'] = True
-    #paramDict['snrThresh'] = 3.5 
-    paramDict['snrThresh'] = 0
-    #paramDict['useGPU'] = True
+    paramDict['snrThresh'] = 3.5 
+    paramDict['stdDevThresh'] = 0
   return paramDict
 
 ##

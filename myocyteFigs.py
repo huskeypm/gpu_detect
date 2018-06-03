@@ -35,7 +35,6 @@ def fig3():
 
   iters = [-25,-20, -15, -10, -5, 0, 5, 10, 15, 20,25]
   coloredImg, coloredAngles, angleCounts = giveMarkedMyocyte(testImage=testImage,
-                        #ImgTwoSarcSize=twoSarcSize,
                         returnAngles=True,
                         iters=iters,
                         )
@@ -91,9 +90,8 @@ def fig4():
   root = "./myoimages/"
   filterTwoSarcSize = 25
   imgName = root + "HF_1_processed.png"
-  #twoSarcSize = 21
   rawImg = util.ReadImg(imgName)
-  markedImg = giveMarkedMyocyte(testImage=imgName)#,ImgTwoSarcSize=twoSarcSize)
+  markedImg = giveMarkedMyocyte(testImage=imgName)
 
   ### make bar chart for content
   wtContent, ltContent, lossContent = assessContent(markedImg,imgName)
@@ -133,20 +131,15 @@ def fig4():
 ## MI 
 def fig5(): 
   ### update if need be
-  root="./myoimages"
+  root="./myoimages/"
   filterTwoSarcSize = 25
 
   ### Distal, Medial, Proximal
-  print "TwoSarcSize argument is deprecated with new preprocssing function. Remove."
   DImageName = root+"MI_D_73_processed.png"
-  DTwoSarcSize = 22
   MImageName = root+"MI_M_45_processed.png"
-  MTwoSarcSize = 21
   PImageName = root+"MI_P_16_processed.png"
-  PTwoSarcSize = 21
 
   imgNames = [DImageName, MImageName, PImageName]
-  ImgTwoSarcSizes = [DTwoSarcSize,MTwoSarcSize,PTwoSarcSize]
 
   ### Read in images for figure
   DImage = util.ReadImg(DImageName)
@@ -155,9 +148,9 @@ def fig5():
   images = [DImage, MImage, PImage]
 
   # BE SURE TO UPDATE TESTMF WITH OPTIMIZED PARAMS
-  Dimg = giveMarkedMyocyte(testImage=DImageName,ImgTwoSarcSize=DTwoSarcSize)
-  Mimg = giveMarkedMyocyte(testImage=MImageName,ImgTwoSarcSize=MTwoSarcSize)
-  Pimg = giveMarkedMyocyte(testImage=PImageName,ImgTwoSarcSize=PTwoSarcSize)
+  Dimg = giveMarkedMyocyte(testImage=DImageName)
+  Mimg = giveMarkedMyocyte(testImage=MImageName)
+  Pimg = giveMarkedMyocyte(testImage=PImageName)
 
   results = [Dimg, Mimg, Pimg]
   keys = ['Distal', 'Medial', 'Proximal']
@@ -177,7 +170,6 @@ def fig5():
     lossResults.append(lossContent)
 
   ### generating figure
-  #fig, axarr = plt.subplots(3,3)
   width = 0.25
   colors = ["blue","green","red"]
   marks = ["WT","LT","Loss"]
@@ -199,9 +191,7 @@ def fig5():
   ### saving individual marked images
   fig, axarr = plt.subplots(3,2)
   for i,img in enumerate(images):
-    scale = float(filterTwoSarcSize) / float(ImgTwoSarcSizes[i])
-    resizedImg = cv2.resize(img,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
-    axarr[i,0].imshow(resizedImg,cmap='gray')
+    axarr[i,0].imshow(img)
     axarr[i,0].axis('off')
     axarr[i,0].set_title(keys[i]+" Raw")
 
@@ -1097,8 +1087,13 @@ def minDistanceROC(dataSet,paramDict,param1Range,param2Range,
   optimumP1 = param1Range[optP1idx]
   optimumP2 = param2Range[optP2idx]
 
+  print ""
+  print 100*"#"
   print "Minimum Distance to Perfect Detection:",distanceStorage.min()
-  print optimumP1, optimumP2
+  print "Optimum",param1,"->",optimumP1
+  print "Optimum",param2,"->",optimumP2
+  print 100*"#"
+  print ""
   return optimumP1, optimumP2, distanceStorage
 
 def optimizeWT():
@@ -1125,15 +1120,60 @@ def optimizeWT():
                                                   param1="snrThresh",
                                                   param2="gamma", FPthresh=1.)
 
-  #plt.figure()
-  #plt.imshow(distToPerfect)
-  #plt.title("Distance to Perfect Detection")
-  #plt.colorbar()
-  #plt.show()
+  distToPerfect *= 255
+  distToPerfect = np.asarray(distToPerfect, dtype=np.uint8)
+  cv2.imwrite("ROC_Optimization_WT.png",distToPerfect)
+
+def optimizeLT():
+  root = "./myoimages/"
+  dataSet = Myocyte()
+  dataSet.filter1PositiveChannel= 1
+  dataSet.filter1Label = "LT"
+  dataSet.filter1Name = root+'LongitudinalFilter.png'
+  #optimizer.SetupTests(dataSet,meanFilter=True)
+  optimizer.SetupTests(dataSet)
+  #print dataSet.pasteFilters
+  dataSet.pasteFilters = False
+
+  paramDict = optimizer.ParamDict(typeDict='LT')
+  snrThreshRange = np.linspace(2, 8, 10)
+  stdDevThreshRange = np.linspace(0.05, 0.5, 10)
+
+  optimumSNRthresh, optimumGamma, distToPerfect= minDistanceROC(dataSet,paramDict,
+                                                  snrThreshRange,stdDevThreshRange,
+                                                  param1="snrThresh",
+                                                  param2="stdDevThresh",
+                                                  FPthresh=1.)
 
   distToPerfect *= 255
   distToPerfect = np.asarray(distToPerfect, dtype=np.uint8)
-  cv2.imwrite("ROC_Optimization.png",distToPerfect)
+  cv2.imwrite("ROC_Optimization_LT.png",distToPerfect)
+
+def optimizeLoss():
+  root = "./myoimages/"
+  dataSet = Myocyte()
+  dataSet.filter1PositiveChannel= 2
+  dataSet.filter1Label = "Loss"
+  dataSet.filter1Name = root+'LossFilter.png'
+  #optimizer.SetupTests(dataSet,meanFilter=True)
+  optimizer.SetupTests(dataSet)
+  #print dataSet.pasteFilters
+  dataSet.pasteFilters = False
+
+  paramDict = optimizer.ParamDict(typeDict='Loss')
+  snrThreshRange = np.linspace(1, 10, 20)
+  stdDevThreshRange = np.linspace(0.05, 0.5, 20)
+
+  optimumSNRthresh, optimumGamma, distToPerfect= minDistanceROC(dataSet,paramDict,
+                                                  snrThreshRange,stdDevThreshRange,
+                                                  param1="snrThresh",
+                                                  param2="stdDevThresh",
+                                                  FPthresh=1.)
+
+  distToPerfect *= 255
+  distToPerfect = np.asarray(distToPerfect, dtype=np.uint8)
+  cv2.imwrite("ROC_Optimization_Loss.png",distToPerfect)
+
 
 # function to validate that code has not changed since last commit
 def validate(testImage=root+"MI_D_78.png",
@@ -1319,6 +1359,14 @@ if __name__ == "__main__":
 
     if(arg=="-optimizeWT"):
       optimizeWT()
+      quit()
+
+    if(arg=="-optimizeLT"):
+      optimizeLT()
+      quit()
+
+    if(arg=="-optimizeLoss"):
+      optimizeLoss()
       quit()
 	   
     if(arg=="-test"):

@@ -4,9 +4,9 @@ need to figure out what's different by detect.py vs origin implementation in tis
 
 NOTE: Before running algorithm on user provided images, be sure to run through
 <code>
-python util.py -preprocessImg "IMGNAME" "IMGTWOSARCSIZE" "FILTERTWOSARCSIZE"
+python preprocessing.py -preprocess "IMGNAME" "FILTERTWOSARCSIZE"
 </code>
-Where IMGNAME is the path/name of your image, IMGTWOSARCSIZE is the measured two sarcomere size in pixels of your image, and FILTERTWOSARCSIZE 
+Where IMGNAME is the path/name of your image and FILTERTWOSARCSIZE 
 is the default two sarcomere size for the filters used. Default filter size is 25 pixels.
 
 ## MASTER SCRIPT 
@@ -49,7 +49,12 @@ python util.py -genAllMyo
 python myocyteFigs.py -validation
 </code>
 
-#$# generate paper figs
+### Generate Paper Figures
+To preprocess images:
+<code>
+python preprocessing.py -preprocessAll
+</code>
+To generate the paper figures:
 <code>
 python myocyteFigs.py -allFigs 
 </code>

@@ -27,14 +27,15 @@ root = "/net/share/dfco222/data/TT/LouchData/processed/"
 
 ## WT 
 def fig3(): 
+  root = "./myoimages/"
   testImage = root+"Sham_M_65_processed.png"
-  twoSarcSize = 21
+  #twoSarcSize = 21
 
   rawImg = util.ReadImg(testImage,cvtColor=False)
 
   iters = [-25,-20, -15, -10, -5, 0, 5, 10, 15, 20,25]
   coloredImg, coloredAngles, angleCounts = giveMarkedMyocyte(testImage=testImage,
-                        ImgTwoSarcSize=twoSarcSize,
+                        #ImgTwoSarcSize=twoSarcSize,
                         returnAngles=True,
                         iters=iters,
                         )
@@ -87,11 +88,12 @@ def fig3():
 ## HF 
 def fig4(): 
   ### initial arguments
+  root = "./myoimages/"
   filterTwoSarcSize = 25
   imgName = root + "HF_1_processed.png"
-  twoSarcSize = 21
+  #twoSarcSize = 21
   rawImg = util.ReadImg(imgName)
-  markedImg = giveMarkedMyocyte(testImage=imgName,ImgTwoSarcSize=twoSarcSize)
+  markedImg = giveMarkedMyocyte(testImage=imgName)#,ImgTwoSarcSize=twoSarcSize)
 
   ### make bar chart for content
   wtContent, ltContent, lossContent = assessContent(markedImg,imgName)
@@ -131,6 +133,7 @@ def fig4():
 ## MI 
 def fig5(): 
   ### update if need be
+  root="./myoimages"
   filterTwoSarcSize = 25
 
   ### Distal, Medial, Proximal
@@ -865,11 +868,15 @@ def rocData():
 
   root = "./myoimages/"
 
+  # flag to turn on the pasting of unit cell on each hit
+  dataSet.pasteFilters = True
+
   ## Testing TT first 
   dataSet.filter1PositiveChannel= 0
   dataSet.filter1Label = "TT"
   dataSet.filter1Name = root+'WTFilter.png'
-  optimizer.SetupTests(dataSet,meanFilter=True)
+  optimizer.SetupTests(dataSet,meanFilter=False)
+  #optimizer.SetupTests(dataSet,meanFilter=True)
   paramDict = optimizer.ParamDict(typeDict='WT')
   paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
   paramDict['mfPunishment'] = util.LoadFilter(root+"WTPunishmentFilter.png")
@@ -879,10 +886,10 @@ def rocData():
         paramDict,
         filter1Label = dataSet.filter1Label,
   #      f1ts = np.linspace(0.13,0.35,15),
-        f1ts = np.linspace(15,30, 30),
+        f1ts = np.linspace(15,30, 10),
         iters=iters,
         )
-  quit()
+
   ## Testing LT now
   dataSet.filter1PositiveChannel=1
   dataSet.filter1Label = "LT"
@@ -1100,25 +1107,33 @@ def optimizeWT():
   dataSet.filter1PositiveChannel= 0
   dataSet.filter1Label = "TT"
   dataSet.filter1Name = root+'WTFilter.png'
-  optimizer.SetupTests(dataSet,meanFilter=True)
-  print dataSet.pasteFilters
+  #optimizer.SetupTests(dataSet,meanFilter=True)
+  optimizer.SetupTests(dataSet)
+  #print dataSet.pasteFilters
+  dataSet.pasteFilters = False
 
   paramDict = optimizer.ParamDict(typeDict='WT')
   paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
   paramDict['mfPunishment'] = util.LoadFilter(root+"WTPunishmentFilter.png") 
-  snrThreshRange = np.linspace(0.01, 0.15, 35)
-  gammaRange = np.linspace(4., 25., 35)
+  #snrThreshRange = np.linspace(0.01, 0.15, 35)
+  #gammaRange = np.linspace(4., 25., 35)
+  snrThreshRange = np.linspace(.1, 10, 20)
+  gammaRange = np.linspace(0.75, 3, 20)
 
   optimumSNRthresh, optimumGamma, distToPerfect= minDistanceROC(dataSet,paramDict,
                                                   snrThreshRange,gammaRange,
                                                   param1="snrThresh",
                                                   param2="gamma", FPthresh=1.)
 
-  plt.figure()
-  plt.imshow(distToPerfect)
-  plt.title("Distance to Perfect Detection")
-  plt.colorbar()
-  plt.show()
+  #plt.figure()
+  #plt.imshow(distToPerfect)
+  #plt.title("Distance to Perfect Detection")
+  #plt.colorbar()
+  #plt.show()
+
+  distToPerfect *= 255
+  distToPerfect = np.asarray(distToPerfect, dtype=np.uint8)
+  cv2.imwrite("ROC_Optimization.png",distToPerfect)
 
 # function to validate that code has not changed since last commit
 def validate(testImage=root+"MI_D_78.png",
@@ -1349,5 +1364,9 @@ if __name__ == "__main__":
     ### Additional Arguments
     if(arg=="-tag"):
       tag = sys.argv[i+1]
+
+    if(arg=="-noPrint"):
+      import os,sys
+      sys.stdout = open(os.devnull, 'w')
 
   raise RuntimeError("Arguments not understood")

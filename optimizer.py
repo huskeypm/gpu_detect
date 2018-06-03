@@ -183,8 +183,8 @@ def ParamDict(typeDict=None):
   elif typeDict=='WT':
     paramDict['filterMode'] = 'punishmentFilter'
     print "Be sure to update ParamDict constructor once params are optimized"
-    paramDict['gamma'] = .15
-    paramDict['snrThresh'] = 22.5#35 
+    paramDict['gamma'] = .75
+    paramDict['snrThresh'] = 6.874 
     #paramDict['gamma'] = 11.7
     #paramDict['snrThresh'] = .061813
   elif typeDict=='LT':

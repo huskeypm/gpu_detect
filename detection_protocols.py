@@ -275,7 +275,7 @@ def regionalDeviation(inputs,paramDict):
     resultImage = np.zeros_like(img)
     resultImage[commonHits] = 5 * paramDict['snrThresh']
   else:
-    resultImage = np.product(np.ones_like(img), 5 * paramDict['snrThresh'])
+    resultImage = np.ones_like(img) * 5. * paramDict['snrThresh']
     resultImage[commonHits] = 0.
   results.snr = resultImage
 

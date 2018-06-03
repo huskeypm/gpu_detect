@@ -121,7 +121,7 @@ def reorient(img):
   ### rotate image
   rotated = imutils.rotate_bound(img,dOffCenter)
 
-  return rotated
+  return rotated, dOffCenter
 
 ###############################################################################
 ###
@@ -234,7 +234,7 @@ def resizeToFilterSize(img,filterTwoSarcomereSize):
   bigSum[fBig < minPeriodogramValue] = 0.
   bigSum[fBig > maxPeriodogramValue] = 0.
 
-  display = True
+  display = False
   if display:
     import matplotlib.pyplot as plt
     plt.figure()
@@ -254,7 +254,7 @@ def resizeToFilterSize(img,filterTwoSarcomereSize):
   scale = float(filterTwoSarcomereSize) / float(imgTwoSarcomereSize)
   resized = cv2.resize(img,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
 
-  return resized
+  return resized,scale
 
 ###############################################################################
 ###
@@ -278,16 +278,45 @@ def applyCLAHE(img,filterTwoSarcomereSize):
 def preprocess(fileName,filterTwoSarcomereSize):
   img = util.ReadImg(fileName)
 
-  img = reorient(img)
-  img = resizeToFilterSize(img,filterTwoSarcomereSize)
+  img,degreesOffCenter = reorient(img)
+  img,resizeScale = resizeToFilterSize(img,filterTwoSarcomereSize)
   img = applyCLAHE(img,filterTwoSarcomereSize)
+
+  # fix mask based on img orientation and resize scale
+  try:
+    processMask(fileName,degreesOffCenter,resizeScale)
+  except:
+    1
 
   # write file
   name,fileType = fileName[:-4],fileName[-4:]
-  newName = name+"_processed_new"+fileType
+  newName = name+"_processed"+fileType
   cv2.imwrite(newName,img)
 
   return img
+
+def processMask(fileName,degreesOffCenter,resizeScale):
+  '''
+  function to reorient and resize the mask that was generated for the original
+  image.
+  '''
+  maskName = fileName[:-4]+"_mask"+fileName[-4:]
+  mask = util.ReadImg(maskName)
+  reoriented = imutils.rotate_bound(mask,degreesOffCenter)
+  resized = cv2.resize(reoriented,None,fx=resizeScale,fy=resizeScale,interpolation=cv2.INTER_CUBIC)
+  cv2.imwrite(fileName[:-4]+"_processed_mask"+fileName[-4:],resized)
+
+def preprocessAll():
+  '''
+  function meant to preprocess all of the images needed for data reproduction
+  '''
+  root = './myoimages/'
+  imgNames = ["HF_1.png", "MI_D_73.png","MI_M_45.png","MI_P_16.png","Sham_11.png",
+              "Sham_M_65.png"]
+  for name in imgNames:
+    filterTwoSarcomereSize = 25
+    # perform preprocessing on image
+    preprocess(root+name,filterTwoSarcomereSize)
 
 ###############################################################################
 ###
@@ -338,4 +367,8 @@ if __name__ == "__main__":
         filterTwoSarcomereSize = 25
       preprocess(fileName,filterTwoSarcomereSize)
       quit()
+    if (arg=="-preprocessAll"):
+      preprocessAll()
+      quit()
+  raise RuntimeError("Arguments not understood")
 

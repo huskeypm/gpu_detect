@@ -360,7 +360,7 @@ def analyzeAllMyo():
     print name
     ### iterate through names and mark the images
     markedMyocyte = giveMarkedMyocyte(testImage=root+name,
-                                       tag=name,
+                                       tag=name[:-4],
                                        writeImage=True,
                                        returnAngles=False)
 
@@ -1065,6 +1065,8 @@ def minDistanceROC(dataSet,paramDict,param1Range,param2Range,
   perfectDetection = (0,1)
 
   distanceStorage = np.ones((len(param1Range),len(param2Range)),dtype=np.float32)
+  TruePosStorage = np.ones_like(distanceStorage)
+  FalsePosStorage = np.ones_like(distanceStorage)
   for i,p1 in enumerate(param1Range):
     paramDict[param1] = p1
     for j,p2 in enumerate(param2Range):
@@ -1077,6 +1079,8 @@ def minDistanceROC(dataSet,paramDict,param1Range,param2Range,
       elif param2 == "snrThresh":
         dataSet.filter1Thresh = p2
       posScore,negScore = optimizer.TestParams_Single(dataSet,paramDict,iters=iters)
+      TruePosStorage[i,j] = posScore
+      FalsePosStorage[i,j] = negScore
       if negScore < FPthresh:
         distanceFromPerfect = np.sqrt(((perfectDetection[0]-negScore)**2 +\
                                       (perfectDetection[1]-posScore)**2))
@@ -1086,10 +1090,14 @@ def minDistanceROC(dataSet,paramDict,param1Range,param2Range,
   optP1idx,optP2idx = idx[0],idx[1]
   optimumP1 = param1Range[optP1idx]
   optimumP2 = param2Range[optP2idx]
+  optimumTP = TruePosStorage[optP1idx,optP2idx]
+  optimumFP = FalsePosStorage[optP1idx,optP2idx]
 
   print ""
   print 100*"#"
   print "Minimum Distance to Perfect Detection:",distanceStorage.min()
+  print "True Postive Rate:",optimumTP
+  print "False Positive Rate:",optimumFP
   print "Optimum",param1,"->",optimumP1
   print "Optimum",param2,"->",optimumP2
   print 100*"#"
@@ -1136,14 +1144,17 @@ def optimizeLT():
   dataSet.pasteFilters = False
 
   paramDict = optimizer.ParamDict(typeDict='LT')
-  snrThreshRange = np.linspace(2, 8, 10)
-  stdDevThreshRange = np.linspace(0.05, 0.5, 10)
+  snrThreshRange = np.linspace(2, 7, 30)
+  stdDevThreshRange = np.linspace(0.05, 0.4, 30)
+
+  # maximum rate of false positives
+  FPthresh = 0.3
 
   optimumSNRthresh, optimumGamma, distToPerfect= minDistanceROC(dataSet,paramDict,
                                                   snrThreshRange,stdDevThreshRange,
                                                   param1="snrThresh",
                                                   param2="stdDevThresh",
-                                                  FPthresh=1.)
+                                                  FPthresh=FPthresh)
 
   distToPerfect *= 255
   distToPerfect = np.asarray(distToPerfect, dtype=np.uint8)

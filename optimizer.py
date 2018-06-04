@@ -187,9 +187,9 @@ def ParamDict(typeDict=None):
     paramDict['snrThresh'] = 6.874 
   elif typeDict=='LT':
     paramDict['filterMode'] = 'regionalDeviation'
-    # optimized as of June 3, 2018 
-    paramDict['snrThresh'] = 4.0 
-    paramDict['stdDevThresh'] = 0.15
+    # optimized as of June 4, 2018 
+    paramDict['snrThresh'] = 4.4138 
+    paramDict['stdDevThresh'] = 0.18275
   elif typeDict=='Loss':
     # optimized as of XXX
     paramDict['filterMode'] = 'regionalDeviation'

@@ -12,7 +12,69 @@ from PIL import Image
 pygame.init() # initializes pygame modules
 from sklearn.decomposition import PCA
 import imutils
+import matchedFilter as mF
 
+###############################################################################
+###
+### Normalization Routines
+###
+##############################################################################
+
+def normalizeToStriations(img, subsection):
+  '''
+  function that will go through the subsection and find average smoothed peak 
+  and valley intensity of each striation and will normalize the image 
+  based on those values.
+  '''
+  subsectionDims = np.shape(subsection)
+ 
+  ### smooth striations
+  smoothingFilter = np.ones((1,4),dtype=np.float64) / 4. 
+  smoothed = mF.matchedFilter(subsection,smoothingFilter,demean=False)
+
+  ### calculate slopes using centered difference formula
+  slopeFilter = np.zeros((1, 3),dtype=np.float64)
+  slopeFilter[0,0] = -1.
+  slopeFilter[0,2] = 1.
+  slopeFilter /= 2.
+  slopes = mF.matchedFilter(smoothed,slopeFilter,demean=False)
+  binarySlopes = slopes > 0
+
+  ### find where slope = 0 (either a peak or valley according to 1st deriv rule)
+  #zeroSlopes = np.argwhere(np.abs(slopes) < 0.0000005)
+
+  #peakValues = []
+  #valleyValues = []
+  #for idx in zeroSlopes:
+  #  if idx[1] == 0 or idx[1] == subsectionDims[1]-1:
+  #    continue
+  #  else:
+  #    if slopes[idx[0],idx[1]-1] > 0 and slopes[idx[0],idx[1]+1] < 0:
+  #      peakValues.append(smoothed[idx[0],idx[1]]) 
+  #    elif slopes[idx[0],idx[1]-1] < 0 and slopes[idx[0],idx[1]+1] > 0:
+  #      valleyValues.append(smoothed[idx[0],idx[1]])
+  for row in range(subsectionDims[0]):
+    thisRow = binarySlopes[row,:]
+    #print thisRow
+    rolled = np.roll(thisRow, -1)
+    #print rolled
+    #return thisRow, rolled
+    peakIdxs = np.argwhere(thisRow & np.invert(rolled))
+    valleyIdxs = np.argwhere(np.invert(thisRow) & rolled)
+    print peakIdxs,valleyIdxs
+    peaks = []
+    for idx in peakIdxs:
+      peaks.append(smoothed[row,idx])
+    print np.mean(peaks)
+    valleys = []
+    for idx in valleyIdxs:
+      valleys.append(smoothed[row,idx])
+    print np.mean(valleys)
+    quit()
+  meanPeaks = np.mean(peakValues)
+  meanValleys = np.mean(valleyValues)
+
+  return meanPeaks,meanValleys
 ###############################################################################
 ###
 ### FFT Filtering Routines
@@ -254,7 +316,7 @@ def resizeToFilterSize(img,filterTwoSarcomereSize):
   scale = float(filterTwoSarcomereSize) / float(imgTwoSarcomereSize)
   resized = cv2.resize(img,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
 
-  return resized,scale
+  return resized,scale,subsection
 
 ###############################################################################
 ###
@@ -279,7 +341,8 @@ def preprocess(fileName,filterTwoSarcomereSize):
   img = util.ReadImg(fileName)
 
   img,degreesOffCenter = reorient(img)
-  img,resizeScale = resizeToFilterSize(img,filterTwoSarcomereSize)
+  img,resizeScale,subsection = resizeToFilterSize(img,filterTwoSarcomereSize)
+  img = normalizeToStriations(img,subsection)
   img = applyCLAHE(img,filterTwoSarcomereSize)
 
   # fix mask based on img orientation and resize scale

@@ -360,7 +360,7 @@ def saveGaussLongFilter():
   cv2.imwrite("./myoimages/LongitudinalFilter.png",LTfilter)
 
 def SaveFixedLossFilter():
-  dim = 12
+  dim = 16
   img = np.zeros((dim+2,dim+2,),dtype='uint8')
   img[2:-2,2:-2] = 255
   cv2.imwrite(root+"LossFilter.png",img)

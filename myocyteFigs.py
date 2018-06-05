@@ -663,14 +663,10 @@ def markPastedFilters(
 
 
 def giveMarkedMyocyte(
-      #ttFilterName="./myoimages/WTFilter.png",
-      #ttFilterName="./myoimages/singleTTFilter.png",
-      ttFilterName="./newSimpleWTFilter.png",
+      ttFilterName="./myoimages/newSimpleWTFilter.png",
       ltFilterName="./myoimages/newLTfilter.png",
       lossFilterName="./myoimages/LossFilter.png",
-      #wtPunishFilterName="./myoimages/WTPunishmentFilter.png",
-      #wtPunishFilterName="./myoimages/singleTTPunishmentFilter.png",
-      wtPunishFilterName="./newSimpleWTPunishmentFilter.png",
+      wtPunishFilterName="./myoimages/newSimpleWTPunishmentFilter.png",
       ltPunishFilterName="./myoimages/newLTPunishmentFilter.png",
       testImage="./myoimages/MI_D_73_annotation.png",
       ImgTwoSarcSize=None,
@@ -1267,7 +1263,7 @@ def optimizeLoss():
 
 
 # function to validate that code has not changed since last commit
-def validate(testImage=root+"MI_D_78.png",
+def validate(testImage="./myoimages/MI_D_78.png",
              ImgTwoSarcSize=22,
              display=False
              ):
@@ -1293,7 +1289,7 @@ def validate(testImage=root+"MI_D_78.png",
   print "PASSED!"
 
 # A minor validation function to serve as small tests between commits
-def minorValidate(testImage=root+"MI_D_73_annotation.png",
+def minorValidate(testImage="./myoimages/MI_D_73_annotation.png",
                   ImgTwoSarcSize=25, #img is already resized to 25 px
                   iters=[-10,0,10],
                   display=False):

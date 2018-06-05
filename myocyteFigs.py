@@ -192,7 +192,7 @@ def fig5():
   ### saving individual marked images
   fig, axarr = plt.subplots(3,2)
   for i,img in enumerate(images):
-    axarr[i,0].imshow(img)
+    axarr[i,0].imshow(img,cmap='gray')
     axarr[i,0].axis('off')
     axarr[i,0].set_title(keys[i]+" Raw")
 
@@ -338,7 +338,8 @@ def figS1():
 
 def analyzeAllMyo():
   #root = "/home/AD/dfco222/Desktop/LouchData/processedImgs_May23/"
-  root = "/net/share/dfco222/data/TT/LouchData/processed/"
+  #root = "/net/share/dfco222/data/TT/LouchData/processed/"
+  root = "/net/share/dfco222/data/TT/LouchData/processedWithIntelligentThresholding/"
 
   ### instantiate dicitionary to hold content values
   Sham = {}; MI_D = {}; MI_M = {}; MI_P = {}; HF = {};
@@ -441,11 +442,11 @@ def giveBarChartfromDict(dictionary,tag):
     ltC.append(content[1])
     lossC.append(content[2])
 
-  maxContent = np.max([np.max(wtC), np.max(ltC), np.max(lossC)])
+  #maxContent = np.max([np.max(wtC), np.max(ltC), np.max(lossC)])
 
-  wtC = np.divide(wtC,maxContent)
-  ltC = np.divide(ltC,maxContent)
-  lossC = np.divide(lossC, maxContent)
+  #wtC = np.divide(wtC,maxContent)
+  #ltC = np.divide(ltC,maxContent)
+  #lossC = np.divide(lossC, maxContent)
 
   wtC = np.asarray(wtC)
   ltC = np.asarray(ltC)

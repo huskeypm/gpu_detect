@@ -307,6 +307,26 @@ def SaveFixedWTFilter(WTFilterRoot=root+"filterImgs/WT/",filterTwoSarcSize=25,
   # save filter
   cv2.imwrite(root+"WTFilter.png",savedFilt)
 
+def saveSimpleWTFilter():
+  '''
+  function to write the wt filter used as of June 5, 2018
+  '''
+  filterLength = 10
+  TTwidth = 6
+  bufferWidth = 1
+  punishWidth = 5
+  filterWidth = TTwidth + bufferWidth + punishWidth + bufferWidth + TTwidth
+  WTfilter = np.zeros((filterLength,filterWidth),dtype=np.uint8)
+  punishFilter = np.zeros_like(WTfilter)
+
+  WTfilter[:,:TTwidth] = 255
+  WTfilter[:,-TTwidth:] = 255 
+
+  punishFilter[:,(TTwidth+bufferWidth):-(TTwidth+bufferWidth)] = 255
+
+  cv2.imwrite("./myoimages/newSimpleWTFilter.png", WTfilter)
+  cv2.imwrite("./myoimages/newSimpleWTPunishmentFilter.png",punishFilter)
+
 def SaveFixedLongFilter(LongFilterRoot=root+"filterImgs/Longitudinal/",
                         filterTwoSarcSizeDict={"SongWKY_long1":16, "Xie_RV_Control_long2":14, "Xie_RV_Control_long1":16, "Guo2013Fig1C_long1":22},
                         filterTwoSarcLength=25,

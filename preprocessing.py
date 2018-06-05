@@ -20,61 +20,89 @@ import matchedFilter as mF
 ###
 ##############################################################################
 
-def normalizeToStriations(img, subsection):
+def normalizeToStriations(img, subsectionIdxs,filterSize):
   '''
   function that will go through the subsection and find average smoothed peak 
   and valley intensity of each striation and will normalize the image 
   based on those values.
   '''
-  subsectionDims = np.shape(subsection)
- 
-  ### smooth striations
-  smoothingFilter = np.ones((1,4),dtype=np.float64) / 4. 
-  smoothed = mF.matchedFilter(subsection,smoothingFilter,demean=False)
+  
+  ### Load in filter that will be used to smooth the subsection
+  WTfilterName = "./myoimages/singleTTFilter.png"
+  WTfilter = util.ReadImg(WTfilterName,renorm=True)
+  # divide by the sum so that we are averaging across the filter
+  WTfilter /= np.sum(WTfilter)
 
-  ### calculate slopes using centered difference formula
-  slopeFilter = np.zeros((1, 3),dtype=np.float64)
-  slopeFilter[0,0] = -1.
-  slopeFilter[0,2] = 1.
-  slopeFilter /= 2.
-  slopes = mF.matchedFilter(smoothed,slopeFilter,demean=False)
-  binarySlopes = slopes > 0
+  ### Perform smoothing on subsection
+  smoothed = np.asarray(mF.matchedFilter(img,WTfilter,demean=False),dtype=np.uint8)
 
-  ### find where slope = 0 (either a peak or valley according to 1st deriv rule)
-  #zeroSlopes = np.argwhere(np.abs(slopes) < 0.0000005)
+  ### Grab subsection of the smoothed image
+  smoothedSubsection = smoothed.copy()[subsectionIdxs[0]:subsectionIdxs[1],
+                                       subsectionIdxs[2]:subsectionIdxs[3]]
+  plt.figure()
+  plt.imshow(smoothedSubsection)
+  plt.colorbar()
+  plt.show()
+  
+  ### Perform Gaussian thresholding to pull out striations
+  # blockSize is pixel neighborhood that each pixel is compared to
+  blockSize = int(round(float(filterSize) / 3.57)) # value is empirical
+  # blockSize must be odd so we have to check this
+  if blockSize % 2 == 0:
+    blockSize += 1
+  # constant is a constant that is subtracted from each distribution for each pixel
+  constant = 0
+  # threshValue is the value at which super threshold pixels are marked, else px = 0
+  threshValue = 1
+  gaussSubsection = cv2.adaptiveThreshold(smoothedSubsection, threshValue,
+                                          cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                          cv2.THRESH_BINARY, blockSize,
+                                          constant)
+  plt.figure()
+  plt.imshow(gaussSubsection)
+  plt.colorbar()
+  plt.show()
 
-  #peakValues = []
-  #valleyValues = []
-  #for idx in zeroSlopes:
-  #  if idx[1] == 0 or idx[1] == subsectionDims[1]-1:
-  #    continue
-  #  else:
-  #    if slopes[idx[0],idx[1]-1] > 0 and slopes[idx[0],idx[1]+1] < 0:
-  #      peakValues.append(smoothed[idx[0],idx[1]]) 
-  #    elif slopes[idx[0],idx[1]-1] < 0 and slopes[idx[0],idx[1]+1] > 0:
-  #      valleyValues.append(smoothed[idx[0],idx[1]])
-  for row in range(subsectionDims[0]):
-    thisRow = binarySlopes[row,:]
-    #print thisRow
-    rolled = np.roll(thisRow, -1)
-    #print rolled
-    #return thisRow, rolled
-    peakIdxs = np.argwhere(thisRow & np.invert(rolled))
-    valleyIdxs = np.argwhere(np.invert(thisRow) & rolled)
-    print peakIdxs,valleyIdxs
-    peaks = []
-    for idx in peakIdxs:
-      peaks.append(smoothed[row,idx])
-    print np.mean(peaks)
-    valleys = []
-    for idx in valleyIdxs:
-      valleys.append(smoothed[row,idx])
-    print np.mean(valleys)
-    quit()
-  meanPeaks = np.mean(peakValues)
-  meanValleys = np.mean(valleyValues)
+  ### Calculate the peak and valley values from the segmented image
+  peaks = smoothedSubsection[np.nonzero(gaussSubsection)]
+  peakValue = np.mean(peaks)
+  peakSTD = np.std(peaks)
+  valleys = smoothedSubsection[np.where(gaussSubsection == 0)]
+  valleyValue = np.mean(valleys)
+  valleySTD = np.std(valleys)
 
-  return meanPeaks,meanValleys
+  print "Average Striation Value:", peakValue
+  print "Standard Deviation of Striation:", peakSTD
+  print "Average Striation Gap Value:", valleyValue
+  print "Stand Deviation of Striation Gap", valleySTD
+
+  ### Calculate ceiling and floor thresholds empirically
+  ceiling = peakValue + 3 * peakSTD
+  floor = valleyValue - 2 * valleySTD
+  if ceiling > 255:
+    ceiling = 255.
+  if floor < 0:
+    floor = 0
+
+  ceiling = int(round(ceiling))
+  floor = int(round(floor))
+
+  print "Ceiling Pixel Value:", ceiling
+  print "Floor Pixel Value:", floor
+
+  ### Threshold
+  #img = img.astype(np.float64)
+  #img /= np.max(img)  
+  img[img>=ceiling] = ceiling
+  img[img<=floor] = floor
+  img -= floor
+  img = img.astype(np.float64)
+  img /= np.max(img)
+  img *= 255
+  img = img.astype(np.uint8)
+
+  return img
+
 ###############################################################################
 ###
 ### FFT Filtering Routines
@@ -249,9 +277,10 @@ def giveSubsection(array):
     if lower < upper:
         lower, upper = upper, lower
     subsection = array.copy()[upper:lower,left:right]
+    indexes = np.asarray([upper, lower, left, right])
     subsection = np.asarray(subsection, dtype=np.float64)
     pygame.display.quit()
-    return subsection
+    return subsection, indexes
 
 def resizeToFilterSize(img,filterTwoSarcomereSize):
   '''
@@ -259,26 +288,7 @@ def resizeToFilterSize(img,filterTwoSarcomereSize):
   '''
 
   ### 1. Select subsection of image that exhibits highly conserved network of TTs
-  subsection = giveSubsection(img)#,dtype=np.float32)
-
-  ### 1.5 Attempting simple thresholding based on subsection as well
-  #print np.max(img)
-  #img[img > 0.3 * np.max(subsection)] = 0.3 * np.max(subsection)
-  #img[img > 1.5 * np.mean(subsection)] = np.mean(subsection)
-  #img[img < 0.05 * np.max(subsection)] = 0.05 * np.max(subsection)
-  #print np.max(img)
-  #print np.min(img)
-  #img -= np.min(img)
-  #img = np.float64(img)
-  #img /= np.max(img)
-  #img *= 255
-  #img = np.uint8(img)
-
-  #import matplotlib.pyplot as plt
-  #plt.figure()
-  #plt.imshow(img,cmap='gray')
-  #plt.show()
-
+  subsection,indexes = giveSubsection(img)#,dtype=np.float32)
   # best to normalize the subsection for display purposes
   subsection /= np.max(subsection)
 
@@ -304,7 +314,7 @@ def resizeToFilterSize(img,filterTwoSarcomereSize):
     plt.title("Collapsed Periodogram of Subsection")
     plt.show()
 
-  ### 3. Find peak value of periodogram and calculate striation size
+  ### 4. Find peak value of periodogram and calculate striation size
   striationSize = 1. / fBig[np.argmax(bigSum)]
   imgTwoSarcomereSize = int(round(2 * striationSize))
   print "Two Sarcomere size:", imgTwoSarcomereSize,"Pixels per Two Sarcomeres"
@@ -312,11 +322,15 @@ def resizeToFilterSize(img,filterTwoSarcomereSize):
     print "WARNING: Image likely failed to be properly resized. Manual resizing",\
            "may be necessary!!!!!"
 
-  ### 4. Using peak value, resize the image
+  ### 5. Using peak value, resize the image
   scale = float(filterTwoSarcomereSize) / float(imgTwoSarcomereSize)
   resized = cv2.resize(img,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
 
-  return resized,scale,subsection
+  ### 6. Find new indexes in image
+  newIndexes = indexes * scale
+  newIndexes = np.round(newIndexes).astype(np.int32)
+ 
+  return resized,scale,subsection,newIndexes
 
 ###############################################################################
 ###
@@ -341,9 +355,9 @@ def preprocess(fileName,filterTwoSarcomereSize):
   img = util.ReadImg(fileName)
 
   img,degreesOffCenter = reorient(img)
-  img,resizeScale,subsection = resizeToFilterSize(img,filterTwoSarcomereSize)
-  #img = normalizeToStriations(img,subsection)
+  img,resizeScale,subsection,idxs = resizeToFilterSize(img,filterTwoSarcomereSize)
   img = applyCLAHE(img,filterTwoSarcomereSize)
+  img = normalizeToStriations(img,idxs,filterTwoSarcomereSize)
 
   # fix mask based on img orientation and resize scale
   try:

@@ -64,6 +64,7 @@ python myocyteFigs.py -allFigs
 python myocyteFigs.py -minorValidate
 </code>
 Meant to serve as a rapid validation test between commits
+Note: Currently broken
 
 ### execute images 
 <code>

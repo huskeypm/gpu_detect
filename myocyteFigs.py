@@ -1247,7 +1247,7 @@ def optimizeLoss():
 
 
 # function to validate that code has not changed since last commit
-def validate(testImage="./myoimages/MI_D_78.png",
+def validate(testImage="./myoimages/MI_D_78_processed.png",
              ImgTwoSarcSize=22,
              display=False
              ):
@@ -1263,13 +1263,9 @@ def validate(testImage="./myoimages/MI_D_78.png",
   # calculate wt, lt, and loss content  
   wtContent, ltContent, lossContent = assessContent(markedImg)
 
-  print "WT Content:",wtContent
-  print "LT Content:", ltContent
-  print "Loss Content:", lossContent
-  
-  assert(abs(wtContent - 64565) < 1), "WT validation failed."
-  assert(abs(ltContent - 65496) < 1), "LT validation failed."
-  assert(abs(lossContent - 161208) < 1), "Loss validation failed."
+  assert(abs(wtContent - 66435) < 1), "WT validation failed."
+  assert(abs(ltContent - 13669) < 1), "LT validation failed."
+  assert(abs(lossContent - 14458) < 1), "Loss validation failed."
   print "PASSED!"
 
 # A minor validation function to serve as small tests between commits

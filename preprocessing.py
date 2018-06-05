@@ -78,15 +78,14 @@ def normalizeToStriations(img, subsectionIdxs,filterSize):
 
   ### Calculate ceiling and floor thresholds empirically
   ceiling = peakValue + 3 * peakSTD
-  floor = valleyValue - 2 * valleySTD
+  floor = valleyValue - valleySTD
   if ceiling > 255:
     ceiling = 255.
   if floor < 0:
     floor = 0
-
+  
   ceiling = int(round(ceiling))
   floor = int(round(floor))
-
   print "Ceiling Pixel Value:", ceiling
   print "Floor Pixel Value:", floor
 

@@ -28,7 +28,7 @@ root = "/net/share/dfco222/data/TT/LouchData/processedWithIntelligentThresholdin
 
 ## WT 
 def fig3(): 
-  root = "./myoimages/"
+  #root = "./myoimages/"
   testImage = root+"Sham_M_65_processed.png"
   #twoSarcSize = 21
 
@@ -88,7 +88,7 @@ def fig3():
 ## HF 
 def fig4(): 
   ### initial arguments
-  root = "./myoimages/"
+  #root = "./myoimages/"
   filterTwoSarcSize = 25
   imgName = root + "HF_1_processed.png"
   rawImg = util.ReadImg(imgName)
@@ -132,7 +132,7 @@ def fig4():
 ## MI 
 def fig5(): 
   ### update if need be
-  root="./myoimages/"
+  #root="./myoimages/"
   filterTwoSarcSize = 25
 
   ### Distal, Medial, Proximal
@@ -208,6 +208,7 @@ def fig5():
 
 def fig6():
   ### taking notch filtered image and marking where WT is located
+  root = "./myoimages/"
   name = "testingNotchFilter.png"
   
   ## opting to write specific routine since the stacked hits have to be pulled out separately
@@ -270,6 +271,7 @@ def figS1():
                        }
 
   for key,imgName in imgNames.iteritems():
+      print imgName
       ### setup dataset
       dataSet = optimizer.DataSet(
                   root = root,
@@ -634,12 +636,12 @@ def markPastedFilters(
 
   ### we want to mark WT last since that should be the most stringent
   # Opting to mark Loss, then Long, then WT
-  halfCellSizeLoss = 12 # should think of how to automate
+  halfCellSizeLoss = 16 # should think of how to automate
   labeledLoss = painter.doLabel(Lossholder,dx=halfCellSizeLoss,thresh=254)
   LTx = 14
   LTy = 3
   labeledLT = painter.doLabel(LTholder,dx=LTx,dy=LTy,thresh=254)
-  halfCellSizeWT = 12
+  halfCellSizeWT = 19
   labeledWT = painter.doLabel(WTholder,dx=halfCellSizeWT,thresh=254)
 
   ### perform masking
@@ -662,11 +664,13 @@ def markPastedFilters(
 
 def giveMarkedMyocyte(
       #ttFilterName="./myoimages/WTFilter.png",
-      ttFilterName="./myoimages/singleTTFilter.png",
+      #ttFilterName="./myoimages/singleTTFilter.png",
+      ttFilterName="./newSimpleWTFilter.png",
       ltFilterName="./myoimages/newLTfilter.png",
       lossFilterName="./myoimages/LossFilter.png",
       #wtPunishFilterName="./myoimages/WTPunishmentFilter.png",
-      wtPunishFilterName="./myoimages/singleTTPunishmentFilter.png",
+      #wtPunishFilterName="./myoimages/singleTTPunishmentFilter.png",
+      wtPunishFilterName="./newSimpleWTPunishmentFilter.png",
       ltPunishFilterName="./myoimages/newLTPunishmentFilter.png",
       testImage="./myoimages/MI_D_73_annotation.png",
       ImgTwoSarcSize=None,
@@ -708,8 +712,8 @@ def giveMarkedMyocyte(
   if wtGamma != None:
     WTparams['gamma'] = wtGamma
 
-  WTparams['snrThresh'] = 1.2
-  WTparams['filterMode'] = 'filterRatio'
+  WTparams['snrThresh'] = 0.35 
+  WTparams['gamma'] = 3.
 
   WTresults = bD.DetectFilter(inputs,WTparams,iters,returnAngles=returnAngles)  
   WTstackedHits = WTresults.stackedHits
@@ -719,12 +723,17 @@ def giveMarkedMyocyte(
   ltFilterName = "./myoimages/LongitudinalFilter.png"
   LTparams = optimizer.ParamDict(typeDict='LT')
   LTFilter = util.LoadFilter(ltFilterName)
+  LTFilter /= np.sum(LTFilter)
   inputs.mfOrig = LTFilter
   if ltThresh != None:
     LTparams['snrThresh'] = ltThresh
   if ltGamma != None:
     LTparams['gamma'] = ltGamma
   LTparams['useGPU'] = useGPU
+
+  LTparams['snrThresh'] = 0.6
+  LTparams['stdDevThresh'] = .2
+
   LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)#,display=True)
   LTstackedHits = LTresults.stackedHits
 
@@ -739,8 +748,8 @@ def giveMarkedMyocyte(
   if lossThresh != None:
     Lossparams['snrThresh'] = lossThresh
 
-  Lossparams['snrThresh'] = 0.05
-  Lossparams['stdDevThresh'] = 0.3
+  Lossparams['snrThresh'] = 0.04
+  Lossparams['stdDevThresh'] = 0.1
   Lossresults = bD.DetectFilter(inputs,Lossparams,Lossiters,returnAngles=returnAngles)
   LossstackedHits = Lossresults.stackedHits
  
@@ -800,6 +809,9 @@ def giveMarkedMyocyte(
       cv2.imwrite(tag+"_output.png",cI)       
 
   if returnAngles:
+    print "Consider using the previously computed rigorous WT hits as a mask",\
+          "and rerun with a simple WT filter or the same filter without punishment.",\
+          "Using the punishment filter results in wonky striation angles."
     cImg = util.ReadImg(testImage,cvtColor=False)
     coloredAngles = painter.colorAngles(cImg,WTresults.stackedAngles,iters)
     coloredAnglesMasked = ReadResizeApplyMask(coloredAngles,testImage,

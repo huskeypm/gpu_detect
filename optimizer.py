@@ -182,20 +182,20 @@ def ParamDict(typeDict=None):
     paramDict['doCLAHE'] = True
   elif typeDict=='WT':
     paramDict['filterMode'] = 'punishmentFilter'
-    # optimized as of June 2, 2018
-    paramDict['gamma'] = .75
-    paramDict['snrThresh'] = 6.874 
+    # optimized as of June 5, 2018
+    paramDict['gamma'] = 3.
+    paramDict['snrThresh'] = 0.35 
   elif typeDict=='LT':
     paramDict['filterMode'] = 'regionalDeviation'
-    # optimized as of June 4, 2018 
-    paramDict['snrThresh'] = 4.4138 
-    paramDict['stdDevThresh'] = 0.18275
+    # optimized as of June 5, 2018 
+    paramDict['snrThresh'] = 0.6 
+    paramDict['stdDevThresh'] = 0.2
   elif typeDict=='Loss':
-    # optimized as of XXX
+    # optimized as of June 5, 2018
     paramDict['filterMode'] = 'regionalDeviation'
     paramDict['inverseSNR'] = True
-    paramDict['snrThresh'] = 3.5 
-    paramDict['stdDevThresh'] = 0
+    paramDict['snrThresh'] = 0.04 
+    paramDict['stdDevThresh'] = 0.1
   return paramDict
 
 ##

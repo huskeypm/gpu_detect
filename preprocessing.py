@@ -342,7 +342,7 @@ def preprocess(fileName,filterTwoSarcomereSize):
 
   img,degreesOffCenter = reorient(img)
   img,resizeScale,subsection = resizeToFilterSize(img,filterTwoSarcomereSize)
-  img = normalizeToStriations(img,subsection)
+  #img = normalizeToStriations(img,subsection)
   img = applyCLAHE(img,filterTwoSarcomereSize)
 
   # fix mask based on img orientation and resize scale

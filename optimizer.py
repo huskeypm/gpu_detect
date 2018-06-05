@@ -163,7 +163,7 @@ def SetupTests(dataSet,meanFilter=False):
   dataSet.filter2y,dataSet.filter2x = measureFilterDimensions(dataSet.filter2Data)
 
 def ParamDict(typeDict=None):
-  print "WILL MAKE INTO CLASS LATER"
+  #print "WILL MAKE INTO CLASS LATER"
   paramDict={
     'snrThresh':1.,
     'penaltyscale': 1.,

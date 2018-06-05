@@ -281,6 +281,29 @@ def regionalDeviation(inputs,paramDict):
 
   return results
 
+def filterRatio(inputs,paramDict):
+  # get data 
+  img = inputs.img # raw (preprocessed image) 
+  mf  = inputs.mf 
+  mfPunish = paramDict['mfPunishment']  
+
+  ## get correlation plane w filter 
+  results = empty()
+  if paramDict['useGPU'] == False:
+    results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF'])
+    results.corrPunishment = mF.matchedFilter(img,mfPunish,parsevals=False,demean=paramDict['demeanMF'])
+    #results.corr = sMF.MF(img,mf,useGPU=False)
+  elif paramDict['useGPU'] == True:
+    results.corr = sMF.MF(img,mf,useGPU=True)
+    results.corrPunishment = sMF.MF(img,mfPunish,useGPU=True)
+
+    
+
+  results.snr = results.corr  / results.corrPunishment
+
+  return results
+
+
 
 #
 # Calls different modes of selecting best hits 
@@ -303,6 +326,8 @@ def FilterSingle(
     results = simpleDetect(inputs,paramDict)
   elif mode=="regionalDeviation":
     results = regionalDeviation(inputs,paramDict)
+  elif mode=="filterRatio":
+    results = filterRatio(inputs,paramDict)
   else: 
     #raise RuntimeError("need to define mode") 
     print "Patiently ignoring you until this is implemented" 

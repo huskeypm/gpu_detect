@@ -357,6 +357,8 @@ def analyzeAllMyo():
   #                                     returnAngles=False)
 
   for name in os.listdir(root):
+    if "mask" in name:
+      continue
     print name
     ### iterate through names and mark the images
     markedMyocyte = giveMarkedMyocyte(testImage=root+name,
@@ -365,9 +367,9 @@ def analyzeAllMyo():
                                        returnAngles=False)
 
     ### assess content
-    wtC, ltC, lossC = assessContent(markedMyocyte)
+    wtC, ltC, lossC = assessContent(markedMyocyte,imgName=root+name)
     content = np.asarray([wtC, ltC, lossC],dtype=float)
-    content /= np.max(content)
+    
 
     ### store content in respective dictionary
     if 'Sham' in name:
@@ -599,7 +601,7 @@ def markPastedFilters(
   LTx = 14
   LTy = 3
   labeledLT = painter.doLabel(LTholder,dx=LTx,dy=LTy,thresh=254)
-  halfCellSizeWT = 14
+  halfCellSizeWT = 12
   labeledWT = painter.doLabel(WTholder,dx=halfCellSizeWT,thresh=254)
 
   ### perform masking
@@ -621,10 +623,12 @@ def markPastedFilters(
 
 
 def giveMarkedMyocyte(
-      ttFilterName="./myoimages/WTFilter.png",
+      #ttFilterName="./myoimages/WTFilter.png",
+      ttFilterName="./myoimages/singleTTFilter.png",
       ltFilterName="./myoimages/newLTfilter.png",
       lossFilterName="./myoimages/LossFilter.png",
-      wtPunishFilterName="./myoimages/WTPunishmentFilter.png",
+      #wtPunishFilterName="./myoimages/WTPunishmentFilter.png",
+      wtPunishFilterName="./myoimages/singleTTPunishmentFilter.png",
       ltPunishFilterName="./myoimages/newLTPunishmentFilter.png",
       testImage="./myoimages/MI_D_73_annotation.png",
       ImgTwoSarcSize=None,
@@ -651,20 +655,29 @@ def giveMarkedMyocyte(
   inputs.imgOrig = ReadResizeApplyMask(img,testImage,25,25) # just applies mask
 
   ### WT filtering
+  print "WT Filtering"
   ttFilter = util.LoadFilter(ttFilterName)
+  ttFilter /= np.sum(ttFilter)
   inputs.mfOrig = ttFilter
   WTparams = optimizer.ParamDict(typeDict='WT')
   WTparams['covarianceMatrix'] = np.ones_like(img)
-  WTparams['mfPunishment'] = util.LoadFilter(wtPunishFilterName)
+  punishFilter = util.LoadFilter(wtPunishFilterName)
+  punishFilter /= np.sum(punishFilter)
+  WTparams['mfPunishment'] = punishFilter
   WTparams['useGPU'] = useGPU
   if ttThresh != None:
     WTparams['snrThresh'] = ttThresh
   if wtGamma != None:
     WTparams['gamma'] = wtGamma
+
+  WTparams['snrThresh'] = 1.2
+  WTparams['filterMode'] = 'filterRatio'
+
   WTresults = bD.DetectFilter(inputs,WTparams,iters,returnAngles=returnAngles)  
   WTstackedHits = WTresults.stackedHits
 
   ### LT filtering
+  print "LT filtering"
   ltFilterName = "./myoimages/LongitudinalFilter.png"
   LTparams = optimizer.ParamDict(typeDict='LT')
   LTFilter = util.LoadFilter(ltFilterName)
@@ -678,13 +691,18 @@ def giveMarkedMyocyte(
   LTstackedHits = LTresults.stackedHits
 
   ### Loss filtering
+  print "Loss filtering"
   Lossparams = optimizer.ParamDict(typeDict='Loss')
   Lossparams['useGPU'] = useGPU
   Lossiters = [0, 45] # don't need many rotations for loss filtering
   LossFilter = util.LoadFilter(lossFilterName)
+  LossFilter /= np.sum(LossFilter)
   inputs.mfOrig =  LossFilter
   if lossThresh != None:
     Lossparams['snrThresh'] = lossThresh
+
+  Lossparams['snrThresh'] = 0.05
+  Lossparams['stdDevThresh'] = 0.3
   Lossresults = bD.DetectFilter(inputs,Lossparams,Lossiters,returnAngles=returnAngles)
   LossstackedHits = Lossresults.stackedHits
  

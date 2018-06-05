@@ -227,9 +227,12 @@ def fig6():
   ### setup WT parameters
   WTparams = optimizer.ParamDict(typeDict='WT')
   WTparams['covarianceMatrix'] = np.ones_like(img)
-  WTparams['mfPunishment'] = util.LoadFilter("./myoimages/WTPunishmentFilter.png")
+  #WTparams['mfPunishment'] = util.LoadFilter("./myoimages/WTPunishmentFilter.png")
+  ### TODO change this routine to work with new util.LoadFilter function
+  WTparams['mfPunishment'] = util.ReadImg("./myoimages/WTPunishmentFilter.png",renorm=True)
+  #ttFilter = util.LoadFilter(ttFilterName)
+  ttFilter = util.ReadImg(ttFilterName,renorm=True)
   WTparams['useGPU'] = False # for now
-  ttFilter = util.LoadFilter(ttFilterName)
   inputs.mfOrig = ttFilter
 
   ### obtain super threshold filter hits
@@ -694,61 +697,42 @@ def giveMarkedMyocyte(
 
   ### WT filtering
   print "WT Filtering"
-  ttFilter = util.LoadFilter(ttFilterName)
-  ttFilter /= np.sum(ttFilter)
-  inputs.mfOrig = ttFilter
+  inputs.mfOrig = util.LoadFilter(ttFilterName)
   WTparams = optimizer.ParamDict(typeDict='WT')
   WTparams['covarianceMatrix'] = np.ones_like(img)
-  punishFilter = util.LoadFilter(wtPunishFilterName)
-  punishFilter /= np.sum(punishFilter)
-  WTparams['mfPunishment'] = punishFilter
+  WTparams['mfPunishment'] = util.LoadFilter(wtPunishFilterName)
   WTparams['useGPU'] = useGPU
   if ttThresh != None:
     WTparams['snrThresh'] = ttThresh
   if wtGamma != None:
     WTparams['gamma'] = wtGamma
-
-  WTparams['snrThresh'] = 0.35 
-  WTparams['gamma'] = 3.
-
   WTresults = bD.DetectFilter(inputs,WTparams,iters,returnAngles=returnAngles)  
   WTstackedHits = WTresults.stackedHits
 
   ### LT filtering
   print "LT filtering"
-  ltFilterName = "./myoimages/LongitudinalFilter.png"
+  inputs.mfOrig = util.LoadFilter("./myoimages/LongitudinalFilter.png")
   LTparams = optimizer.ParamDict(typeDict='LT')
-  LTFilter = util.LoadFilter(ltFilterName)
-  LTFilter /= np.sum(LTFilter)
-  inputs.mfOrig = LTFilter
   if ltThresh != None:
     LTparams['snrThresh'] = ltThresh
   if ltGamma != None:
     LTparams['gamma'] = ltGamma
   LTparams['useGPU'] = useGPU
-
-  LTparams['snrThresh'] = 0.6
-  LTparams['stdDevThresh'] = .2
-
-  LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)#,display=True)
+  LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)
   LTstackedHits = LTresults.stackedHits
 
   ### Loss filtering
   print "Loss filtering"
+  inputs.mfOrig = util.LoadFilter(lossFilterName)
   Lossparams = optimizer.ParamDict(typeDict='Loss')
   Lossparams['useGPU'] = useGPU
   Lossiters = [0, 45] # don't need many rotations for loss filtering
-  LossFilter = util.LoadFilter(lossFilterName)
-  LossFilter /= np.sum(LossFilter)
-  inputs.mfOrig =  LossFilter
   if lossThresh != None:
     Lossparams['snrThresh'] = lossThresh
-
-  Lossparams['snrThresh'] = 0.04
-  Lossparams['stdDevThresh'] = 0.1
   Lossresults = bD.DetectFilter(inputs,Lossparams,Lossiters,returnAngles=returnAngles)
   LossstackedHits = Lossresults.stackedHits
  
+  ### Read in colored image for marking hits
   cI = util.ReadImg(testImage,cvtColor=False)
 
   # Must subtract 1 from the image since all hits are marked 255 and orig img is normed to 255

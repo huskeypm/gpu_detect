@@ -23,7 +23,8 @@ import os
 class empty:pass
 
 #root = "myoimages/"
-root = "/net/share/dfco222/data/TT/LouchData/processed/"
+#root = "/net/share/dfco222/data/TT/LouchData/processed/"
+root = "/net/share/dfco222/data/TT/LouchData/processedWithIntelligentThresholding/"
 
 ## WT 
 def fig3(): 
@@ -338,23 +339,9 @@ def figS1():
 def analyzeAllMyo():
   #root = "/home/AD/dfco222/Desktop/LouchData/processedImgs_May23/"
   root = "/net/share/dfco222/data/TT/LouchData/processed/"
-  #twoSarcSizeDict = {'Sham_P_23':21, 'Sham_M_65':21, 'Sham_D_100':20, 'Sham_23':22,
-  #                    'Sham_11':21, 'MI_P_8':21, 'MI_P_5':21, 'MI_P_16':21, 'MI_M_46':22,
-  #                    'MI_M_45':21, 'MI_M_44':21, 'HF_1':21, 'HF_13':21,'MI_D_78':22,
-  #                    'MI_D_76':21, 'MI_D_73':22,
-  #                    'HF_5':21 
-  #                     }
+
   ### instantiate dicitionary to hold content values
   Sham = {}; MI_D = {}; MI_M = {}; MI_P = {}; HF = {};
-  #for name,twoSarcSize in twoSarcSizeDict.iteritems():
-  #   print name
-  #   ### iterate through names and mark the images
-  #   realName = name+"_processed.png"
-  #   markedMyocyte = giveMarkedMyocyte(testImage=root+realName,
-  #                                     ImgTwoSarcSize=twoSarcSize,
-  #                                     tag=name,
-  #                                     writeImage=True,
-  #                                     returnAngles=False)
 
   for name in os.listdir(root):
     if "mask" in name:
@@ -387,7 +374,115 @@ def analyzeAllMyo():
   ### use function to construct and write bar charts for each content dictionary
   giveBarChartfromDict(Sham,'Sham')
   giveBarChartfromDict(HF,'HF')
-  ### manually construct MI bar chart
+  giveMIBarChart(MI_D,MI_M,MI_P)
+
+def analyzeDirectory(directory):
+  '''
+  Function to iterate through a directory containing images that have already
+  been preprocessed by preprocessing.py
+  This directory can contain masks but it is not necessary for this to be the
+  case.
+  '''
+
+  ### instantiate dictionaries for results
+  Sham = {}; HF = {}; MI_D = {}; MI_M = {}; MI_P = {}
+
+  for name in os.listdir(directory):
+    if "mask" not in name:
+      ### mark myocyte
+      markedMyocyte = giveMarkedMyocyte(testImage=root+name,
+                                         tag=name[:-4],
+                                         writeImage=True,
+                                         returnAngles=False)
+
+      ### assess content
+      wtC, ltC, lossC = assessContent(markedMyocyte,imgName=root+name)
+      content = np.asarray([wtC, ltC, lossC],dtype=float)
+
+      ### store content in respective dictionary
+      if 'Sham' in name:
+        Sham[name] = content
+      elif 'HF' in name:
+        HF[name] = content
+      elif 'MI' in name:
+        if '_D' in name:
+          MI_D[name] = content
+        elif '_M' in name:
+          MI_M[name] = content
+        elif '_P' in name:
+          MI_P[name] = content
+
+  ### Make bar charts for results
+  giveBarChartFromDict(Sham,'Sham')
+  giveBarChartFromDict(HF,'HF')
+  giveMIBarChart(MI_D,MI_M,MI_P)
+
+def analyzeSingleMyo(name,twoSarcSize):
+   realName = name+"_processed.png"
+   markedMyocyte = giveMarkedMyocyte(testImage=realName,
+                                     ImgTwoSarcSize=twoSarcSize,
+                                     tag=name,
+                                     writeImage=True,
+                                     returnAngles=False)
+   ### assess content
+   wtC, ltC, lossC = assessContent(markedMyocyte)
+   content = np.asarray([wtC, ltC, lossC],dtype=float)
+   content /= np.max(content)
+
+   ### making into dictionary to utilize bar graph function
+   dictionary = {name:content}
+   giveBarChartfromDict(dictionary,name)
+
+def giveBarChartfromDict(dictionary,tag):
+  ### instantiate lists to contain contents
+  wtC = []; ltC = []; lossC = [];
+  for name,content in dictionary.iteritems():
+    wtC.append(content[0])
+    ltC.append(content[1])
+    lossC.append(content[2])
+
+  maxContent = np.max([np.max(wtC), np.max(ltC), np.max(lossC)])
+
+  wtC = np.divide(wtC,maxContent)
+  ltC = np.divide(ltC,maxContent)
+  lossC = np.divide(lossC, maxContent)
+
+  wtC = np.asarray(wtC)
+  ltC = np.asarray(ltC)
+  lossC = np.asarray(lossC)
+
+  wtAvg = np.mean(wtC)
+  ltAvg = np.mean(ltC)
+  lossAvg = np.mean(lossC)
+
+  wtStd = np.std(wtC)
+  ltStd = np.std(ltC)
+  lossStd = np.std(lossC)
+
+  ### now make a bar chart from this
+  colors = ["blue","green","red"]
+  marks = ["WT", "LT", "Loss"]
+  width = 0.25
+  N = 1
+  indices = np.arange(N) + width
+  fig,ax = plt.subplots()
+  rects1 = ax.bar(indices, wtAvg, width, color=colors[0],yerr=wtStd,ecolor='k')
+  rects2 = ax.bar(indices+width, ltAvg, width, color=colors[1],yerr=ltStd,ecolor='k')
+  rects3 = ax.bar(indices+2*width, lossAvg, width, color=colors[2],yerr=lossStd,ecolor='k')
+  ax.set_ylabel('Normalized Content')
+  ax.legend(marks)
+  ax.set_xticks([])
+  ax.set_ylim([0,1])
+  plt.gcf().savefig(tag+'_BarChart.png')
+
+def giveMIBarChart(MI_D, MI_M, MI_P):
+  '''
+  Gives combined bar chart for all three proximities to the infarct.
+  MI_D, MI_M, and MI_P are all dictionaries with structure:
+    dict['file name'] = [wtContent, ltContent, lossContent]
+  where the contents are floats
+  '''
+
   wtAvgs = {}; wtStds = {}; ltAvgs = {}; ltStds = {}; lossAvgs = {}; lossStds = {};
 
   DwtC = []; DltC = []; DlossC = [];
@@ -465,64 +560,6 @@ def analyzeAllMyo():
   ax.set_xticklabels(['D', 'M','P','','D','M','P','','D','M','P'])
   ax.set_ylim([0,1])
   plt.gcf().savefig('MI_BarChart.png')
-
-def analyzeSingleMyo(name,twoSarcSize):
-   realName = name+"_processed.png"
-   markedMyocyte = giveMarkedMyocyte(testImage=realName,
-                                     ImgTwoSarcSize=twoSarcSize,
-                                     tag=name,
-                                     writeImage=True,
-                                     returnAngles=False)
-   ### assess content
-   wtC, ltC, lossC = assessContent(markedMyocyte)
-   content = np.asarray([wtC, ltC, lossC],dtype=float)
-   content /= np.max(content)
-
-   ### making into dictionary to utilize bar graph function
-   dictionary = {name:content}
-   giveBarChartfromDict(dictionary,name)
-
-def giveBarChartfromDict(dictionary,tag):
-  ### instantiate lists to contain contents
-  wtC = []; ltC = []; lossC = [];
-  for name,content in dictionary.iteritems():
-    wtC.append(content[0])
-    ltC.append(content[1])
-    lossC.append(content[2])
-
-  maxContent = np.max([np.max(wtC), np.max(ltC), np.max(lossC)])
-
-  wtC = np.divide(wtC,maxContent)
-  ltC = np.divide(ltC,maxContent)
-  lossC = np.divide(lossC, maxContent)
-
-  wtC = np.asarray(wtC)
-  ltC = np.asarray(ltC)
-  lossC = np.asarray(lossC)
-
-  wtAvg = np.mean(wtC)
-  ltAvg = np.mean(ltC)
-  lossAvg = np.mean(lossC)
-
-  wtStd = np.std(wtC)
-  ltStd = np.std(ltC)
-  lossStd = np.std(lossC)
-
-  ### now make a bar chart from this
-  colors = ["blue","green","red"]
-  marks = ["WT", "LT", "Loss"]
-  width = 0.25
-  N = 1
-  indices = np.arange(N) + width
-  fig,ax = plt.subplots()
-  rects1 = ax.bar(indices, wtAvg, width, color=colors[0],yerr=wtStd,ecolor='k')
-  rects2 = ax.bar(indices+width, ltAvg, width, color=colors[1],yerr=ltStd,ecolor='k')
-  rects3 = ax.bar(indices+2*width, lossAvg, width, color=colors[2],yerr=lossStd,ecolor='k')
-  ax.set_ylabel('Normalized Content')
-  ax.legend(marks)
-  ax.set_xticks([])
-  ax.set_ylim([0,1])
-  plt.gcf().savefig(tag+'_BarChart.png')
 
 def figAnalysis(
       ttFilterName=root+"WTFilter.png",
@@ -1067,6 +1104,18 @@ def assessContent(markedImg,imgName=None):
     wtContent /= cellArea
     ltContent /= cellArea
     lossContent /= cellArea
+    print "WT Content:", wtContent
+    print "LT Content:", ltContent
+    print "Loss Content:", lossContent
+    print "Sum of Content:", wtContent+ltContent+lossContent
+    # these should sum to 1 exactly but I'm leaving wiggle room
+    assert (wtContent+ltContent+lossContent) < 1.2, ("Something went " 
+            +"wrong with the normalization of content to the cell area calculated "
+            +"by the mask. Double check the masking routine.") 
+  else:
+    print "WT Content:", wtContent
+    print "LT Content:", ltContent
+    print "Loss Content:", lossContent  
 
   return wtContent, ltContent, lossContent
 
@@ -1436,6 +1485,10 @@ if __name__ == "__main__":
                         returnAngles=False,
                         writeImage=True,
                         useGPU=True)
+      quit()
+
+    if(arg=="-analyzeDirectory"):
+      analyzeDirectory()
       quit()
 
     ### Additional Arguments

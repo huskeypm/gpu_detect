@@ -639,13 +639,14 @@ def markPastedFilters(
 
   ### we want to mark WT last since that should be the most stringent
   # Opting to mark Loss, then Long, then WT
-  halfCellSizeLoss = 16 # should think of how to automate
-  labeledLoss = painter.doLabel(Lossholder,dx=halfCellSizeLoss,thresh=254)
+  cellSizeLoss = 16 # should think of how to automate
+  labeledLoss = painter.doLabel(Lossholder,dx=cellSizeLoss,thresh=254)
   LTx = 14
   LTy = 3
   labeledLT = painter.doLabel(LTholder,dx=LTx,dy=LTy,thresh=254)
-  halfCellSizeWT = 19
-  labeledWT = painter.doLabel(WTholder,dx=halfCellSizeWT,thresh=254)
+  WTx = 19
+  WTy = 10
+  labeledWT = painter.doLabel(WTholder,dx=WTx,dy=WTy,thresh=254)
 
   ### perform masking
   WTmask = labeledWT.copy()

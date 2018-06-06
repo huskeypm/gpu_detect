@@ -20,6 +20,7 @@ import optimizer
 import painter
 import time
 import os
+import matchedFilter as mF
 class empty:pass
 
 #root = "myoimages/"
@@ -353,20 +354,40 @@ def saveWorkflowFig():
                     returnAngles=True,
                     writeImage=True)
 
-  angle_output = util.ReadImg("WorkflowFig_angles_output.png",cvtColor=False)
-  output = util.ReadImg("WorkflowFig_output.png",cvtColor=False)
-  origImg = util.ReadImg(imgName,cvtColor=False)
-  imgs = {"WorkflowFig_angles_output.png":angle_output, 
-          "WorkflowFig_output.png":output, 
-          "WorkflowFig_orig.png":origImg}
+  ### save the correlation planes
+  lossFilter = util.LoadFilter("./myoimages/LossFilter.png")
+  ltFilter = util.LoadFilter("./myoimages/LongitudinalFilter.png")
+  wtFilter = util.LoadFilter("./myoimages/newSimpleWTFilter.png")
 
-  left = 225; right = 312; top = 111; bottom = 168
-  for name,img in imgs.iteritems():
-    holder = np.zeros((bottom-top,right-left,3),dtype=np.uint8)
-    for channel in range(3):
-      ### crop images
-      holder[:,:,channel] = img[top:bottom,left:right,channel]
-    cv2.imwrite(name,holder)
+  origImg = util.ReadImg(imgName,cvtColor=False)
+  origImg = cv2.cvtColor(origImg,cv2.COLOR_BGR2GRAY)
+  lossCorr = mF.matchedFilter(origImg, lossFilter,demean=False)
+  ltCorr = mF.matchedFilter(origImg, ltFilter,demean=False)
+  wtCorr = mF.matchedFilter(origImg, wtFilter,demean=False)
+
+  cropImgs = False
+  if cropImgs:
+    angle_output = util.ReadImg("WorkflowFig_angles_output.png",cvtColor=False)
+    output = util.ReadImg("WorkflowFig_output.png",cvtColor=False)
+    imgs = {"WorkflowFig_angles_output.png":angle_output, 
+            "WorkflowFig_output.png":output, 
+            "WorkflowFig_orig.png":origImg}
+
+    left = 204; right = 304; top = 74; bottom = 151
+    for name,img in imgs.iteritems():
+      if cropImgs:
+        holder = np.zeros((bottom-top,right-left,3),dtype=np.uint8)
+        for channel in range(3):
+          ### crop images
+          holder[:,:,channel] = img[top:bottom,left:right,channel]
+      cv2.imwrite(name,holder)
+    lossCorr = lossCorr[top:bottom,left:right]
+    ltCorr = ltCorr[top:bottom,left:right]
+    wtCorr = wtCorr[top:bottom,left:right]
+
+  cv2.imwrite("WorkflowFig_lossCorr.png",lossCorr)
+  cv2.imwrite("WorkflowFig_ltCorr.png",ltCorr)
+  cv2.imwrite("WorkflowFig_wtCorr.png",wtCorr)
 
 def analyzeAllMyo():
   #root = "/home/AD/dfco222/Desktop/LouchData/processedImgs_May23/"
@@ -768,12 +789,10 @@ def giveMarkedMyocyte(
   LossstackedHits = Lossresults.stackedHits
  
   ### Read in colored image for marking hits
-  cI = util.ReadImg(testImage,cvtColor=False)
-
-  # Must subtract 1 from the image since all hits are marked 255 and orig img is normed to 255
-  # have to be careful since uint8 format means that 0 - 1 = 255
-  cI[cI == 0] = 1
-  cI -= 1
+  cI = util.ReadImg(testImage,cvtColor=False).astype(np.float64)
+  # killing the brightness a bit so looking at results isn't like staring at the sun
+  cI *= 0.85
+  cI = np.round(cI).astype(np.uint8)
 
   ### Marking superthreshold hits for loss filter
   LossstackedHits[LossstackedHits != 0] = 255

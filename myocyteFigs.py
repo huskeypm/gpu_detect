@@ -618,7 +618,9 @@ def figAnalysis(
 
 def markPastedFilters(
       lossMasked, ltMasked, wtMasked, cI,
-      lossSize=12, LTx=14, LTy=3, wtSize=14
+      lossName="./myoimages/LossFilter.png",
+      ltName="./myoimages/LongitudinalFilter.png",
+      wtName="./myoimages/newSimpleWTFilter.png"
       ):
   '''
   Given masked stacked hits for the 3 filters and a doctored colored image, 
@@ -637,15 +639,20 @@ def markPastedFilters(
   WTholder = empty()
   WTholder.stackedHits = wtMasked
 
+  ### load in filters to get filter dimensions
+  lossFilt = util.LoadFilter(lossName)
+  ltFilt = util.LoadFilter(ltName)
+  wtFilt = util.LoadFilter(wtName)
+
+  ### get filter dimensions
+  lossy,lossx = util.measureFilterDimensions(lossFilt)
+  LTy, LTx = util.measureFilterDimensions(ltFilt)
+  WTy, WTx = util.measureFilterDimensions(wtFilt)
+
   ### we want to mark WT last since that should be the most stringent
   # Opting to mark Loss, then Long, then WT
-  cellSizeLoss = 16 # should think of how to automate
-  labeledLoss = painter.doLabel(Lossholder,dx=cellSizeLoss,thresh=254)
-  LTx = 14
-  LTy = 3
+  labeledLoss = painter.doLabel(Lossholder,dx=lossx,dy=lossy,thresh=254)
   labeledLT = painter.doLabel(LTholder,dx=LTx,dy=LTy,thresh=254)
-  WTx = 19
-  WTy = 10
   labeledWT = painter.doLabel(WTholder,dx=WTx,dy=WTy,thresh=254)
 
   ### perform masking
@@ -1249,11 +1256,10 @@ def optimizeLoss():
 
 # function to validate that code has not changed since last commit
 def validate(testImage="./myoimages/MI_D_78_processed.png",
-             ImgTwoSarcSize=22,
              display=False
              ):
   # run algorithm
-  markedImg = giveMarkedMyocyte(testImage=testImage,ImgTwoSarcSize=ImgTwoSarcSize)
+  markedImg = giveMarkedMyocyte(testImage=testImage)
 
   if display:
     import matplotlib.pyplot as plt
@@ -1264,9 +1270,9 @@ def validate(testImage="./myoimages/MI_D_78_processed.png",
   # calculate wt, lt, and loss content  
   wtContent, ltContent, lossContent = assessContent(markedImg)
 
-  assert(abs(wtContent - 66435) < 1), "WT validation failed."
-  assert(abs(ltContent - 13669) < 1), "LT validation failed."
-  assert(abs(lossContent - 14458) < 1), "Loss validation failed."
+  assert(abs(wtContent - 52594) < 1), "WT validation failed."
+  assert(abs(ltContent - 11687) < 1), "LT validation failed."
+  assert(abs(lossContent - 12752) < 1), "Loss validation failed."
   print "PASSED!"
 
 # A minor validation function to serve as small tests between commits

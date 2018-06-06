@@ -339,7 +339,34 @@ def figS1():
   #plt.show()
   plt.gcf().savefig('figS1.png')
   
+def saveWorkflowFig():
+  '''
+  Function that will save the images used for the workflow figure in the paper.
+  Note: This is slightly subject to how one preprocesses the MI_D_73.png image.
+        A slight change in angle or what subsection was selected in the preprocessing
+        could slightly change how the images appear.
+  '''
+  imgName = "./myoimages/MI_D_73_processed.png" 
   
+  giveMarkedMyocyte(testImage=imgName,
+                    tag="WorkflowFig",
+                    returnAngles=True,
+                    writeImage=True)
+
+  angle_output = util.ReadImg("WorkflowFig_angles_output.png",cvtColor=False)
+  output = util.ReadImg("WorkflowFig_output.png",cvtColor=False)
+  origImg = util.ReadImg(imgName,cvtColor=False)
+  imgs = {"WorkflowFig_angles_output.png":angle_output, 
+          "WorkflowFig_output.png":output, 
+          "WorkflowFig_orig.png":origImg}
+
+  left = 225; right = 312; top = 111; bottom = 168
+  for name,img in imgs.iteritems():
+    holder = np.zeros((bottom-top,right-left,3),dtype=np.uint8)
+    for channel in range(3):
+      ### crop images
+      holder[:,:,channel] = img[top:bottom,left:right,channel]
+    cv2.imwrite(name,holder)
 
 def analyzeAllMyo():
   #root = "/home/AD/dfco222/Desktop/LouchData/processedImgs_May23/"
@@ -1421,10 +1448,8 @@ if __name__ == "__main__":
       quit()
 
     if(arg=="-workflowFig"):
-      giveMarkedMyocyte(testImage="./myoimages/MI_D_73_annotation.png",
-                        tag="WorkflowFig",
-                        returnAngles=True,
-                        writeImage=True)
+      saveWorkflowFig()
+      quit()
 
     ### Testing/Optimization Routines
     if(arg=="-roc"): 

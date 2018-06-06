@@ -574,7 +574,7 @@ if __name__ == "__main__":
   for i,arg in enumerate(sys.argv):
     if(arg=="-genWT"):
       SaveFixedWTFilter()
-    elif(arg="-genSimpleWTFilter"):
+    elif(arg=="-genSimpleWTFilter"):
       saveSimpleWT()
     elif(arg=="-genLong"):
       print "WARNING: DEPRECATED. Use -genGaussLongFilter"

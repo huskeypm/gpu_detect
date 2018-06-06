@@ -15,29 +15,6 @@ import painter
 
 class empty():pass
 
-def measureFilterDimensions(grayFilter):
-  '''
-  Measures where the filter has any data and returns a minimum bounding
-  rectangle around the filter. To be used in conjunction with the 
-  pasteFilters flag in DataSet
-  '''
-  filtery,filterx = np.shape(grayFilter)
-
-  collapsedRows = np.sum(grayFilter,0)
-  leftPadding = np.argmax(collapsedRows>0)
-  rightPadding = np.argmax(collapsedRows[::-1]>0)
-  numRows = filtery - leftPadding - rightPadding
-
-  collapsedCols = np.sum(grayFilter,1)
-  topPadding = np.argmax(collapsedCols>0)
-  bottomPadding = np.argmax(collapsedCols[::-1]>0)
-  numCols = filterx - topPadding - bottomPadding
-
-  print "filter y,x:",numRows,numCols
-
-  return numRows, numCols
-
-
 ##
 ## dataset for param optimziation 
 ## This class is intended to contain all the necessary information to optmize detection parameters. 
@@ -152,7 +129,7 @@ def SetupTests(dataSet,meanFilter=False):
     filter1Filter = cv2.imread(dataSet.filter1Name)
     dataSet.filter1Data   = cv2.cvtColor(filter1Filter, cv2.COLOR_BGR2GRAY)
     dataSet.filter1Data = util.renorm(np.array(dataSet.filter1Data,dtype=float),scale=1.)
-  dataSet.filter1y,dataSet.filter1x = measureFilterDimensions(dataSet.filter1Data)
+  dataSet.filter1y,dataSet.filter1x = util.measureFilterDimensions(dataSet.filter1Data)
 
   if meanFilter:
     dataSet.filter2Data = util.LoadFilter(dataSet.filter2Name)
@@ -160,7 +137,7 @@ def SetupTests(dataSet,meanFilter=False):
     filter2Filter = cv2.imread(dataSet.filter2Name)
     dataSet.filter2Data   = cv2.cvtColor(filter2Filter, cv2.COLOR_BGR2GRAY)
     dataSet.filter2Data = util.renorm(np.array(dataSet.filter2Data,dtype=float),scale=1.)
-  dataSet.filter2y,dataSet.filter2x = measureFilterDimensions(dataSet.filter2Data)
+  dataSet.filter2y,dataSet.filter2x = util.measureFilterDimensions(dataSet.filter2Data)
 
 def ParamDict(typeDict=None):
   #print "WILL MAKE INTO CLASS LATER"

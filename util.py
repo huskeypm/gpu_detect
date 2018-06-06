@@ -33,6 +33,28 @@ def LoadFilter(fileName):
   filterImg /=  np.sum(filterImg)
   return filterImg
 
+def measureFilterDimensions(grayFilter):
+  '''
+  Measures where the filter has any data and returns a minimum bounding
+  rectangle around the filter. To be used in conjunction with the 
+  pasteFilters flag in DataSet
+  '''
+  filtery,filterx = np.shape(grayFilter)
+
+  collapsedRows = np.sum(grayFilter,0)
+  leftPadding = np.argmax(collapsedRows>0)
+  rightPadding = np.argmax(collapsedRows[::-1]>0)
+  numRows = filtery - leftPadding - rightPadding
+
+  collapsedCols = np.sum(grayFilter,1)
+  topPadding = np.argmax(collapsedCols>0)
+  bottomPadding = np.argmax(collapsedCols[::-1]>0)
+  numCols = filterx - topPadding - bottomPadding
+
+  print "filter y,x:",numRows,numCols
+
+  return numRows, numCols
+
 import scipy.fftpack as fftp
 
 # Prepare matrix of vectorized of FFT'd images

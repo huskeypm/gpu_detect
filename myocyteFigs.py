@@ -77,14 +77,7 @@ def fig3():
   plt.close()
 
   ### save histogram of angles
-  plt.figure()
-  n, bins, patches = plt.hist(angleCounts, len(iters), normed=1, 
-                              facecolor='green', alpha=0.5)
-  plt.xlabel('Rotation Angle')
-  plt.ylabel('Probability')
-  plt.gcf().savefig("fig3_histogram.png")
-  plt.close()
-  
+  giveAngleHistogram(angleCounts,iters,"fig3")
 
 ## HF 
 def fig4(): 
@@ -347,12 +340,15 @@ def saveWorkflowFig():
         A slight change in angle or what subsection was selected in the preprocessing
         could slightly change how the images appear.
   '''
+
   imgName = "./myoimages/MI_D_73_processed.png" 
+  iters = [-25,-20,-15,-10,-5,0,5,10,15,20,25]
   
-  giveMarkedMyocyte(testImage=imgName,
-                    tag="WorkflowFig",
-                    returnAngles=True,
-                    writeImage=True)
+  colorImg,colorAngles,angleCounts = giveMarkedMyocyte(testImage=imgName,
+                                                       tag="WorkflowFig",
+                                                       iters=iters,
+                                                       returnAngles=True,
+                                                       writeImage=True)
 
   ### save the correlation planes
   lossFilter = util.LoadFilter("./myoimages/LossFilter.png")
@@ -389,6 +385,83 @@ def saveWorkflowFig():
   cv2.imwrite("WorkflowFig_ltCorr.png",ltCorr)
   cv2.imwrite("WorkflowFig_wtCorr.png",wtCorr)
 
+  ### Assess content
+  wtC,ltC,ldC = assessContent(colorImg,imgName=imgName)
+
+  ### make a bar chart using routine
+  content = [wtC,ltC,ldC]
+  contentDict = {imgName:content}
+  giveBarChartfromDict(contentDict,"WorkflowFig_Content")
+
+  ### Make a histogram for the angles
+  giveAngleHistogram(angleCounts,iters,"WorkflowFig")
+
+def giveAngleHistogram(angleCounts,iters,tag):
+  ### Make a histogram for the angles
+  iters = np.asarray(iters,dtype='float')
+  binSpace = iters[-1] - iters[-2]
+  myBins = iters - binSpace / 2.
+  myBins= np.append(myBins,myBins[-1] + binSpace)
+  plt.figure()
+  n, bins, patches = plt.hist(angleCounts, bins=myBins,
+                              normed=1,
+                              align='mid',
+                              facecolor='green', alpha=0.5)
+  plt.xlabel('Rotation Angle')
+  plt.ylabel('Probability')
+  plt.gcf().savefig(tag+"_angle_histogram.png")
+  plt.close()
+
+def giveAvgStdofDicts(ShamDict,HFDict,MI_DDict,MI_MDict,MI_PDict):
+  ### make a big dictionary to iterate through
+  results = {'Sham':ShamDict,'HF':HFDict,'MI_D':MI_DDict,'MI_M':MI_MDict,'MI_P':MI_PDict}
+  ### make dictionaries to store results
+  avgDict = {}; stdDict = {}
+  for model,dictionary in results.iteritems():
+    ### make holders to store results
+    angleAvgs = []; angleStds = []
+    for name,angleCounts in dictionary.iteritems():
+      print name
+      if 'angle' not in name:
+        continue
+      angleAvgs.append(np.mean(angleCounts))
+      angleStds.append(np.std(angleCounts))
+      print "Average striation angle:",angleAvgs[-1]
+      print "Standard deviation of striation angle:",angleStds[-1]
+    avgDict[model] = angleAvgs
+    stdDict[model] = angleStds
+
+  ### Normalize Standard Deviations to Sham Standard Deviation
+  ShamAvgStd = np.mean(stdDict['Sham'])
+  stdStdDev = {}
+  for name,standDev in stdDict.iteritems():
+    standDev = np.asarray(standDev,dtype=float) / ShamAvgStd
+    stdDict[name] = np.mean(standDev)
+    stdStdDev[name] = np.std(standDev)
+
+  ### Make bar chart for angles 
+  # need to have results in ordered arrays...
+  names = ['Sham', 'HF', 'MI_D', 'MI_M', 'MI_P']
+  avgs = []; stds = []
+  for name in names:
+    avgs.append(avgDict[name])
+    stds.append(stdDict[name])
+  width = 0.25
+  N = 1
+  indices = np.arange(N) + width
+  fig,ax = plt.subplots()
+  for i,name in enumerate(names):
+    ax.bar(indices+i*width, stdDict[name], width, yerr=stdStdDev[name],ecolor='k',alpha=0.5)
+  ax.set_ylabel("Average Angle Standard Deviation Normalized to Sham")
+  xtickLocations = np.arange(len(names)) * width + width*3./2.
+  ax.set_xticks(xtickLocations)
+  ax.set_xticklabels(names,rotation='vertical')
+  plt.gcf().savefig("Whole_Dataset_Angles.png")
+
+  
+      
+  
+
 def analyzeAllMyo():
   #root = "/home/AD/dfco222/Desktop/LouchData/processedImgs_May23/"
   #root = "/net/share/dfco222/data/TT/LouchData/processed/"
@@ -402,10 +475,10 @@ def analyzeAllMyo():
       continue
     print name
     ### iterate through names and mark the images
-    markedMyocyte = giveMarkedMyocyte(testImage=root+name,
-                                       tag=name[:-4],
-                                       writeImage=True,
-                                       returnAngles=False)
+    markedMyocyte,_,angleCounts = giveMarkedMyocyte(testImage=root+name,
+                                                    tag=name[:-4],
+                                                    writeImage=True,
+                                                    returnAngles=True)
 
     ### assess content
     wtC, ltC, lossC = assessContent(markedMyocyte,imgName=root+name)
@@ -415,20 +488,26 @@ def analyzeAllMyo():
     ### store content in respective dictionary
     if 'Sham' in name:
       Sham[name] = content
+      Sham[name+'_angles'] = angleCounts
     elif 'HF' in name:
       HF[name] = content
+      HF[name+'_angles'] = angleCounts
     elif 'MI' in name:
       if '_D' in name:
         MI_D[name] = content
+        MI_D[name+'_angles'] = angleCounts
       elif '_M' in name:
         MI_M[name] = content
+        MI_M[name+'_angles'] = angleCounts
       elif '_P' in name:
         MI_P[name] = content
+        MI_P[name+'_angles'] = angleCounts
 
   ### use function to construct and write bar charts for each content dictionary
   giveBarChartfromDict(Sham,'Sham')
   giveBarChartfromDict(HF,'HF')
   giveMIBarChart(MI_D,MI_M,MI_P)
+  giveAvgStdofDicts(Sham,HF,MI_D,MI_M,MI_P)
 
 def analyzeDirectory(directory):
   '''
@@ -491,6 +570,8 @@ def giveBarChartfromDict(dictionary,tag):
   ### instantiate lists to contain contents
   wtC = []; ltC = []; lossC = [];
   for name,content in dictionary.iteritems():
+    if "angle" in name:
+      continue
     wtC.append(content[0])
     ltC.append(content[1])
     lossC.append(content[2])
@@ -541,6 +622,8 @@ def giveMIBarChart(MI_D, MI_M, MI_P):
 
   DwtC = []; DltC = []; DlossC = [];
   for name, content in MI_D.iteritems():
+    if 'angle' in name:
+      continue
     wtC = content[0]
     ltC = content[1]
     lossC = content[2]
@@ -556,6 +639,8 @@ def giveMIBarChart(MI_D, MI_M, MI_P):
 
   MwtC = []; MltC = []; MlossC = [];
   for name, content in MI_M.iteritems():
+    if 'angle' in name:
+      continue
     wtC = content[0]
     ltC = content[1]
     lossC = content[2]
@@ -572,6 +657,8 @@ def giveMIBarChart(MI_D, MI_M, MI_P):
 
   PwtC = []; PltC = []; PlossC = [];
   for name, content in MI_P.iteritems():
+    if 'angle' in name:
+      continue
     wtC = content[0]
     ltC = content[1]
     lossC = content[2]

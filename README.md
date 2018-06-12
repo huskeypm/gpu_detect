@@ -1,6 +1,6 @@
 !!!! Working to direct everything through detect.py right now, which should be extremely general (down to cmd line operation for arbitrary data) 
 python tissue.py -test1
-need to figure out what's different by detect.py vs origin implementation in tissue.y
+need to figure out what's different by detect.py vs origin implementation in tissue.py
 
 NOTE: Before running algorithm on user provided images, be sure to run through
 <code>
@@ -9,8 +9,19 @@ python preprocessing.py -preprocess "IMGNAME" "FILTERTWOSARCSIZE"
 Where IMGNAME is the path/name of your image and FILTERTWOSARCSIZE 
 is the default two sarcomere size for the filters used. Default filter size is 25 pixels.
 
-## MASTER SCRIPT 
-# detect.py 
+# Upon Pulling a Clean Repo
+Initialize the repo by running the following commands:
+1. Run "python util.py -genAllMyo" to generate all necessary filters
+2. Run "python preprocessing.py -preprocessAll" to process all of the included myocyte images
+
+# Preprocesing User Supplied Images
+To preprocess a directory containing user supplied images, run:
+<code>
+python preprocessing.py -preprocessDirectory PATH_TO_DIRECTORY
+</code>
+
+# MASTER SCRIPT 
+## detect.py 
 To validate:
 python detect.py -validation 
 
@@ -21,30 +32,24 @@ To run with yaml: (follow ex.yml for an example)
 python detect.py -simpleYaml ex.yml
 
 
-# gpu_detect
+## gpu_detect
 GPU-accelerated matched filter detection.
 
 Requires tensorflow cuda (python), which is currently installed on kafka and hesse.
 source config.bash to load tensor-flow libs
 
 
-## GPU 
+# GPU 
 tensorflow_fftconv.py - compares performances of tensorflow FFT/matrix multiply/iFFT vs FFTPack
 
 tensorflow_mf.py - matched filtering via tensorflow
 
 commfigs.bash - generates images for paper 
 
-## Todo
+# Todo
 see TODO for todo items 
 
-## Myocyte filter generation
-Initialize by running
-<code>
-python util.py -genAllMyo
-</code>
-
-### validation test
+# validation test
 <code>
 python myocyteFigs.py -validation
 </code>
@@ -67,6 +72,7 @@ Meant to serve as a rapid validation test between commits
 Note: Currently broken
 
 ### execute images 
+<font color=red> Deprecated </color>
 <code>
 python myocyteFigs.py -tag "MI" -test ./myoimages/WTFilter.png ./myoimages/LongFilter.png ./myoimages/MI_D_73_annotation.png 0.06 0.38 3.
 </code>
@@ -86,6 +92,7 @@ python silicaFigs.py -rocfigs
 </code>
 
 ## Misc. ROC? 
+<font color=red> Need to update </color>
 To generate roc data:
 <code>
 python optimizer.py -optimize

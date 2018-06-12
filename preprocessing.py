@@ -387,7 +387,13 @@ def preprocessAll():
   function meant to preprocess all of the images needed for data reproduction
   '''
   root = './myoimages/'
-  imgNames = ["HF_1.png", "MI_D_73.png","MI_M_45.png","MI_P_16.png","Sham_11.png",
+  imgNames = ["HF_1.png", 
+              "MI_D_73.png",
+              "MI_D_76.png",
+              "MI_D_78.png",
+              "MI_M_45.png",
+              "MI_P_16.png",
+              "Sham_11.png",
               "Sham_M_65.png"]
   for name in imgNames:
     filterTwoSarcomereSize = 25

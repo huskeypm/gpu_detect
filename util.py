@@ -430,7 +430,6 @@ def saveFixedLossFilter():
 
 def saveFixedPunishmentFilter(LongitudinalFilterName=root+"LongFilter.png",
                               rowMin=2,rowMax=-1,colMin=6,colMax=13):
-  print "This function is deprecated. Replace with simpler one"
   #punishFilter = GenerateWTPunishmentFilter(LongitudinalFilterName,
   #                                          rowMin=2,rowMax=-1,colMin=7,colMax=12)
   punishFilter = np.zeros((28,7),dtype='uint8')

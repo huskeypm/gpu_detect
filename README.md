@@ -9,13 +9,20 @@ python preprocessing.py -preprocess "IMGNAME" "FILTERTWOSARCSIZE"
 Where IMGNAME is the path/name of your image and FILTERTWOSARCSIZE 
 is the default two sarcomere size for the filters used. Default filter size is 25 pixels.
 
+# Package Dependencies and Installation Pages
+
+
+
 # Upon Pulling a Clean Repo
 Initialize the repo by running the following commands:
+
 1. Run "python util.py -genAllMyo" to generate all necessary filters
+
 2. Run "python preprocessing.py -preprocessAll" to process all of the included myocyte images
 
 # Preprocesing User Supplied Images
 To preprocess a directory containing user supplied images, run:
+
 <code>
 python preprocessing.py -preprocessDirectory PATH_TO_DIRECTORY
 </code>
@@ -49,9 +56,11 @@ commfigs.bash - generates images for paper
 # Todo
 see TODO for todo items 
 
-# validation test
+# Miscellaneous 
+
+### validation test
 <code>
-python myocyteFigs.py -validation
+python myocyteFigs.py -validate
 </code>
 
 ### Generate Paper Figures

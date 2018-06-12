@@ -2,8 +2,10 @@
 ### Group of functions that will walk the user fully through the preprocessing
 ### routines.
 ###
-
-import util, cv2
+import sys
+import os
+import cv2
+import util
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import signal
@@ -307,7 +309,6 @@ def resizeToFilterSize(img,filterTwoSarcomereSize):
 
   display = False
   if display:
-    import matplotlib.pyplot as plt
     plt.figure()
     plt.plot(fBig,bigSum)
     plt.title("Collapsed Periodogram of Subsection")
@@ -404,7 +405,6 @@ def preprocessDirectory(directoryName,filterTwoSarcomereSize=25):
   '''
   function for preprocessing an entire directory of images
   '''
-  import os
   for name in os.listdir(directoryName):
     preprocess(directoryName+name,filterTwoSarcomereSize)
 
@@ -439,7 +439,6 @@ Notes:
 #
 tag = "default_"
 if __name__ == "__main__":
-  import sys
   msg = helpmsg()
   remap = "none"
 

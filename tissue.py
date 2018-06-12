@@ -2,9 +2,17 @@
 For processing large tissue subsection from Frank
 """
 # SPecific to a single case, so should be moved elsewhere
+import sys
 import matchedFilter as mF 
 import numpy as np
 import matplotlib.pylab as plt
+import cv2
+import util
+import display_util as du
+import imutils
+import optimizer
+import detection_protocols as dps
+import detect
 class empty:pass
 
 
@@ -20,9 +28,6 @@ params.imgName = "/home/AD/pmke226/DataLocker/cardiac/Sachse/171127_tissue/tissu
 #params.imgName = "tissue.tif"
 params.fov = np.array([3916.62,4093.31]) # um (from image caption in imagej. NOTE: need to reverse spatial dimensions to correspond to the way cv2 loads image)
 
-
-import cv2
-import util
 
 def Setup():
   img = cv2.imread(params.imgName)
@@ -102,7 +107,6 @@ def get_fiji(gray, loc_um,d_um):
 
     return subregion
 
-import display_util as du
 def dbgimg(case,results,
            rotIter=0, # which rotation result you want
            orig=True,
@@ -171,11 +175,6 @@ def DisplayHits(img,threshed):
 
         # merge two fields 
         du.StackGrayRedAlpha(img,sadf)
-
-
-  
-
-import imutils
     
 def CreateFilter(
     params,
@@ -219,16 +218,6 @@ def CreateLobeFilter(params,rot=22.):
   # imshow(lobemfr,cmap='gray')
   return lobemfr
 
-
-   
-import optimizer
-
-
-import detection_protocols as dps
-import cv2
-import util
-
-import detect
 def Test1(
   fileName = "test.png" 
   ):
@@ -309,8 +298,7 @@ def validate():
   assert( np.abs( totInfo - truthVal) < 1), "FAIL: %f != %f"%(totInfo,truthVal) 
   print "PASS" 
 
-  
-import sys
+
 #
 # Message printed when program run without arguments 
 #
@@ -335,7 +323,6 @@ Notes:
 # MAIN routine executed when launching this script from command line 
 #
 if __name__ == "__main__":
-  import sys
   msg = helpmsg()
   remap = "none"
 

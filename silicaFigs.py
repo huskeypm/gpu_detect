@@ -1,12 +1,15 @@
 """
 Generates figure for paper 
 """
+import sys
 import matplotlib
 #matplotlib.use('Agg')
 import cv2
 import numpy as np
 import bankDetect as bD
 import matplotlib.pylab as plt
+import optimizer
+import painter
 
 class empty():pass
 root = "./pnpimages/"
@@ -106,7 +109,6 @@ def GenFigN():
     testCase.outName="fullBest_%3.1f.png"%val
     DoTest(testCase,fusedThresh=val*fusedThresh,bulkThresh=val*bulkThresh,display=False)
   
-import painter
 def Extrapolate(
   testCase,
   expPerm = 1.4e-6, # m/s
@@ -197,7 +199,6 @@ def Extrapolate(
 
   
 #!/usr/bin/env python
-import sys
 ##################################
 #
 # Revisions
@@ -208,7 +209,6 @@ import sys
 ##
 ## Defines dataset for silica 
 ##
-import optimizer
 def Silica():
   root = "pnpimages/"
   # 0.05 0.3 0.710752318791 0.0043 0.764521193093 0.0728
@@ -288,7 +288,6 @@ def validate():
 # MAIN routine executed when launching this script from command line 
 #
 if __name__ == "__main__":
-  import sys
 
   if len(sys.argv) < 2:
       raise RuntimeError("CHECK INSIDE FOR CMMANDS") 
@@ -299,7 +298,6 @@ if __name__ == "__main__":
   #  #print "arg"
 
   # Loops over each argument in the command line 
-  import optimizer
   for i,arg in enumerate(sys.argv):
     # calls 'doit' with the next argument following the argument '-validation'
     if(arg=="-paperfigs"):     

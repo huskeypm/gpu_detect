@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys
+import os
 ##################################
 #
 # Revisions
@@ -13,13 +14,14 @@ import sys
 import numpy as np
 import cv2
 import matplotlib.pylab as plt
+import pandas as pd
 import bankDetect as bD
 import util
 import optimizer
 import painter
 import time
-import os
 import matchedFilter as mF
+import tissue
 class empty:pass
 
 #root = "myoimages/"
@@ -239,7 +241,6 @@ def fig6():
   plt.show()
 
   # utilize previously written routine to smooth hits and show WT regions
-  import tissue
   tissue.DisplayHits(nonFilteredImg, WTstackedHits)
   plt.gcf().savefig("fig6.png",dpi=300)
   plt.close()
@@ -280,7 +281,6 @@ def figS1():
       myocyteROC(dataSet,key,threshes = np.linspace(5,30,15))
   
   ### read data from hdf5 files
-  import pandas as pd
   # make big ol' dictionary
   bigData = {}
   bigData['MI'] = {}
@@ -1394,7 +1394,6 @@ def validate(testImage="./myoimages/MI_D_78_processed.png",
   markedImg = giveMarkedMyocyte(testImage=testImage)
 
   if display:
-    import matplotlib.pyplot as plt
     plt.figure()
     plt.imshow(markedImg)
     plt.show()
@@ -1417,7 +1416,6 @@ def minorValidate(testImage="./myoimages/MI_D_73_annotation.png",
   markedImg = giveMarkedMyocyte(testImage=testImage, 
                                 ImgTwoSarcSize=ImgTwoSarcSize,iters=iters)
   if display:
-    import matplotlib.pyplot as plt
     plt.figure()
     plt.imshow(markedImg)
     plt.show()
@@ -1495,7 +1493,6 @@ Notes:
 #
 tag = "default_" 
 if __name__ == "__main__":
-  import sys
   msg = helpmsg()
   remap = "none"
 
@@ -1622,7 +1619,6 @@ if __name__ == "__main__":
       tag = sys.argv[i+1]
 
     if(arg=="-noPrint"):
-      import os,sys
       sys.stdout = open(os.devnull, 'w')
 
   raise RuntimeError("Arguments not understood")

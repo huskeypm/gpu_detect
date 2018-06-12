@@ -1,9 +1,14 @@
+import sys
+import os
 import matplotlib.pylab as plt 
 import numpy as np 
 import cv2
+import scipy
 import scipy.signal as sig
-
+import scipy.fftpack as fftp
 import imutils
+import operator
+ 
 
 root = "myoimages/"
 
@@ -54,8 +59,6 @@ def measureFilterDimensions(grayFilter):
   print "filter y,x:",numRows,numCols
 
   return numRows, numCols
-
-import scipy.fftpack as fftp
 
 # Prepare matrix of vectorized of FFT'd images
 def CalcX(
@@ -138,7 +141,6 @@ def preprocessPNG(imgName, twoSarcSize, filterTwoSarcSize):
 ### Generating filters
 def generateWTFilter(WTFilterRoot=root+"/filterImgs/WT/", filterTwoSarcSize=25):
   WTFilterImgs = []
-  import os
   for fileName in os.listdir(WTFilterRoot):
       img = cv2.imread(WTFilterRoot+fileName)
       gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
@@ -197,8 +199,6 @@ def generateWTFilter(WTFilterRoot=root+"/filterImgs/WT/", filterTwoSarcSize=25):
   return WTFilter
 
 def generateLongFilter(filterRoot, twoSarcLengthDict, filterTwoSarcLength=24):
-  import os
-  import operator
   '''
   Input
  
@@ -459,9 +459,6 @@ def Depad(img, padding=15):
   newImg = newImg.astype(imgType)
   return newImg
 
-import scipy.fftpack as fftp
-import scipy 
-
 def CalcPSD(Hs): # fourier xformed data
     psd = np.real(np.conj(Hs)*Hs)
     eps = 1e-5
@@ -607,7 +604,6 @@ Notes:
 # MAIN routine executed when launching this script from command line 
 #
 if __name__ == "__main__":
-  import sys
   msg = helpmsg()
   remap = "none"
 

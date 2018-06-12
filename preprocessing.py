@@ -394,6 +394,15 @@ def preprocessAll():
     # perform preprocessing on image
     preprocess(root+name,filterTwoSarcomereSize)
 
+def preprocessDirectory(directoryName,filterTwoSarcomereSize=25):
+  '''
+  function for preprocessing an entire directory of images
+  '''
+  import os
+  for name in os.listdir(directoryName):
+    preprocess(directoryName+name,filterTwoSarcomereSize)
+
+
 ###############################################################################
 ###
 ### Execution of File
@@ -446,5 +455,10 @@ if __name__ == "__main__":
     if (arg=="-preprocessAll"):
       preprocessAll()
       quit()
+    if (arg=="-preprocessDirectory"):
+      directory = str(sys.argv[i+1])
+      preprocessDirectory(directory)
+      quit()
+      
   raise RuntimeError("Arguments not understood")
 

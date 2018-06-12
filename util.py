@@ -295,6 +295,27 @@ def GenerateWTPunishmentFilter(LongitudinalFilterName,
     punishFilter = punishFilter[:,colMin:colMax]
   return punishFilter
 
+def generateSingleTTFilter():
+  '''
+  Generates a bar filter for detection of a single transverse tubule
+  '''
+  WTfilter = np.zeros((20,12),dtype=np.float64)
+  WTfilter[:,3:-3] = 1.
+  WTfilter *= 255.
+  WTfilter = WTfilter.astype(np.uint8)
+  cv2.imwrite("./myoimages/singleTTFilter.png",WTfilter)
+
+def generateSingleTTPunishmentFilter():
+  '''
+  Generates a punishment corollary to the generateSingleTTFilter() function
+  above.
+  '''
+  punishFilter = np.zeros((20,12),dtype=np.float64)
+  punishFilter[:,:3] = 1.; punishFilter[:,-3:] = 1.
+  punishFilter *= 255.
+  punishFilter =  punishFilter.astype(np.uint8)
+  cv2.imwrite("./myoimages/singleTTPunishmentFilter.png",punishFilter)
+
 
 # # 'Fixing' filters (improving contrast) via basic thresholding
 def fixFilter(Filter,pixelCeiling=0.7,pixelFloor=0.4,rowMin=0, rowMax=None, colMin=0, colMax=None):
@@ -528,8 +549,10 @@ def SaveAllMyo():
       saveSimpleWTFilter()
       #SaveFixedLongFilter()
       saveGaussLongFilter()
-      SaveFixedLossFilter()
+      saveFixedLossFilter()
       #SaveFixedPunishmentFilter()
+      saveSingleTTFilter()
+      saveSingleTTPunishmentFilter()
 
 # Embegs signal into known iomage for testing 
 def embedSignal(img,mf,loc=None,scale=0.5):

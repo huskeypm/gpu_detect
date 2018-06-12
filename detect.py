@@ -9,7 +9,7 @@ import display_util as du
 import matchedFilter as mf 
 
 def DisplayHits(img,threshed,
-                smooth=40 # px
+                smooth=8 # px
                 ):
         # smooth out image to make it easier to visualize hits 
         daround=np.ones([smooth,smooth])
@@ -28,7 +28,7 @@ def docalc(img,
            #s=1.,
            paramDict = optimizer.ParamDict(),
            debug=False,
-           smooth = 40, # smoothing for final display
+           smooth = 8, # smoothing for final display
            iters = [-20,-10,0,10,20], # needs to be put into param dict
            fileName="corr.png"):
 
@@ -48,6 +48,18 @@ def docalc(img,
     result = results.correlated[0]
     #corr = np.asarray(results.correlated[0],dtype=float) # or
     results.threshed = results.stackedHits
+
+    pasteFilter = True
+    if pasteFilter:
+      import util, painter
+      MFy,MFx = util.measureFilterDimensions(mf)
+      filterChannel = 0
+      imgDim = np.shape(img)
+      #coloredImageHolder = np.zeros((imgDim[0],imgDim[1],3),dtype=npfloat64)
+      #filterChannelHolder = coloredImageHolder[:,:,filterChannel)
+      # TODO: Come back and fix thresh
+      results.threshed = painter.doLabel(results,dx=MFx,dy=MFy,thresh=254)
+      #coloredImageHolder[:,:,filterChannel] = filterChannelHolder
     
     print "Writing file %s"%fileName
     #import matplotlib.pyplot as plt
@@ -73,7 +85,7 @@ import sys
 # Simple performs a matched filtering detection with a single filter, image and threshold
 #
 import util 
-def simple(imgName,mfName,thresh,debug=False,smooth=40,outName="hits.png"): 
+def simple(imgName,mfName,thresh,debug=False,smooth=4,outName="hits.png"): 
   img = util.ReadImg(imgName,renorm=True)
   mf  = util.ReadImg( mfName,renorm=True)
 

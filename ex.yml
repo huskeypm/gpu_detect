@@ -1,6 +1,6 @@
-imgName: myoimages/Sham_11.png 
-mfName: myoimages/WTFilter.png 
-thresh: 0.01
+imgName: myoimages/Sham_11_processed.png 
+mfName: myoimages/newSimpleWTFilter.png 
+thresh: 0.8
 debug: True
 outName: exYaml.png
 

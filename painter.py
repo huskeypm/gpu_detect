@@ -266,14 +266,14 @@ def doLabel(result,dx=10,dy=None,thresh=0):
     
     filtered = signal.convolve2d(img, kernel, mode='same') / np.sum(kernel)
 
-    plt.subplot(1,3,1)
-    plt.imshow(img)
-    plt.subplot(1,3,2)
-    plt.imshow(filtered)
-    plt.subplot(1,3,3)
+    #plt.subplot(1,3,1)
+    #plt.imshow(img)
+    #plt.subplot(1,3,2)
+    #plt.imshow(filtered)
+    #plt.subplot(1,3,3)
     labeled = filtered > 0
-    plt.imshow(labeled)
-    plt.tight_layout()
+    #plt.imshow(labeled)
+    #plt.tight_layout()
     #plt.show()
     
     return labeled

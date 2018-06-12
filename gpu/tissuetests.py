@@ -1,16 +1,12 @@
 import numpy as np
-
+import cv2
+import imutils
+import tensorflow as tf
+import tensorflow_mf as tmf
 imgName = "/home/AD/pmke226/DataLocker/cardiac/Sachse/171127_tissue/tissue.tif"
 
 
 # If we take PSD of image, can we filter out low freq myocyte border info? (or is it even necessary if we apply sidelobe)
-
-# In[3]:
-
-import cv2
-
-
-# In[4]:
 
 img = cv2.imread(imgName)
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -61,7 +57,6 @@ mf[:,(horz-w):horz]=1.
 
 #imshow(mf,cmap='gray')
 
-import imutils
 mfr = imutils.rotate_bound(mf,-rot)
 
 # need this to be square for GPU (probably buried in a cv2 function somewhere)
@@ -94,7 +89,6 @@ lobemf[:,lobeW:(lobeW+sigW)]=0.
 
 #imshow(mf,cmap='gray')
 
-import imutils
 lobemfr = imutils.rotate_bound(lobemf,-rot)
 lobemfr = makeSquare(lobemfr)
 
@@ -114,13 +108,7 @@ def embed(img,mf):
 
 # ### Tensor flow stuff
 
-# In[80]:
 
-import tensorflow as tf
-import tensorflow_mf as tmf
-
-
-# In[94]:
 ## First test 
 if 0: 
   subregion = get_fiji(gray,loc_um,extent_um)

@@ -7,6 +7,8 @@ import numpy as np
 import matchedFilter as mF
 import sys
 import os
+import util
+import matplotlib.pylab as plt
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(dir_path+"/gpu/")
 import simple_GPU_MF as sMF
@@ -82,7 +84,6 @@ def lobeDetect(
 
 
 # TODO phase this out 
-import util
 def CalcInvFilter(inputs,paramDict,corr):
     
       penaltyscale = paramDict['penaltyscale'] 
@@ -127,7 +128,6 @@ def punishmentFilter(
   ):
     # get data 
     img = inputs.img # raw (preprocessed image) 
-    import matplotlib.pylab as plt
     #plt.figure()
     #plt.title('Preprocessed Image')
     #plt.imshow(img)
@@ -178,7 +178,6 @@ def punishmentFilter(
     ######
     snr = results.corr / (cM + gamma * results.corrPunishment)
 
-    #import matplotlib.pyplot as plt
     #plt.figure()
     #plt.imshow(mf)
     #plt.colorbar()

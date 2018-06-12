@@ -1,16 +1,16 @@
 import cv2
 import matplotlib
+import sys
 matplotlib.use('Agg')
 import numpy as np
 import matplotlib.pylab as plt
 import tensorflow as tf
 import time
-
-
-
-# In[126]:
-
 import imutils
+import scipy.fftpack as fftp
+
+
+
 def LoadImage(
   imgName = "/home/AD/pmke226/DataLocker/cardiac/Sachse/171127_tissue/tissue.tif",
   mid = 10000,
@@ -101,10 +101,6 @@ def Pad(
     return filt
 
 
-# In[147]:
-
-import scipy.fftpack as fftp
-
 
 ##
 ## Tensor flow part 
@@ -192,7 +188,6 @@ def writer(testImage,name="out.tif"):
     # convert to unsigned image 
     out = np.array(imgN,dtype=np.uint8)
     cv2.imwrite(name,out)
-    #import matplotlib.pylab as plt
     #plt.pcolormesh(out)
     #plt.gcf().savefig("x.png")
 
@@ -202,7 +197,6 @@ def writer(testImage,name="out.tif"):
 
 
 #!/usr/bin/env python
-import sys
 ##################################
 #
 # Revisions
@@ -253,7 +247,6 @@ Notes:
 # MAIN routine executed when launching this script from command line 
 #
 if __name__ == "__main__":
-  import sys
   msg = helpmsg()
   remap = "none"
 

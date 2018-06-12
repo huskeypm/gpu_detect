@@ -11,6 +11,9 @@ import imutils
 from imtools import *
 from matplotlib import cm
 import detection_protocols as dps
+from scipy import signal
+import util 
+import util2
 
 class empty:pass
 
@@ -58,7 +61,6 @@ def correlateThresher(
 
       # pad/rotate 
       params['angle'] = angle
-      #import matplotlib.pyplot as plt
       #plt.figure()
       #plt.imshow(filterRef)
       #plt.colorbar()
@@ -112,8 +114,6 @@ def CalcSNR(signalResponse,sigma_n=1):
   print "PHASE ME OUT" 
   return signalResponse/sigma_n
 
-import util 
-import util2
 ##
 ## Collects all hits above some criterion for a given angle and 'stacks' them
 ## into a single image
@@ -257,7 +257,6 @@ def paintME(myImg, myFilter1,  threshold = 190, cropper=[24,129,24,129],iters = 
 
 # Basically just finds a 'unit cell' sized area around each detection 
 # for the purpose of interpolating the data 
-from scipy import signal
 def doLabel(result,dx=10,dy=None,thresh=0):
     if dy == None:
       dy = dx
@@ -290,7 +289,6 @@ def WT_SNR(Img, WTfilter, WTPunishmentFilter,C,gamma):
 
   return SNR
 
-import matchedFilter as mf
 def correlateThresherTT (Img, filterDict, iters=[-10,0,10],
              printer=False, label=None, scale=1.0, sigma_n=1.,
              #WTthreshold=None, LossThreshold=None, LongitudinalThreshold=None,

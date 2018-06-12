@@ -8,7 +8,6 @@ import matplotlib.pylab as plt
 import numpy as np
 import cv2
 import imtools as it 
-
 import random as rand
 def rotater(img, ang):
     rows,cols = img.shape

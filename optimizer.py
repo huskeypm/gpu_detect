@@ -7,6 +7,7 @@ import matplotlib
 #matplotlib.use('Agg')
 import cv2
 import sys
+import pandas as pd
 import bankDetect as bD
 import numpy as np
 import matplotlib.pylab as plt
@@ -479,7 +480,6 @@ def AnalyzePerformanceData(dfOrig,tag='filter1',label=None,normalize=False,roc=T
 ## dataSet - a dataset object specific to case you're optimizing (see definition) 
 ## 
 ## 
-import pandas as pd
 def Assess_Simultaneous(
   dataSet,
   paramDict,
@@ -607,7 +607,6 @@ def GenFigROC_TruePos_FalsePos(
   ##
   ## Now analyze and make ROC plots 
   ## 
-  import pandas as pd
   df = pd.read_hdf(hdf5Name,'table') 
   tag = "filter1"      
   AnalyzePerformanceData(df,tag=tag,label=filter1Label,    
@@ -645,7 +644,6 @@ def GenFigROC_CompetingFilters(
   ##
   ## Now analyze and make ROC plots 
   ## 
-  import pandas as pd
   df = pd.read_hdf(hdf5Name,'table') 
   tag = "filter1"      
   AnalyzePerformanceData(df,tag=tag,label=filter1Label,    
@@ -692,7 +690,6 @@ Notes:
 # MAIN routine executed when launching this script from command line 
 #
 if __name__ == "__main__":
-  import sys
   msg = helpmsg()
   remap = "none"
 

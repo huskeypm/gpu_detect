@@ -157,7 +157,6 @@ def TestFilters(
     filter1Result = DetectFilter(inputs,params,iters,display=display,
                                  filterMode="filter1",label=label,
                                  returnAngles=returnAngles)
-    import matplotlib.pyplot as plt
     #plt.figure()
     #plt.imshow(filter1Result.stackedHits)
     #plt.colorbar()

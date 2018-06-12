@@ -7,6 +7,12 @@ import matplotlib.pylab as plt
 import numpy as np
 import display_util as du
 import matchedFilter as mf 
+import optimizer
+import bankDetect as bD
+import util
+import painter
+import sys
+import yaml
 
 def DisplayHits(img,threshed,
                 smooth=8 # px
@@ -19,8 +25,7 @@ def DisplayHits(img,threshed,
         du.StackGrayRedAlpha(img,sadf)
 
 
-class empty:pass   
-import optimizer 
+class empty:pass    
 def docalc(img,
            mf,
            lobemf=None,
@@ -43,7 +48,7 @@ def docalc(img,
     print "WARNING: TOO RESTRICTIVE ANGLES" 
 
 
-    import bankDetect as bD
+
     results = bD.DetectFilter(inputs,paramDict,iters=iters,display=debug)
     result = results.correlated[0]
     #corr = np.asarray(results.correlated[0],dtype=float) # or
@@ -51,7 +56,7 @@ def docalc(img,
 
     pasteFilter = True
     if pasteFilter:
-      import util, painter
+
       MFy,MFx = util.measureFilterDimensions(mf)
       filterChannel = 0
       imgDim = np.shape(img)
@@ -62,7 +67,6 @@ def docalc(img,
       #coloredImageHolder[:,:,filterChannel] = filterChannelHolder
     
     print "Writing file %s"%fileName
-    #import matplotlib.pyplot as plt
     #plt.figure()
     DisplayHits(img,results.threshed)
     plt.gcf().savefig(fileName,dpi=300)
@@ -73,7 +77,6 @@ def docalc(img,
 
 
 #!/usr/bin/env python
-import sys
 ##################################
 #
 # Revisions
@@ -84,7 +87,6 @@ import sys
 #
 # Simple performs a matched filtering detection with a single filter, image and threshold
 #
-import util 
 def simple(imgName,mfName,thresh,debug=False,smooth=4,outName="hits.png"): 
   img = util.ReadImg(imgName,renorm=True)
   mf  = util.ReadImg( mfName,renorm=True)
@@ -106,8 +108,6 @@ def simple(imgName,mfName,thresh,debug=False,smooth=4,outName="hits.png"):
 # Calls 'simple' with yaml file 
 # 
 def simpleYaml(ymlName):
-  # import yaml stuff  
-  import yaml
   with open(ymlName) as fp:
     data=yaml.load(fp)
   #print data    
@@ -162,7 +162,6 @@ Notes:
 # MAIN routine executed when launching this script from command line 
 #
 if __name__ == "__main__":
-  import sys
   msg = helpmsg()
   remap = "none"
 

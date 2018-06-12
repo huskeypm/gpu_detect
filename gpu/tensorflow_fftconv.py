@@ -2,6 +2,12 @@
 import numpy as np
 import tensorflow as tf
 import time
+import matplotlib.pylab as plt
+import scipy.fftpack as fftp
+import cv2
+import os.path
+
+
 
 #wav = np.random.random_sample((N,))
 #img = np.fft.fft(wav)[:N/2+1]
@@ -10,7 +16,6 @@ def saveimg(imgFloat,outName="out.tif"):
     # convert to unsigned image 
     out = np.array(imgFloat,dtype=np.uint8)
     cv2.imwrite("out.png",out)
-    import matplotlib.pylab as plt
     plt.pcolormesh(out)
     plt.gcf().savefig("x.png")
 
@@ -63,7 +68,6 @@ def doFFTPloop(img,mFs,
   ## 
   start = time.time()
   x = img 
-  import scipy.fftpack as fftp
   for i in range(nrots):
       xF  =fftp.fft2(x)
       mFF =fftp.fft2(mFs)
@@ -74,13 +78,12 @@ def doFFTPloop(img,mFs,
   print 'numpy:{}s'.format(tElapsed)
   return final, tElapsed
 
-import cv2 
+ 
 def TestImg(
   imgName = "test.png",
   maxDim=-1  # truncate image s.t. max dimensions are less than 0..maxDim
   ):
 
-  import os.path
   assert( os.path.exists(imgName) ),imgName +" does not exist"
   
   img = cv2.imread(imgName)
@@ -100,7 +103,6 @@ def TestImg(
   mF = np.zeros_like(img)
   m = 8
   mF[(-m + dimx/2):(m+dimx/2),(-m + dimy/2):(m+dimy/2)]=1.
-  import scipy.fftpack as fftp
   mFs = fftp.fftshift(mF)
   ### NOTE: should technically pad image such that dimensions are a log2 integer....
 
@@ -108,7 +110,6 @@ def TestImg(
   doFFTPloop(img,mFs)
 
 def TestRandom():
-  import matplotlib.pylab as plt
   Ns = 2**np.array([7,8,9,10,11,12])
   tTFs=np.zeros_like(Ns,dtype=np.float)
   tFFTPs=np.zeros_like(Ns,dtype=np.float)
@@ -133,12 +134,7 @@ def TestRandom():
   ax.plot(Ns,tFFTPs,label="CPU") 
   ax.legend(loc=0)
   plt.gcf().savefig("scaling2.png") 
-    
-  
 
-
-
-import sys
 
 #
 # Message printed when program run without arguments 
@@ -163,7 +159,6 @@ Notes:
 # MAIN routine executed when launching this script from command line 
 #
 if __name__ == "__main__":
-  import sys
   msg = helpmsg()
   remap = "none"
 

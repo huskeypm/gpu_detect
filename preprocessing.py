@@ -39,10 +39,10 @@ def normalizeToStriations(img, subsectionIdxs,filterSize):
   ### Grab subsection of the smoothed image
   smoothedSubsection = smoothed.copy()[subsectionIdxs[0]:subsectionIdxs[1],
                                        subsectionIdxs[2]:subsectionIdxs[3]]
-  plt.figure()
-  plt.imshow(smoothedSubsection)
-  plt.colorbar()
-  plt.show()
+  #plt.figure()
+  #plt.imshow(smoothedSubsection)
+  #plt.colorbar()
+  #plt.show()
   
   ### Perform Gaussian thresholding to pull out striations
   # blockSize is pixel neighborhood that each pixel is compared to
@@ -58,10 +58,10 @@ def normalizeToStriations(img, subsectionIdxs,filterSize):
                                           cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                           cv2.THRESH_BINARY, blockSize,
                                           constant)
-  plt.figure()
-  plt.imshow(gaussSubsection)
-  plt.colorbar()
-  plt.show()
+  #plt.figure()
+  #plt.imshow(gaussSubsection)
+  #plt.colorbar()
+  #plt.show()
 
   ### Calculate the peak and valley values from the segmented image
   peaks = smoothedSubsection[np.nonzero(gaussSubsection)]

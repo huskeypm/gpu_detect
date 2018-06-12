@@ -8,6 +8,7 @@ import matplotlib.pylab as plt
 import tensorflow as tf
 import time
 import scipy.fftpack as fftp
+import util
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 #import cPickle as Pickle
 
@@ -20,11 +21,8 @@ def LoadImage(
   maxDim = 100,
   angle = -35.    
 ):
-  print "WARNING: please use util.ReadImg"
     # read image 
-    img = cv2.imread(imgName)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    img = np.array(img, dtype=np.float)
+    img = np.array(util.ReadImg(imgName),dtype=np.float64)
     
     # extract subset 
     imgTrunc = img[

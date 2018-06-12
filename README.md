@@ -10,6 +10,20 @@ Where IMGNAME is the path/name of your image and FILTERTWOSARCSIZE
 is the default two sarcomere size for the filters used. Default filter size is 25 pixels.
 
 # Package Dependencies and Installation Pages
+- OpenCV (cv2)
+- imutils
+- Numpy
+- Matplotlib
+- PyYAML
+- Scipy
+  - Scipy.fftpack
+  - Scipy.signal
+- Pandas
+- Pygame
+- Python Image Library (PIL)
+- SciKit Learn
+  - sklearn.decomposition
+- TensorFlow
 
 
 

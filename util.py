@@ -136,7 +136,7 @@ def preprocessPNG(imgName, twoSarcSize, filterTwoSarcSize):
   cv2.imwrite(name+'_processed'+filetype,clahed)
   
 ### Generating filters
-def GenerateWTFilter(WTFilterRoot=root+"/filterImgs/WT/", filterTwoSarcSize=25):
+def generateWTFilter(WTFilterRoot=root+"/filterImgs/WT/", filterTwoSarcSize=25):
   WTFilterImgs = []
   import os
   for fileName in os.listdir(WTFilterRoot):
@@ -196,7 +196,7 @@ def GenerateWTFilter(WTFilterRoot=root+"/filterImgs/WT/", filterTwoSarcSize=25):
   WTFilter /= np.max(WTFilter)
   return WTFilter
 
-def GenerateLongFilter(filterRoot, twoSarcLengthDict, filterTwoSarcLength=24):
+def generateLongFilter(filterRoot, twoSarcLengthDict, filterTwoSarcLength=24):
   import os
   import operator
   '''
@@ -280,7 +280,7 @@ def GenerateLongFilter(filterRoot, twoSarcLengthDict, filterTwoSarcLength=24):
   avgImg /= np.max(avgImg)
   return avgImg
 
-def GenerateWTPunishmentFilter(LongitudinalFilterName,
+def generateWTPunishmentFilter(LongitudinalFilterName,
                                rowMin=2,rowMax=-1,colMin=6,colMax=13):
   # generates the punishment filter in WT SNR calculation based upon longitudinal filter
   LongFilter = ReadImg(LongitudinalFilterName)
@@ -295,7 +295,7 @@ def GenerateWTPunishmentFilter(LongitudinalFilterName,
     punishFilter = punishFilter[:,colMin:colMax]
   return punishFilter
 
-def generateSingleTTFilter():
+def saveSingleTTFilter():
   '''
   Generates a bar filter for detection of a single transverse tubule
   '''
@@ -305,7 +305,7 @@ def generateSingleTTFilter():
   WTfilter = WTfilter.astype(np.uint8)
   cv2.imwrite("./myoimages/singleTTFilter.png",WTfilter)
 
-def generateSingleTTPunishmentFilter():
+def saveSingleTTPunishmentFilter():
   '''
   Generates a punishment corollary to the generateSingleTTFilter() function
   above.
@@ -333,11 +333,11 @@ def fixFilter(Filter,pixelCeiling=0.7,pixelFloor=0.4,rowMin=0, rowMax=None, colM
     fixedFilter = fixedFilter[:,colMin:colMax]
   return fixedFilter
 
-def SaveFixedWTFilter(WTFilterRoot=root+"filterImgs/WT/",filterTwoSarcSize=25,
+def saveFixedWTFilter(WTFilterRoot=root+"filterImgs/WT/",filterTwoSarcSize=25,
                       pixelCeiling=0.6,pixelFloor=0.25,
                       rowMin=20, rowMax=None, colMin=1, colMax=None):
   # opting now to save WT filter and load into the workhorse script instead of generating filter every call
-  WTFilter = GenerateWTFilter(WTFilterRoot=WTFilterRoot,filterTwoSarcSize=filterTwoSarcSize)
+  WTFilter = generateWTFilter(WTFilterRoot=WTFilterRoot,filterTwoSarcSize=filterTwoSarcSize)
   fixedFilter = fixFilter(WTFilter,pixelCeiling=pixelCeiling,pixelFloor=pixelFloor,
                           rowMin=rowMin,rowMax=rowMax,colMin=colMin,colMax=colMax)
   # convert to png format
@@ -370,13 +370,13 @@ def saveSimpleWTFilter():
   cv2.imwrite("./myoimages/newSimpleWTFilter.png", WTfilter)
   cv2.imwrite("./myoimages/newSimpleWTPunishmentFilter.png",punishFilter)
 
-def SaveFixedLongFilter(LongFilterRoot=root+"filterImgs/Longitudinal/",
+def saveFixedLongFilter(LongFilterRoot=root+"filterImgs/Longitudinal/",
                         filterTwoSarcSizeDict={"SongWKY_long1":16, "Xie_RV_Control_long2":14, "Xie_RV_Control_long1":16, "Guo2013Fig1C_long1":22},
                         filterTwoSarcLength=25,
                         pixelCeiling=0.7,pixelFloor=0.4,
                         rowMin=8, rowMax=11, colMin=0, colMax=-1):
   # opting now to save Long filter and load into the workhorse script instead of generating filter every call
-  Filter = GenerateLongFilter(LongFilterRoot,filterTwoSarcSizeDict,filterTwoSarcLength=filterTwoSarcLength)
+  Filter = generateLongFilter(LongFilterRoot,filterTwoSarcSizeDict,filterTwoSarcLength=filterTwoSarcLength)
   fixedFilter = fixFilter(Filter,pixelCeiling=pixelCeiling,pixelFloor=pixelFloor,
                           rowMin=rowMin,rowMax=rowMax,colMin=colMin,colMax=colMax)
   # convert to png format
@@ -385,7 +385,7 @@ def SaveFixedLongFilter(LongFilterRoot=root+"filterImgs/Longitudinal/",
   # save filter
   cv2.imwrite(root+"LongFilter.png",savedFilt)
 
-def SaveWeirdLongFilter():
+def saveWeirdLongFilter():
   filt = np.zeros((6,17),dtype='uint8')
   filt[1:-1,6:11] = 255
 
@@ -422,13 +422,13 @@ def saveGaussLongFilter():
   LTfilter = np.asarray(LTfilter,np.uint8)
   cv2.imwrite("./myoimages/LongitudinalFilter.png",LTfilter)
 
-def SaveFixedLossFilter():
+def saveFixedLossFilter():
   dim = 16
   img = np.zeros((dim+2,dim+2,),dtype='uint8')
   img[2:-2,2:-2] = 255
   cv2.imwrite(root+"LossFilter.png",img)
 
-def SaveFixedPunishmentFilter(LongitudinalFilterName=root+"LongFilter.png",
+def saveFixedPunishmentFilter(LongitudinalFilterName=root+"LongFilter.png",
                               rowMin=2,rowMax=-1,colMin=6,colMax=13):
   print "This function is deprecated. Replace with simpler one"
   #punishFilter = GenerateWTPunishmentFilter(LongitudinalFilterName,
@@ -544,13 +544,13 @@ def PasteFilter(img, filt):
   myImg[:filtDim[0],:filtDim[1]] = filt
   return myImg
 
-def SaveAllMyo():
-      #SaveFixedWTFilter()
+def saveAllMyo():
+      saveFixedWTFilter()
       saveSimpleWTFilter()
-      #SaveFixedLongFilter()
+      #saveFixedLongFilter()
       saveGaussLongFilter()
       saveFixedLossFilter()
-      #SaveFixedPunishmentFilter()
+      saveFixedPunishmentFilter()
       saveSingleTTFilter()
       saveSingleTTPunishmentFilter()
 
@@ -618,18 +618,18 @@ if __name__ == "__main__":
   # Loops over each argument in the command line 
   for i,arg in enumerate(sys.argv):
     if(arg=="-genWT"):
-      SaveFixedWTFilter()
+      saveFixedWTFilter()
     elif(arg=="-genSimpleWTFilter"):
       saveSimpleWT()
     elif(arg=="-genLong"):
       print "WARNING: DEPRECATED. Use -genGaussLongFilter"
-      SaveFixedLongFilter()
+      saveFixedLongFilter()
     elif(arg=="-genLoss"):
-      SaveFixedLossFilter()
+      saveFixedLossFilter()
     elif(arg=="-genPunishment"):
-      SaveFixedPunishmentFilter()
+      saveFixedPunishmentFilter()
     elif(arg=="-genAllMyo"): 
-      SaveAllMyo()
+      saveAllMyo()
     elif(arg=="-preprocess"):
       print "WARNING THIS IS DEPRECATED. USE PREPROCESSING.PY FILE NOW!!!!!"
       imgName = sys.argv[i+1]
@@ -642,11 +642,11 @@ if __name__ == "__main__":
       quit()
     elif(arg=="-genWeirdLong"):
       print "WARNING: DEPRECATED. Use -genGaussLongFilter"
-      SaveWeirdLongFilter()
+      saveWeirdLongFilter()
       quit()
     elif(arg=="-genSimpleLong"):
       print "WARNING: DEPRECATED. Use -genGaussLongFilter"
-      SaveSimpleLongFilter()
+      saveSimpleLongFilter()
       quit()
     elif(arg=="-genGaussLong"):
       saveGaussLongFilter()

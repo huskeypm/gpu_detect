@@ -12,7 +12,9 @@ import util
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 #import cPickle as Pickle
 
-height = 10
+height = 1
+iters = [-25,-20,-15,-10,-5,0,5,10,15,20,25]
+
 
 #import imutils
 def LoadImage(
@@ -133,6 +135,7 @@ def doTFloop(img,# test image
       return cnt > 0
 
     def body(x,mf,cnt):
+      mfStart = time.time()
       ## Essentially the matched filtering parts 
       xF  =tf.fft3d(x)
       xFc = tf.conj(xF)
@@ -143,13 +146,18 @@ def doTFloop(img,# test image
       ## ------
 
       cntnew=cnt-1
+
+      mfElapsedTime = time.time() - mfStart
+      print "GPU matched filtering elapsed time:", mfElapsedTime
       return xR, mf,cntnew
 
     start = time.time()
 
     final, mfo,cnt= tf.while_loop(condition, body,
                               [specVar,filtVar,cnt], parallel_iterations=1)
+    print "First Calculation Time:", time.time()-start
     final, mfo,cnt =  sess.run([final,mfo,cnt])
+    print "Second Calculation Time:", time.time()-start
     corr = np.real(final) 
 
     #start = time.time()
@@ -164,7 +172,8 @@ def MF(
     dImage,
     dFilter,
     useGPU=False,
-    dim=2
+    dim=2,
+    iters=iters
     ):
     filt = Pad(dImage,dFilter)
     #print "PRE FILTER"
@@ -174,16 +183,21 @@ def MF(
        corr = np.real(corr)
        #print "POST FILTER"
     else:        
-       start = time.time()
-       I = dImage
-       T = filt
-       fI = fftp.fftn(I)
-       fT = fftp.fftn(T)
-       c = np.conj(fI)*fT
-       corr = fftp.ifftn(c)
-       corr = np.real(corr)
-       tElapsed = time.time()-start
-       print 'fftp:{}s'.format(tElapsed)
+      start = time.time()
+      for rotation in iters:
+        # rotate filter
+        filt = imutils.rotate_bound(dFilter)
+        filt = Pad(dImage,dFilter)
+
+        I = dImage
+        T = filt
+        fI = fftp.fftn(I)
+        fT = fftp.fftn(T)
+        c = np.conj(fI)*fT
+        corr = fftp.ifftn(c)
+        corr = np.real(corr)
+      tElapsed = time.time()-start
+      print 'fftp:{}s'.format(tElapsed)
        
     #cv2.imshow(dImage,cmap="gray")
     #plt.figure()

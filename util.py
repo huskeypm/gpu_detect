@@ -60,6 +60,32 @@ def measureFilterDimensions(grayFilter):
 
   return numRows, numCols
 
+def makeCubeFilter(prismFilter):
+  '''
+  Function to make a filter that is sufficiently padded with zeros such that 
+  any rotation performed on the filter will not cause the filter information
+  to be clipped by any rotation algorithm.
+  '''
+  # get shape of old filter
+  fy,fx,fz = np.shape(prismFilter)
+
+  # get shape of new cubic filter
+  biggestDimension = np.max((fy,fx,fz))
+  newDim = ceil(np.sqrt(2) * biggestDimension)
+  if newDim % 2 != 0:
+    newDim += 1
+
+  # construct holder for new filter
+  cubeFilt = np.zeros((newDim,newDim,newDim),dtype=np.float64)
+  center = newDim / 2
+
+  # store old filter in the new filter
+  cubeFilt[center - floor(fy/2.):center + ceil(fy/2.),
+           center - floor(fx/2.):center + ceil(fx/2.),
+           center - floor(fz/2.):center + ceil(fz/2.)] = prismFilter
+
+  return cubeFilt
+
 # Prepare matrix of vectorized of FFT'd images
 def CalcX(
   imgs,

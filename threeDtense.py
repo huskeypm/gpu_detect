@@ -14,7 +14,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 #import cPickle as Pickle
 
 height = 10
-iters = [-25,-20,-15,-10,-5,0,5,10,15,20,25]
+iters = [-10,0,10]
 
 
 #import imutils
@@ -122,12 +122,16 @@ def Pad(
 ##
 def doTFloop(img,# test image
            mFs, # shifted filter
-           xiters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
-           yiters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
-           ziters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
+           #xiters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
+           #yiters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
+           #ziters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
+           xiters=iters,
+           yiters=iters,
+           ziters=iters
            ):
 
   with tf.Session() as sess:
+    start = time.time()
     # Create and initialize variables
     specVar = tf.Variable(img, dtype=tf.complex64)
     filtVar = tf.Variable(mFs, dtype=tf.complex64)
@@ -174,7 +178,6 @@ def doTFloop(img,# test image
       cntnew=cnt-1
       return xR, mf,cntnew,bigIters
 
-    start = time.time()
 
     final, mfo,cnt,bigIters= tf.while_loop(condition, body,
                                             [specVar,filtVar,cnt,bigIters], parallel_iterations=10)
@@ -194,9 +197,12 @@ def MF(
     dFilter,
     useGPU=False,
     dim=2,
-    xiters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
-    yiters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
-    ziters=[-25,-20,-15,-10,-5,0,5,10,15,20,25]
+    #xiters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
+    #yiters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
+    #ziters=[-25,-20,-15,-10,-5,0,5,10,15,20,25]
+    xiters=iters,
+    yiters=iters,
+    ziters=iters
     ):
     # NOTE: May need to do this padding within tensorflow loop itself to 
     #       ameliorate latency due to loading large matrices into GPU
@@ -206,18 +212,24 @@ def MF(
        corr = np.real(corr)
     else:        
       start = time.time()
-      for rotation in iters:
-        # rotate filter
-        filt = imutils.rotate_bound(dFilter,rotation)
-        filt = Pad(dImage,dFilter)
-
-        I = dImage
-        T = filt
-        fI = fftp.fftn(I)
-        fT = fftp.fftn(T)
-        c = np.conj(fI)*fT
-        corr = fftp.ifftn(c)
-        corr = np.real(corr)
+      filtTF = tf.convert_to_tensor(filt)
+      for i in xiters:
+        i = tf.constant(i,dtype=tf.float64)
+        for j in yiters:
+          j = tf.constant(j,dtype=tf.float64)
+          for k in ziters:
+            # rotate filter using tensorflow routine anyway
+            # NOTE: I may change this
+            k = tf.constant(k,dtype=tf.float64)
+            filtRot = util.rotateFilterCube3D(filtTF,i,j,k)
+            filtRot = tf.Session().run(filtRot)
+            I = dImage
+            T = filtRot
+            fI = fftp.fftn(I)
+            fT = fftp.fftn(T)
+            c = np.conj(fI)*fT
+            corr = fftp.ifftn(c)
+            corr = np.real(corr)
       tElapsed = time.time()-start
       print 'fftp:{}s'.format(tElapsed)
        
@@ -275,7 +287,6 @@ def runner(dims):
   f.write('Dims:{}'.format(dims))
   f.write('\nCPU:')
   for i,d in enumerate(dims):
-    continue
     print "dim", d
     testImage = MakeTestImage(d)
     dFilter = MakeFilter()
@@ -362,7 +373,8 @@ if __name__ == "__main__":
       test1(maxDim=5000)
       quit()
     if(arg=="-running"):
-      dims = np.linspace(50,1000,11,endpoint=True)
+      #dims = np.linspace(50,1000,11,endpoint=True)
+      dims = np.linspace(50,500,3,endpoint=True)
       times,timesGPU = runner(dims)
       print "CPU", times
       print"\n" + "GPU",timesGPU

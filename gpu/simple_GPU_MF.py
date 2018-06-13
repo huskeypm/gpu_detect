@@ -8,6 +8,7 @@ import tensorflow as tf
 import time
 import imutils
 import scipy.fftpack as fftp
+import util
 
 
 def LoadImage(
@@ -191,18 +192,7 @@ def MF(
     dFilter,
     useGPU=False
     ):
-    #print 'shape of dFilter', np.shape(dFilter)
-    dFilterShape = np.shape(dFilter)
-    #if dFilterShape[0] == dFilterShape[1]:
-    if 1:
-      filt1 = shittyPadding(dFilter)
-      #print 'shape of padded Filter', np.shape(filt1)
-      filt = Pad(dImage,filt1)
-    #elif dFilterShape[0] != dFilterShape[1]:
-    #  raise RuntimeError("The filter must be square to utilize GPU speedup")
-    #filt1 = shittyPadding(dFilter)
-    #print 'shape of padded Filter', np.shape(filt1) 
-    #filt = Pad(dImage,filt1)
+
     
     if useGPU:
         # NOTE: I pass in an 'nrots' argument, but it doesn't actually do anything (e.g. 'some assembly required')

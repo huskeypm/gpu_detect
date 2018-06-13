@@ -144,9 +144,9 @@ def fig5():
   images = [DImage, MImage, PImage]
 
   # BE SURE TO UPDATE TESTMF WITH OPTIMIZED PARAMS
-  Dimg = giveMarkedMyocyte(testImage=DImageName)
-  Mimg = giveMarkedMyocyte(testImage=MImageName)
-  Pimg = giveMarkedMyocyte(testImage=PImageName)
+  Dimg = giveMarkedMyocyte(testImage=DImageName,useGPU=True)
+  Mimg = giveMarkedMyocyte(testImage=MImageName,useGPU=True)
+  Pimg = giveMarkedMyocyte(testImage=PImageName,useGPU=True)
 
   results = [Dimg, Mimg, Pimg]
   keys = ['Distal', 'Medial', 'Proximal']

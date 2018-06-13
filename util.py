@@ -8,6 +8,7 @@ import scipy.signal as sig
 import scipy.fftpack as fftp
 import imutils
 import operator
+import tensorflow as tf
  
 
 root = "myoimages/"
@@ -71,7 +72,7 @@ def makeCubeFilter(prismFilter):
 
   # get shape of new cubic filter
   biggestDimension = np.max((fy,fx,fz))
-  newDim = ceil(np.sqrt(2) * biggestDimension)
+  newDim = int(np.ceil(np.sqrt(2) * biggestDimension))
   if newDim % 2 != 0:
     newDim += 1
 
@@ -80,11 +81,127 @@ def makeCubeFilter(prismFilter):
   center = newDim / 2
 
   # store old filter in the new filter
-  cubeFilt[center - floor(fy/2.):center + ceil(fy/2.),
-           center - floor(fx/2.):center + ceil(fx/2.),
-           center - floor(fz/2.):center + ceil(fz/2.)] = prismFilter
+  cubeFilt[center - int(np.floor(fy/2.)):center + int(np.ceil(fy/2.)),
+           center - int(np.floor(fx/2.)):center + int(np.ceil(fx/2.)),
+           center - int(np.floor(fz/2.)):center + int(np.ceil(fz/2.))] = prismFilter
 
   return cubeFilt
+
+def viewer(tensor):
+    def dummy(tensor2):
+        return tensor2
+
+    with tf.Session() as sess:
+        result = sess.run(dummy(tensor))
+        print np.shape(result)
+        print result
+        return result
+
+def rotateFilterCube3D(image,rot1,rot2,rot3):
+  '''
+  Function to rotate a 3D matrix according to three angles of rotation
+  image - 3D np.array that has previously been ran through util.makeCubeFilter
+          as to ensure that no information will be lost due to rotation.
+          New image has the same size as the input image.
+          NOTE: Convention is that image is referenced as 
+                image[x,y,z] 
+  rot1 - tensorflow constant rotation angle (in degrees) COUNTERCLOCKWISE about the x axis
+  rot2 - tensorflow constant rotation angle (in degrees) COUNTERCLOCKWISE about the y axis
+  rot3 - tensorflow constant rotation angle (in degrees) COUNTERCLOCKWISE about the z axis
+
+  HEAVILY modified version of code found on:
+  https://stackoverflow.com/questions/34801342/tensorflow-how-to-rotate-an-image-for-data-augmentation
+  '''
+
+  #rot1 = tf.constant(-rot1 / 180. * np.pi,dtype=tf.float64)
+  #rot2 = tf.constant(-rot2 / 180. * np.pi,dtype=tf.float64)
+  #rot3 = tf.constant(-rot3 / 180. * np.pi,dtype=tf.float64)
+
+  rot1 = tf.multiply(-rot1, np.pi/180.)
+  rot2 = tf.multiply(-rot2, np.pi/180.)
+  rot3 = tf.multiply(-rot3, np.pi/180.)
+
+  #image = tf.convert_to_tensor(image,dtype=tf.float64)
+  image = tf.cast(image, dtype=tf.float64)
+
+  s = image.get_shape().as_list()
+
+  assert len(s) == 3, "Input needs to be 3D."
+  #assert (mode == 'repeat') or (mode == 'black') or (mode == 'white') or (mode == 'ones'), "Unknown boundary mode."
+  image_center = [np.floor(x/2) for x in s]
+
+  # Coordinates of new image
+  coord1 = tf.range(s[0])
+  coord2 = tf.range(s[1])
+  coord3 = tf.range(s[2])
+
+  # Create vectors of those coordinates in order to vectorize the image
+  coord1_vec = tf.tile(coord1, [s[1]*s[2]]) # get first index for all points
+
+  coord2_vec_unordered = tf.tile(coord2, [s[0]*s[2]])
+  coord2_vec_unordered = tf.reshape(coord2_vec_unordered, [s[1], -1])
+  coord2_vec = tf.reshape(tf.transpose(coord2_vec_unordered, [1, 0]), [-1]) # get second index for all points
+
+  coord3_vec_unordered = tf.tile(coord3, [s[0]*s[1]])
+  # something really strange is happening with this reshape. Most likely due to dominant axis or something
+  coord3_vec_unordered = tf.reshape(coord3_vec_unordered, [s[0]*s[1],s[2]])
+  coord3_vec = tf.reshape(tf.transpose(coord3_vec_unordered, [1, 0]), [-1])# get third index for all points
+
+  # center coordinates since rotation center is supposed to be in the image center
+  coord1_vec_centered = coord1_vec - image_center[0]
+  coord2_vec_centered = coord2_vec - image_center[1]
+  coord3_vec_centered = coord3_vec - image_center[2]
+  coord_new_centered = tf.cast(tf.stack([coord1_vec_centered, coord2_vec_centered, coord3_vec_centered]), tf.float64)
+
+  # Perform backward transformation of the image coordinates
+  thisZero = tf.constant(0,dtype=tf.float64)
+  thisOne = tf.constant(1,dtype=tf.float64)
+  rot_mat_inv_1 = tf.reshape([tf.cos(rot1), thisZero, tf.sin(rot1),
+                              thisZero     , thisOne , thisZero,
+                              -tf.sin(rot1),thisZero, tf.cos(rot1)],shape=[3,3])
+  rot_mat_inv_2 = tf.reshape([thisOne , thisZero     , thisZero,
+                              thisZero, tf.cos(rot2), -tf.sin(rot2),
+                              thisZero, tf.sin(rot2), tf.cos(rot2)],shape=[3,3])
+  rot_mat_inv_3 = tf.reshape([tf.cos(rot3), -tf.sin(rot3), thisZero,
+                              tf.sin(rot3), tf.cos(rot3) , thisZero,
+                              thisZero    , thisZero     , thisOne],shape=[3,3])
+  rot_mat_inv = tf.matmul(rot_mat_inv_1,rot_mat_inv_2)
+  rot_mat_inv = tf.matmul(rot_mat_inv,rot_mat_inv_3)
+
+  coord_old_centered = tf.matmul(rot_mat_inv, coord_new_centered)
+
+  # Find nearest neighbor in old image
+  coord1_old_nn = tf.cast(tf.round(coord_old_centered[0, :] + image_center[0]), tf.int32)
+  coord2_old_nn = tf.cast(tf.round(coord_old_centered[1, :] + image_center[1]), tf.int32)
+  coord3_old_nn = tf.cast(tf.round(coord_old_centered[2, :] + image_center[2]), tf.int32)
+
+  # Clip values to stay inside image coordinates
+  outside_ind1 = tf.logical_or(tf.greater(coord1_old_nn, s[0]-1), tf.less(coord1_old_nn, 0))
+  outside_ind2 = tf.logical_or(tf.greater(coord2_old_nn, s[1]-1), tf.less(coord2_old_nn, 0))
+  outside_ind3 = tf.logical_or(tf.greater(coord3_old_nn, s[2]-1), tf.less(coord3_old_nn, 0))
+  outside_ind = tf.logical_or(outside_ind1, outside_ind2)
+  outside_ind = tf.logical_or(outside_ind,  outside_ind3)
+
+  coord_old1_clipped = tf.boolean_mask(coord1_old_nn, tf.logical_not(outside_ind))
+  coord_old2_clipped = tf.boolean_mask(coord2_old_nn, tf.logical_not(outside_ind))
+  coord_old3_clipped = tf.boolean_mask(coord3_old_nn, tf.logical_not(outside_ind))
+
+  coord1_vec = tf.boolean_mask(coord1_vec, tf.logical_not(outside_ind))
+  coord2_vec = tf.boolean_mask(coord2_vec, tf.logical_not(outside_ind))
+  coord3_vec = tf.boolean_mask(coord3_vec, tf.logical_not(outside_ind))
+
+  coord_old_clipped = tf.cast(tf.transpose(tf.stack([coord_old1_clipped, coord_old2_clipped, coord_old3_clipped]), [1, 0]), tf.int32)
+
+  # Coordinates of the new image
+  coord_new = tf.transpose(tf.cast(tf.stack([coord1_vec, coord2_vec, coord3_vec]), tf.int32), [1, 0])
+  # new values for the image
+  image_new_values = tf.gather_nd(image,coord_old_clipped)
+  background_color = 0
+  rotated = tf.sparse_to_dense(coord_new,[s[0],s[1],s[2]],image_new_values, background_color,
+                               validate_indices=False)
+  rotated = tf.cast(rotated,tf.complex64)
+  return rotated
+
 
 # Prepare matrix of vectorized of FFT'd images
 def CalcX(
@@ -153,17 +270,6 @@ def ApplyCLAHE(grayImgList, tileGridSize, clipLimit=2.0, plot=False):
     clahedImage = clahe.apply(grayImgList) # stupid hack
     return clahedImage
 
-# function to take raw myocyte png name, read, resize, renorm, CLAHE, save output
-def preprocessPNG(imgName, twoSarcSize, filterTwoSarcSize):
-  img = ReadImg(imgName,renorm=True)
-  scale = float(filterTwoSarcSize) / float(twoSarcSize)
-  rescaledImg = np.asarray(cv2.resize(img,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC), dtype=float)
-  normed = np.asarray(rescaledImg / np.max(rescaledImg) * 255,dtype='uint8')
-  tileGridSize = (filterTwoSarcSize, filterTwoSarcSize)
-  clahed = ApplyCLAHE(normed,tileGridSize)
-  name, filetype = imgName[:-4], imgName[-4:]
-  cv2.imwrite(name+'_processed'+filetype,clahed)
-  
 ### Generating filters
 def generateWTFilter(WTFilterRoot=root+"/filterImgs/WT/", filterTwoSarcSize=25):
   WTFilterImgs = []

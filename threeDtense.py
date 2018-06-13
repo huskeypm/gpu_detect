@@ -9,10 +9,11 @@ import tensorflow as tf
 import time
 import scipy.fftpack as fftp
 import util
+import imutils
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 #import cPickle as Pickle
 
-height = 1
+height = 10
 iters = [-25,-20,-15,-10,-5,0,5,10,15,20,25]
 
 
@@ -73,7 +74,8 @@ def MakeTestImage(dim = 400):
 
 def MakeFilter(
     fw = 4,
-    fdim = 14
+    fdim = 14,
+    height=10
   ): 
     dFilter = np.zeros([fdim,fdim,height])
     dFilter[:,0:fw,0:fw]=1.
@@ -120,44 +122,63 @@ def Pad(
 ##
 def doTFloop(img,# test image
            mFs, # shifted filter
-           nrots=4   # like filter rotations) 
+           xiters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
+           yiters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
+           ziters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
            ):
 
   with tf.Session() as sess:
     # Create and initialize variables
-    cnt = tf.Variable(tf.constant(nrots))
     specVar = tf.Variable(img, dtype=tf.complex64)
     filtVar = tf.Variable(mFs, dtype=tf.complex64)
-    sess.run(tf.variables_initializer([specVar,filtVar,cnt]))
 
+    # make big angle container
+    numXits = np.shape(xiters)[0]
+    numYits = np.shape(yiters)[0]
+    numZits = np.shape(ziters)[0]
+    cnt = tf.Variable(tf.constant(numXits * numYits * numZits-1))
+
+    #sess.run(tf.variables_initializer([specVar,filtVar,cnt]))
+
+    # It's late and I'm getting lazy
+    bigIters = []
+    for i in xiters:
+      for j in yiters:
+        for k in ziters:
+          bigIters.append([i,j,k])
+    bigIters = tf.Variable(tf.convert_to_tensor(bigIters,dtype=tf.float64))
+
+    sess.run(tf.variables_initializer([specVar,filtVar,cnt,bigIters]))
+
+    
     # While loop that counts down to zero and computes reverse and forward fft's
-    def condition(x,mf,cnt):
+    def condition(x,mf,cnt,bigIters):
       return cnt > 0
 
-    def body(x,mf,cnt):
-      mfStart = time.time()
+    def body(x,mf,cnt,bigIters):
+      # pick out rotation to use
+      rotations = bigIters[cnt]
+
+      # rotating matched filter to specific angle
+      rotatedMF = util.rotateFilterCube3D(mFs,rotations[0],rotations[1],rotations[2])
+
       ## Essentially the matched filtering parts 
       xF  =tf.fft3d(x)
       xFc = tf.conj(xF)
-      mFF =tf.fft3d(mf)
+      mFF =tf.fft3d(rotatedMF)
       out = tf.multiply(xFc,mFF) # elementwise multiplication for convolutiojn 
       xR  =tf.ifft3d(out)
       # DOESNT LIKE THIS xRr = tf.real(xR)
       ## ------
 
       cntnew=cnt-1
-
-      mfElapsedTime = time.time() - mfStart
-      print "GPU matched filtering elapsed time:", mfElapsedTime
-      return xR, mf,cntnew
+      return xR, mf,cntnew,bigIters
 
     start = time.time()
 
-    final, mfo,cnt= tf.while_loop(condition, body,
-                              [specVar,filtVar,cnt], parallel_iterations=1)
-    print "First Calculation Time:", time.time()-start
-    final, mfo,cnt =  sess.run([final,mfo,cnt])
-    print "Second Calculation Time:", time.time()-start
+    final, mfo,cnt,bigIters= tf.while_loop(condition, body,
+                                            [specVar,filtVar,cnt,bigIters], parallel_iterations=10)
+    final, mfo,cnt,bigIters =  sess.run([final,mfo,cnt,bigIters])
     corr = np.real(final) 
 
     #start = time.time()
@@ -173,20 +194,21 @@ def MF(
     dFilter,
     useGPU=False,
     dim=2,
-    iters=iters
+    xiters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
+    yiters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
+    ziters=[-25,-20,-15,-10,-5,0,5,10,15,20,25]
     ):
+    # NOTE: May need to do this padding within tensorflow loop itself to 
+    #       ameliorate latency due to loading large matrices into GPU
     filt = Pad(dImage,dFilter)
-    #print "PRE FILTER"
     if useGPU:
-        # NOTE: I pass in an 'nrots' argument, but it doesn't actually do anything (e.g. 'some assembly required')
-       corr,tElapsed = doTFloop(dImage,filt,nrots=1)
+       corr,tElapsed = doTFloop(dImage,filt,xiters=xiters,yiters=yiters,ziters=ziters)
        corr = np.real(corr)
-       #print "POST FILTER"
     else:        
       start = time.time()
       for rotation in iters:
         # rotate filter
-        filt = imutils.rotate_bound(dFilter)
+        filt = imutils.rotate_bound(dFilter,rotation)
         filt = Pad(dImage,dFilter)
 
         I = dImage
@@ -253,6 +275,7 @@ def runner(dims):
   f.write('Dims:{}'.format(dims))
   f.write('\nCPU:')
   for i,d in enumerate(dims):
+    continue
     print "dim", d
     testImage = MakeTestImage(d)
     dFilter = MakeFilter()

@@ -13,8 +13,8 @@ import imutils
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 #import cPickle as Pickle
 
-height = 10
-iters = [-10,0,10]
+height = 50
+iters = [-30,-15,0,15,30]
 
 
 #import imutils
@@ -94,8 +94,9 @@ def MakeFilter(
 
 # In[136]:
 
-def Pad(
-    imgR,dFilter):
+def Pad(imgR,
+        dFilter,
+        height=height):
     fdim = np.shape(dFilter)[0]
     filterPadded = np.zeros_like( imgR[:,:,0])
     #print "dFilter dims", np.shape(dFilter)
@@ -178,7 +179,7 @@ def doTFloop(img,# test image
       cntnew=cnt-1
       return xR, mf,cntnew,bigIters
 
-
+    # can we optimize parallel_iterations based on memory allocation?
     final, mfo,cnt,bigIters= tf.while_loop(condition, body,
                                             [specVar,filtVar,cnt,bigIters], parallel_iterations=10)
     final, mfo,cnt,bigIters =  sess.run([final,mfo,cnt,bigIters])
@@ -206,6 +207,8 @@ def MF(
     ):
     # NOTE: May need to do this padding within tensorflow loop itself to 
     #       ameliorate latency due to loading large matrices into GPU
+    lx = len(xiters); ly = len(yiters); lz = len(ziters)
+    numRots = lx * ly * lz
     filt = Pad(dImage,dFilter)
     if useGPU:
        corr,tElapsed = doTFloop(dImage,filt,xiters=xiters,yiters=yiters,ziters=ziters)
@@ -213,15 +216,16 @@ def MF(
     else:        
       start = time.time()
       filtTF = tf.convert_to_tensor(filt)
-      for i in xiters:
-        i = tf.constant(i,dtype=tf.float64)
-        for j in yiters:
-          j = tf.constant(j,dtype=tf.float64)
-          for k in ziters:
+      for i,x in enumerate(xiters):
+        ii = tf.constant(i,dtype=tf.float64)
+        for j,y in enumerate(yiters):
+          jj = tf.constant(j,dtype=tf.float64)
+          for k,z in enumerate(ziters):
+            print "Filtering Progress:", str((i*ly*lz)+(j*lz)+k)+'/'+str(numRots)
             # rotate filter using tensorflow routine anyway
             # NOTE: I may change this
-            k = tf.constant(k,dtype=tf.float64)
-            filtRot = util.rotateFilterCube3D(filtTF,i,j,k)
+            kk = tf.constant(k,dtype=tf.float64)
+            filtRot = util.rotateFilterCube3D(filtTF,ii,jj,kk)
             filtRot = tf.Session().run(filtRot)
             I = dImage
             T = filtRot
@@ -374,7 +378,9 @@ if __name__ == "__main__":
       quit()
     if(arg=="-running"):
       #dims = np.linspace(50,1000,11,endpoint=True)
-      dims = np.linspace(50,500,3,endpoint=True)
+      #dims = np.linspace(50,1000,11,endpoint=True)
+      dims = [5,6,7,8,9,10]
+      dims = map(lambda x: 2**x,dims)
       times,timesGPU = runner(dims)
       print "CPU", times
       print"\n" + "GPU",timesGPU

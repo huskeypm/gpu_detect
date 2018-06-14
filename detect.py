@@ -13,6 +13,7 @@ import util
 import painter
 import sys
 import yaml
+import cv2
 
 def DisplayHits(img,threshed,
                 smooth=8 # px
@@ -125,6 +126,65 @@ def simpleYaml(ymlName):
     data['thresh'],
     debug= data['debug'],
     outName=outName)
+
+
+###
+###  3D routine. Will eventually stick into threeDtense most likely
+###
+
+def do3DGPUFiltering():
+  '''
+  In prototype/testing phase right now
+  '''
+
+  import threeDtense as tdt
+
+  # setup your structures
+  inputs = empty()
+  paramDict = optimizer.ParamDict(typeDict="WT")
+
+  # make a test image of 512x512x50 where the height is hardcoded...
+  img = tdt.MakeTestImage(dim=200)
+  inputs.imgOrig = img
+
+  # making example 3D WT filters
+  mf = util.ReadImg('./myoimages/newSimpleWTFilter.png',renorm=True)
+  mf /= np.sum(mf)
+  mfPunishment = util.ReadImg('./myoimages/newSimpleWTPunishmentFilter.png',renorm=True)
+  mfPunishment /= np.sum(mfPunishment)
+  mfDims = np.shape(mf)
+  mfPunishmentDims = np.shape(mfPunishment)
+  depth = 5
+  mf3D = np.zeros((mfDims[0],mfDims[1],depth),dtype=np.float64)
+  mfPunishment3D = np.zeros((mfPunishmentDims[0],mfPunishmentDims[1],depth),dtype=np.float64)
+  for i in range(depth):
+    mf3D[:,:,i] = mf
+    mfPunishment3D[:,:,i] = mfPunishment
+  inputs.mfOrig = mf3D
+  # fix this dumb piece of code and store it inputs
+  paramDict['mfPunishment'] = mfPunishment3D
+  paramDict['covarianceMatrix'] = np.ones_like(img)
+
+  # call 3D gpu filtering code
+  results,tElapsed = tdt.doTFloop(inputs,paramDict)
+
+  #print "HOORAY!!!!!!"
+  holder = np.zeros_like(results.stackedHits,dtype=np.uint8)
+  holder[results.stackedHits] = 255
+  print np.shape(holder)
+  print type(holder)
+  print holder
+
+  name = "3D_WT_StackedHits.tif"
+  cv2.imwrite(name,holder)
+  print "Wrote", name
+
+
+
+
+
+  
+
 #
 # Validation 
 #
@@ -200,6 +260,10 @@ if __name__ == "__main__":
       thresh = float(sys.argv[i+3])
       debug = True
       simple(imgName,mfName,thresh,debug=debug)
+      quit()
+
+    if(arg=="-do3D"):
+      do3DGPUFiltering()
       quit()
 
 

@@ -16,6 +16,9 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 height = 50
 iters = [-30,-15,0,15,30]
 
+class empty:
+  pass
+
 
 #import imutils
 def LoadImage(
@@ -97,45 +100,70 @@ def MakeFilter(
 def Pad(imgR,
         dFilter,
         height=height):
-    fdim = np.shape(dFilter)[0]
-    filterPadded = np.zeros_like( imgR[:,:,0])
+    fdim = np.shape(dFilter)
+    imgDim = np.shape(imgR)
+    assert (fdim[2] <= imgDim[2]), "Your filter is larger in the z direction than your image"
+    filterPadded = np.zeros_like( imgR)
     #print "dFilter dims", np.shape(dFilter)
-    filterPadded[0:fdim,0:fdim] = dFilter[:,:,0]
-    hfw = np.int(fdim/2.)
-    #print hfw
+    filterPadded[0:fdim[0],0:fdim[1],0:fdim[2]] = dFilter
+    hfw = np.int(fdim[0]/2.)
+    hfwx = np.int(fdim[1]/2.)
+    hfwz = np.int(fdim[2]/2.)
 
-    xroll = np.roll(filterPadded,-hfw,axis=0)
-    xyroll = np.roll(xroll,-hfw,axis=1)
-    #xyzroll = np.roll(xyroll,-hfw, axis=2)
-    #oners = np.ondes(np.shape(imgR[2]))
-    #filt = np.outer(xyroll,ones)
-    #cv2.imshow(filt,cmap="gray")
-    img2 = xyroll
-    height2 = np.ones((height))
-    cross = np.outer(img2, height2)
+    # we do this rolling here in the same way we shift for FFTs
+    yroll = np.roll(filterPadded,-hfw,axis=0)
+    xyroll = np.roll(yroll,-hfwx,axis=1)
+    xyzroll = np.roll(xyroll,-hfwz, axis=2)
+    
+    #filt = np.reshape(cross,(np.shape(img2)[0],np.shape(img2)[1],height))
+    return xyzroll
 
-    filt = np.reshape(cross,(np.shape(img2)[0],np.shape(img2)[1],height))
-    return filt
+def tfMF(img,mf):
+  '''
+  Generic workhorse routine that sets up the image and matched filter for 
+    matched filtering using tensorflow. This routine is called by whichever
+    detection scheme has been chosen. NOT by the doTFloop explicitly.
+
+  INPUTS:
+    img - 'tensorized' image
+    mf - rotated and 'tensorized' matched filter same dimension as img
+  '''
+
+  xF = tf.fft3d(img)
+  #Why are we taking the complex conjugate here??
+  xFc = tf.conj(xF)
+  mFF = tf.fft3d(mf)
+  out = tf.multiply(xFc,mFF)
+  xR = tf.ifft3d(out)
+
+  return xR
 
 
 ##
 ## Tensor flow part 
 ##
-def doTFloop(img,# test image
-           mFs, # shifted filter
-           #xiters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
-           #yiters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
-           #ziters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
+def doTFloop(inputs,
+           #img,# test image
+           #mFs, # shifted filter
+           paramDict,
            xiters=iters,
            yiters=iters,
            ziters=iters
            ):
 
+  # We may potentially want to incorporate all 3 filters into this low level
+  # loop to really speed things up
+  
   with tf.Session() as sess:
     start = time.time()
     # Create and initialize variables
-    specVar = tf.Variable(img, dtype=tf.complex64)
-    filtVar = tf.Variable(mFs, dtype=tf.complex64)
+    #NOTE: double check imgOrig and mfOrig
+    tfImg = tf.Variable(inputs.imgOrig, dtype=tf.complex64)
+    dims = np.shape(inputs.imgOrig)
+    paddedFilter = Pad(inputs.imgOrig,inputs.mfOrig,height=dims[2])
+    tfFilt = tf.Variable(paddedFilter, dtype=tf.complex64)
+    stackedHitsDummy = np.zeros_like(inputs.imgOrig)
+    stackedHits = tf.Variable(stackedHitsDummy, dtype=tf.bool)
 
     # make big angle container
     numXits = np.shape(xiters)[0]
@@ -151,46 +179,79 @@ def doTFloop(img,# test image
       for j in yiters:
         for k in ziters:
           bigIters.append([i,j,k])
+    # have to convert to a tensor so that the rotations can be indexed during tf while loop
     bigIters = tf.Variable(tf.convert_to_tensor(bigIters,dtype=tf.float64))
 
-    sess.run(tf.variables_initializer([specVar,filtVar,cnt,bigIters]))
+    # set up filtering variables
+    if paramDict['filterMode'] == 'punishmentFilter':
+      paramDict['mfPunishment'] = Pad(inputs.imgOrig,paramDict['mfPunishment'])
+      paramDict['mfPunishment'] = tf.Variable(paramDict['mfPunishment'],dtype=tf.complex64)
+      paramDict['covarianceMatrix'] = tf.Variable(paramDict['covarianceMatrix'],dtype=tf.complex64)
+      paramDict['gamma'] = tf.Variable(paramDict['gamma'],dtype=tf.complex64)
+      sess.run(tf.variables_initializer([paramDict['mfPunishment'],paramDict['covarianceMatrix'],paramDict['gamma']]))
 
-    
+    sess.run(tf.variables_initializer([tfImg,tfFilt,cnt,bigIters,stackedHits]))
+
+    inputs.tfImg = tfImg
+    inputs.tfFilt = tfFilt
+    inputs.bigIters = bigIters
+
+
     # While loop that counts down to zero and computes reverse and forward fft's
-    def condition(x,mf,cnt,bigIters):
+    def condition(#inputs,paramDict,
+                  cnt,stackedHits):
       return cnt > 0
 
-    def body(x,mf,cnt,bigIters):
+    def body(#inputs,paramDict,
+             cnt,stackedHits):
+            #img,mf,results,cnt,bigIters,paramDict):
       # pick out rotation to use
       rotations = bigIters[cnt]
 
       # rotating matched filter to specific angle
-      rotatedMF = util.rotateFilterCube3D(mFs,rotations[0],rotations[1],rotations[2])
+      rotatedMF = util.rotateFilterCube3D(inputs.mfOrig,
+                                          rotations[0],
+                                          rotations[1],
+                                          rotations[2])
 
-      ## Essentially the matched filtering parts 
-      xF  =tf.fft3d(x)
-      xFc = tf.conj(xF)
-      mFF =tf.fft3d(rotatedMF)
-      out = tf.multiply(xFc,mFF) # elementwise multiplication for convolutiojn 
-      xR  =tf.ifft3d(out)
-      # DOESNT LIKE THIS xRr = tf.real(xR)
-      ## ------
+      # get detection/snr results
+      snr = doDetection(inputs,paramDict)
+      stackedHitsNew = doStackingHits(inputs,paramDict,stackedHits,snr)
+      #stackedHitsNew = stackedHits
 
       cntnew=cnt-1
-      return xR, mf,cntnew,bigIters
+      return cntnew,stackedHitsNew
 
     # can we optimize parallel_iterations based on memory allocation?
-    final, mfo,cnt,bigIters= tf.while_loop(condition, body,
-                                            [specVar,filtVar,cnt,bigIters], parallel_iterations=10)
-    final, mfo,cnt,bigIters =  sess.run([final,mfo,cnt,bigIters])
-    corr = np.real(final) 
+    '''
+    NOTE: when images get huge (~>512x512x50) and we use parallel iterations=10, they eat a lot of memory
+          since the intermediate results from the while loop are stored for back propogation.
+          This memory consumption can be offloaded if we use swap_memory=True in the tf.while_loop.
+          However, this slows down the calculation immensely, so we want to always cleverly pick
+          the sweet spot between NOT offloading the memory eating tensors and NOT bricking the computer.
+    '''
+    # TODO: See if there is a way to grab maximum available memory for the GPU to automatically
+    #       and cleverly determine the sweetspot to where we don't have to offload tensors to cpu
+    #       but can also efficiently determine parallel_iterations number
+    cnt,stackedHits = tf.while_loop(condition, body,
+                                                 [#inputs,paramDict,
+                                                  cnt,stackedHits],
+                                                 parallel_iterations=10)
+    compStart = time.time()
+    cnt,stackedHits =  sess.run([#inputs,paramDict,
+                                 cnt,stackedHits])
+    compFin = time.time()
+    print "Time for tensor flow to execute run:{}s".format(compFin-compStart)
+
+    results = empty()
+    results.stackedHits = np.real(stackedHits) 
 
     #start = time.time()
     tElapsed = time.time()-start
-    print 'tensorflow:{}s'.format(tElapsed)
+    print 'Total time for tensorflow to run:{}s'.format(tElapsed)
 
 
-    return final, tElapsed
+    return results, tElapsed
 
 
 def MF(
@@ -198,15 +259,13 @@ def MF(
     dFilter,
     useGPU=False,
     dim=2,
-    #xiters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
-    #yiters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
-    #ziters=[-25,-20,-15,-10,-5,0,5,10,15,20,25]
     xiters=iters,
     yiters=iters,
     ziters=iters
     ):
     # NOTE: May need to do this padding within tensorflow loop itself to 
-    #       ameliorate latency due to loading large matrices into GPU
+    #       ameliorate latency due to loading large matrices into GPU.
+    #       Potentially a use for tf.dynamic_stitch?
     lx = len(xiters); ly = len(yiters); lz = len(ziters)
     numRots = lx * ly * lz
     filt = Pad(dImage,dFilter)
@@ -237,9 +296,7 @@ def MF(
       tElapsed = time.time()-start
       print 'fftp:{}s'.format(tElapsed)
        
-    #cv2.imshow(dImage,cmap="gray")
-    #plt.figure()
-    # I'm doing something funky here, s.t. my output is rotated by 180. wtf
+    # for some reason output seems to be rotated by 180 deg?
     if dim==2:
       corr = imutils.rotate(corr,180.)
     else:
@@ -248,6 +305,93 @@ def MF(
       this = np.flip(corr,1)
       return this, tElapsed
     return corr,tElapsed    
+
+###################################################################################################
+###
+### Detection Schemes: taken from detection_protocols.py and 'tensorized'
+###                    See detection_protocols.py for further documentation of functions
+###################################################################################################
+
+def doDetection(inputs,paramDict):
+  '''
+  Function to route all tf detection schemes through.
+
+  inputs - a class structure containing all necessary inputs
+  paramDict - a dictionary containing your parameters
+
+  These should follow the basic structure for the non TF calculations, but just
+    'tensorized'
+  '''
+
+  mode = paramDict['filterMode']
+  if mode=="lobemode":
+    print "Tough luck, this isn't supported yet. Bug the developers to implement this. Quitting program"
+    quit()
+  elif mode=="punishmentFilter":
+    results = punishmentFilterTensor(inputs,paramDict)
+  elif mode=="simple":
+    results = simpleDetectTensor(inputs,paramDict)
+  elif mode=="regionalDeviation":
+    results =regionalDeviationTensor(inputs,paramDict)
+  elif mode=="filterRatio":
+    print "Ignoring this for now. Bug the developers to implement if you want this detection scheme."
+    quit()
+  else:
+    print "That mode isn't understood. Returning image instead."
+    results = inputs.img
+
+  return results
+
+def punishmentFilterTensor(inputs,paramDict):
+  # grab already tensorized image and mf
+  #img = inputs.tfImg
+  #mf = inputs.tfFilt
+  #mfPunishment = paramDict['mfPunishment']
+
+  # all of this setup and such should be handled at a higher level
+  #try:
+  #  mfPunishment = tf.convert_to_tensor(paramDict['mfPunishment'],dtype=tf.complex64)
+  #except:
+  #  raise RuntimeError("No punishment filter was found in paramDict['mfPunishment']")
+  #try:
+  #  cM = tf.convert_to_tensor(paramDict['covarianceMatrix'],dtype=tf.complex64)
+  #except:
+  #  raise RuntimeError("Covariance Matrix Undefined. Replace this with a matrix of all ones the same size as the image")
+  #try:
+  #  gamma = tf.constant(paramDict['gamma'],dtype=tf.complex64)
+  #except:
+  #  raise RuntimeError("Punishment filter weighting term (gamma) not found\
+  #                        within paramDict")
+
+
+  # call generalized tensorflow matched filter routine
+  corr = tfMF(inputs.imgOrig,inputs.tfFilt)
+  corrPunishment = tfMF(inputs.imgOrig,paramDict['mfPunishment'])
+  # calculate signal to noise ratio
+  snr = corr / (paramDict['covarianceMatrix'] + paramDict['gamma'] * corrPunishment)
+  return snr
+
+def simpleDetectTensor(inputs,paramDict):
+  1
+
+def regionalDeviationTensor(inputs,paramDict):
+  2
+
+def doStackingHits(inputs,paramDict,stackedHits,snr):
+  '''
+  Function to threshold the calculated snr and apply to the stackedHits container
+  '''
+  snr = tf.cast(snr,dtype=tf.float64)
+  #stackedHits[tf.where(snr > paramDict['snrThresh'])] = 255 
+
+  stackedHits = tf.logical_or(stackedHits,snr>paramDict['snrThresh'])
+  return stackedHits
+
+###################################################################################################
+###
+###  End detection schemes
+###
+###################################################################################################
 
 def writer(testImage,name="out.tif"):
     # rescale

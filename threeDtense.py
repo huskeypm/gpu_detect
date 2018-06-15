@@ -111,7 +111,7 @@ def Pad(imgR,
       filterPadded[0:fdim[0],0:fdim[1],0:fdim[2]] = dFilter
       hfwz = np.int(fdim[2]/2.)
     else:
-      filterPadded[0:fdim[1],0:fdim[2]] = dFilter
+      filterPadded[0:fdim[0],0:fdim[1]] = dFilter
     hfw = np.int(fdim[0]/2.)
     hfwx = np.int(fdim[1]/2.)
 
@@ -125,7 +125,7 @@ def Pad(imgR,
     
     return xyzroll
 
-def tfMF(img,mf):
+def tfMF(img,mf,dimensions=3):
   '''
   Generic workhorse routine that sets up the image and matched filter for 
     matched filtering using tensorflow. This routine is called by whichever
@@ -136,12 +136,20 @@ def tfMF(img,mf):
     mf - rotated and 'tensorized' matched filter same dimension as img
   '''
 
-  xF = tf.fft3d(img)
-  #Why are we taking the complex conjugate here??
-  xFc = tf.conj(xF)
-  mFF = tf.fft3d(mf)
-  out = tf.multiply(xFc,mFF)
-  xR = tf.ifft3d(out)
+  if dimensions == 3:
+    xF = tf.fft3d(img)
+    #Why are we taking the complex conjugate here??
+    xFc = tf.conj(xF)
+    mFF = tf.fft3d(mf)
+    out = tf.multiply(xFc,mFF)
+    xR = tf.ifft3d(out)
+  else:
+    xF = tf.fft2d(img)
+    #Why are we taking the complex conjugate here??
+    xFc = tf.conj(xF)
+    mFF = tf.fft2d(mf)
+    out = tf.multiply(xFc,mFF)
+    xR = tf.ifft2d(out)
 
   return xR
 
@@ -187,7 +195,7 @@ def doTFloop(inputs,
       bigIters = ziters
 
     # have to convert to a tensor so that the rotations can be indexed during tf while loop
-    bigIters = tf.Variable(tf.convert_to_tensor(bigIters,dtype=tf.float64))
+    bigIters = tf.Variable(tf.convert_to_tensor(bigIters,dtype=tf.float32))
 
     # set up filtering variables
     if paramDict['filterMode'] == 'punishmentFilter':
@@ -219,7 +227,7 @@ def doTFloop(inputs,
                                           rotations[2])
 
       # get detection/snr results
-      snr = doDetection(inputs,paramDict)
+      snr = doDetection(inputs,paramDict,dimensions=3)
       stackedHitsNew = doStackingHits(inputs,paramDict,stackedHits,snr)
       #stackedHitsNew = stackedHits
 
@@ -231,7 +239,7 @@ def doTFloop(inputs,
 
       rotatedMF = util.rotateFilter2D(inputs.tfFilt,rotation)
 
-      snr = doDetection(inputs,paramDict)
+      snr = doDetection(inputs,paramDict,dimensions=2)
       stackedHitsNew = doStackingHits(inputs,paramDict,stackedHits,snr)
       cntnew=cnt-1
       return cntnew,stackedHitsNew
@@ -335,7 +343,7 @@ def MF(
 ###                    See detection_protocols.py for further documentation of functions
 ###################################################################################################
 
-def doDetection(inputs,paramDict):
+def doDetection(inputs,paramDict,dimensions=3):
   '''
   Function to route all tf detection schemes through.
 
@@ -351,11 +359,11 @@ def doDetection(inputs,paramDict):
     print "Tough luck, this isn't supported yet. Bug the developers to implement this. Quitting program"
     quit()
   elif mode=="punishmentFilter":
-    results = punishmentFilterTensor(inputs,paramDict)
+    results = punishmentFilterTensor(inputs,paramDict,dimensions=dimensions)
   elif mode=="simple":
-    results = simpleDetectTensor(inputs,paramDict)
+    results = simpleDetectTensor(inputs,paramDict,dimensions=dimensions)
   elif mode=="regionalDeviation":
-    results =regionalDeviationTensor(inputs,paramDict)
+    results =regionalDeviationTensor(inputs,paramDict,dimensions=dimensions)
   elif mode=="filterRatio":
     print "Ignoring this for now. Bug the developers to implement if you want this detection scheme."
     quit()
@@ -365,16 +373,16 @@ def doDetection(inputs,paramDict):
 
   return results
 
-def punishmentFilterTensor(inputs,paramDict):
+def punishmentFilterTensor(inputs,paramDict,dimensions=3):
   # call generalized tensorflow matched filter routine
-  corr = tfMF(inputs.tfImg,inputs.tfFilt)
-  corrPunishment = tfMF(inputs.tfImg,paramDict['mfPunishment'])
+  corr = tfMF(inputs.tfImg,inputs.tfFilt,dimensions=dimensions)
+  corrPunishment = tfMF(inputs.tfImg,paramDict['mfPunishment'],dimensions=dimensions)
   # calculate signal to noise ratio
   snr = corr / (paramDict['covarianceMatrix'] + paramDict['gamma'] * corrPunishment)
   return snr
 
-def simpleDetectTensor(inputs,paramDict):
-  snr = tfMF(inputs.tfImg,inputs.tfFilt)
+def simpleDetectTensor(inputs,paramDict,dimensions=3):
+  snr = tfMF(inputs.tfImg,inputs.tfFilt,dimensions=dimensions)
   return snr
 
 

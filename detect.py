@@ -179,6 +179,39 @@ def do3DGPUFiltering():
   cv2.imwrite(name,holder)
   print "Wrote", name
 
+def do2DGPUFiltering():
+  '''
+  Prototyping right now
+  '''
+  import threeDtense as tdt
+
+  inputs = empty()
+  paramDict = optimizer.ParamDict(typeDict="WT")
+
+  # make a test image of 512x512x50 where the height is hardcoded...
+  img = tdt.MakeTestImage(dim=200)
+  # take 2d slice of img
+  img = img[:,:,0]
+  inputs.imgOrig = img
+
+  # 2D WT filters
+  mf = util.LoadFilter('./myoimages/newSimpleWTFilter.png')
+  mfPunishment = util.LoadFilter('./myoimages/newSimpleWTPunishmentFilter.png')
+  inputs.mfOrig = mf
+  # fix this dumb piece of code and store it inputs
+  paramDict['mfPunishment'] = mfPunishment
+  paramDict['covarianceMatrix'] = np.ones_like(img)
+
+  # call filtering code
+  results,tElapsed = tdt.doTFloop(inputs,paramDict)
+
+  #print "HOORAY!!!!!!"
+  holder = np.zeros_like(results.stackedHits,dtype=np.uint8)
+  holder[results.stackedHits] = 255
+  print np.shape(holder)
+  print type(holder)
+  print holder
+
 
 
 
@@ -264,6 +297,10 @@ if __name__ == "__main__":
 
     if(arg=="-do3D"):
       do3DGPUFiltering()
+      quit()
+
+    if(arg=="-do2DTF"):
+      do2DGPUFiltering()
       quit()
 
 

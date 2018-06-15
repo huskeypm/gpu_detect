@@ -188,10 +188,17 @@ def do2DGPUFiltering():
   inputs = empty()
   paramDict = optimizer.ParamDict(typeDict="WT")
 
-  # make a test image of 512x512x50 where the height is hardcoded...
-  img = tdt.MakeTestImage(dim=200)
+  import tissue
+  case = empty()
+  case.loc_um = [2577,279]
+  case.extent_um = [500,500]
+  tissue.SetupCase(case)
+  img = case.subregion
+  #import matplotlib.pyplot as plt
+  #plt.imshow(img)
+  #plt.show()
+  #plt.quit()
   # take 2d slice of img
-  img = img[:,:,0]
   inputs.imgOrig = img
 
   # 2D WT filters
@@ -202,8 +209,11 @@ def do2DGPUFiltering():
   paramDict['mfPunishment'] = mfPunishment
   paramDict['covarianceMatrix'] = np.ones_like(img)
 
+  # angles at which we'll do filtering
+  iters = [-45,-40,-35,-30,-25,-20,-15]
+
   # call filtering code
-  results,tElapsed = tdt.doTFloop(inputs,paramDict)
+  results,tElapsed = tdt.doTFloop(inputs,paramDict,ziters=iters)
 
   #print "HOORAY!!!!!!"
   holder = np.zeros_like(results.stackedHits,dtype=np.uint8)

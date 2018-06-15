@@ -206,7 +206,8 @@ def rotateFilter2D(img,rotation):
   '''
   Function to 'tensorize' the rotation of the filter
   '''
-  
+  rotated = tf.contrib.image.rotate(img,rotation)
+  return rotated
 
 
 # Prepare matrix of vectorized of FFT'd images

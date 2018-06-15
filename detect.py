@@ -191,15 +191,23 @@ def do2DGPUFiltering():
   import tissue
   case = empty()
   case.loc_um = [2577,279]
-  case.extent_um = [500,500]
+  case.extent_um = [250,250]
   tissue.SetupCase(case)
   img = case.subregion
-  #import matplotlib.pyplot as plt
-  #plt.imshow(img)
-  #plt.show()
-  #plt.quit()
+  import preprocessing as pp
+  img,_ = pp.reorient(img)
+  img,_,_,idxs = pp.resizeToFilterSize(img,25)
+  img = pp.applyCLAHE(img,25)
+  img2 = pp.normalizeToStriations(img,idxs,25)
+  img2 /= np.max(img2)
+  import matplotlib.pyplot as plt
+  plt.imshow(img)
+  plt.show()
+  plt.imshow(img2)
+  plt.show()
+  #quit()
   # take 2d slice of img
-  inputs.imgOrig = img
+  inputs.imgOrig = img2
 
   # 2D WT filters
   mf = util.LoadFilter('./myoimages/newSimpleWTFilter.png')
@@ -210,7 +218,7 @@ def do2DGPUFiltering():
   paramDict['covarianceMatrix'] = np.ones_like(img)
 
   # angles at which we'll do filtering
-  iters = [-45,-40,-35,-30,-25,-20,-15]
+  iters = [-25,-20,-15,-10,-5,0,5,10,15,20,25]
 
   # call filtering code
   results,tElapsed = tdt.doTFloop(inputs,paramDict,ziters=iters)
@@ -218,9 +226,20 @@ def do2DGPUFiltering():
   #print "HOORAY!!!!!!"
   holder = np.zeros_like(results.stackedHits,dtype=np.uint8)
   holder[results.stackedHits] = 255
-  print np.shape(holder)
-  print type(holder)
-  print holder
+  #print np.shape(holder)
+  #print type(holder)
+  #print holder
+  #dummyVar = np.zeros_like(case.subregion)
+  #coloredImage = markPastedFilters(dummyVar.copy(),dummyVar.copy(),
+
+  coloredImage = img.copy()
+  coloredImage[results.stackedHits] = 255
+
+  import matplotlib.pyplot as plt
+  plt.imshow(coloredImage,cmap='gray')
+  plt.colorbar()
+  plt.show()
+  quit()
 
 
 

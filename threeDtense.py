@@ -275,7 +275,7 @@ def doTFloop(inputs,
 
     results = empty()
     #results.stackedHits = np.real(stackedHits) 
-    stackedHits[stackedHits < paramDict['snrThresh']] = 0
+    #stackedHits[stackedHits < paramDict['snrThresh']] = 0
     
     results.stackedHits = stackedHits
     # TODO: pull out best angles from bigIters

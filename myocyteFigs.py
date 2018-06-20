@@ -331,6 +331,22 @@ def figS1():
 
   #plt.show()
   plt.gcf().savefig('figS1.png')
+
+def figS2():
+  '''
+  Routine to generate the figure showcasing heterogeneity of striation angle
+    in the tissue sample
+  '''
+  import tensorflow_mf as tmf
+  import threeDtense as tdt
+
+  ### Load in the image
+  maxDim = 100
+  testImage = tmf.LoadImage(maxDim=maxDim)
+
+  ### Load in filter
+  #ttFilt = 
+
   
 def saveWorkflowFig():
   '''
@@ -830,6 +846,7 @@ def giveMarkedMyocyte(
  
   start = time.time()
    
+
   ### Read in preprocessed image
   img = util.ReadImg(testImage,renorm=False)
 
@@ -838,7 +855,6 @@ def giveMarkedMyocyte(
   inputs.imgOrig = ReadResizeApplyMask(img,testImage,25,25) # just applies mask
 
   ### WT filtering
-  print "WT Filtering"
   inputs.mfOrig = util.LoadFilter(ttFilterName)
   WTparams = optimizer.ParamDict(typeDict='WT')
   WTparams['covarianceMatrix'] = np.ones_like(img)
@@ -848,8 +864,14 @@ def giveMarkedMyocyte(
     WTparams['snrThresh'] = ttThresh
   if wtGamma != None:
     WTparams['gamma'] = wtGamma
+  print "WT Filtering"
   WTresults = bD.DetectFilter(inputs,WTparams,iters,returnAngles=returnAngles)  
   WTstackedHits = WTresults.stackedHits
+  #plt.figure()
+  #plt.imshow(WTstackedHits)
+  #plt.colorbar()
+  #plt.show()
+  #quit()
 
   ### LT filtering
   print "LT filtering"
@@ -1538,6 +1560,10 @@ if __name__ == "__main__":
 
     if(arg=="-figS1"):
       figS1()
+      quit()
+
+    if(arg=="-figS2"):
+      figS2()
       quit()
 
     # generates all figs

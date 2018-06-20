@@ -28,6 +28,8 @@ def normalizeToStriations(img, subsectionIdxs,filterSize):
   and valley intensity of each striation and will normalize the image 
   based on those values.
   '''
+
+  print "Normalizing myocyte to striations"
   
   ### Load in filter that will be used to smooth the subsection
   WTfilterName = "./myoimages/singleTTFilter.png"
@@ -191,6 +193,7 @@ def reorient(img):
   Function to reorient the myocyte based on a user selected line that is
   orthogonal to the TTs 
   '''
+  print "Reorienting Myocyte"
 
   ### get direction vector from line drawn by user
   dVect = giveSubsectionLine(img)
@@ -288,6 +291,8 @@ def resizeToFilterSize(img,filterTwoSarcomereSize):
   Function to semi-automate the resizing of the image based on the filter
   '''
 
+  print "Resizing myocyte based on user selected subsection"
+
   ### 1. Select subsection of image that exhibits highly conserved network of TTs
   subsection,indexes = giveSubsection(img)#,dtype=np.float32)
   # best to normalize the subsection for display purposes
@@ -339,6 +344,8 @@ def resizeToFilterSize(img,filterTwoSarcomereSize):
 ###############################################################################
 
 def applyCLAHE(img,filterTwoSarcomereSize):
+  print "Applying CLAHE to Myocyte"
+
   kernel = (filterTwoSarcomereSize, filterTwoSarcomereSize)
   clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=kernel)
 

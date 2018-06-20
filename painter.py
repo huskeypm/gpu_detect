@@ -163,12 +163,7 @@ def StackHits(correlated,  # an array of 'correlation planes'
         #maskList.append((util2.rotater(daMask,iteration)))
         maskList.append(daMask)
 
-    ### Dylan - I'm changing this. I believe that summing the hits adds some noise when thresholds
-    ###         are low relative to the hit intensity.
-    # sum all hits; Basically looking for one or more angles that are above threshold
-    #stacked  = np.sum(maskList, axis =0)
-
-    # instead, take maximum hit
+    # take maximum hit
     stacked = np.max(maskList,axis=0)
     
     
@@ -288,80 +283,3 @@ def WT_SNR(Img, WTfilter, WTPunishmentFilter,C,gamma):
   SNR = h / (C + gamma * h_star)
 
   return SNR
-
-def correlateThresherTT (Img, filterDict, iters=[-10,0,10],
-             printer=False, label=None, scale=1.0, sigma_n=1.,
-             #WTthreshold=None, LossThreshold=None, LongitudinalThreshold=None,
-             thresholdDict=None,
-             doCLAHE=True, covarianceM=None, gamma=1.):
-  # similar to correlateThresher but I want to do all mFing with all filters at once
-
-  # find max response of each of the filters
-  maxResponses = {}
-  for name,filt in filterDict.iteritems():
-    maxResponses[name] = np.sum(filt)
-
-  # setting parameters for SNR of WT
-  if covarianceM == None:
-    covarianceM = np.ones_like(Img)
-
-  correlated = []
-
-  if doCLAHE:
-    clahe99 = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(16,16))
-    cl1 = clahe99.apply(Img)
-    adapt99 = cl1
-  else:
-    adapt99 = Img
-  #print iters
-  for i, val in enumerate(iters):
-    result = empty()
-    # copy of original image
-    tN = util.renorm(np.array(adapt99,dtype=float),scale=1.)
-
-    print "DC: lines below should be stored in a separate function, since I think here is where the filtering treatments could diverge. Creating a dummy entry here"
-    #inputs = empty() # will revise later
-    #results = mf.FilterSingle(inputs,mode="do nothing")
-    # DC: consider generalizing the labels here. WT --> label1, etc
-
-    ## WT filter and WT punishment filter
-    # pad/rotate
-    rotWT = PadRotate(filterDict['WT'].copy(), val)
-    rotWTPunish = PadRotate(filterDict['WTPunishFilter'].copy(),val)
-    # Calculate SNR of WT Response
-    rotWT_SNR = WT_SNR(tN, rotWT, rotWTPunish, covarianceM, gamma)
-    rotWT_SNR /= maxResponses['WT']
-
-    ## Longitudinal Filter and Response - still basic here
-    # pad/rotate
-    rotLong = PadRotate(filterDict['Longitudinal'].copy(), val)
-    # matched filtering
-    rotLongmF = mF.matchedFilter(tN, rotLong, demean=False)
-    rotLongmF /= maxResponses['Longitudinal']
-
-    ## Loss Filter and Response - still basic
-    # pad/rotate
-    rotLoss = PadRotate(filterDict['Loss'].copy(),val)
-    # matched filtering
-    rotLossmF = mF.matchedFilter(tN, rotLoss, demean=False)
-    #print maxResponses['Loss']
-    rotLossmF /= maxResponses['Loss']
-
-    # storing results for each function
-    result.WT = rotWT_SNR
-    result.Long = rotLongmF
-    result.Loss = rotLossmF
-
-    correlated.append(result)
-
-  return correlated
-    
-    
-
-
-
-
-
-
-
-

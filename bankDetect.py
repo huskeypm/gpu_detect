@@ -36,23 +36,34 @@ def DetectFilter(
   result.stackedDict = dict()
 
   # do correlations across all iter
-  result.correlated = painter.correlateThresher(
-     inputs,
-     paramDict,
-     iters=iters,
-     printer=display,
-     filterMode=filterMode,
-     label=label,
-     )
+  if not paramDict['useGPU']:
+    result.correlated = painter.correlateThresher(
+       inputs,
+       paramDict,
+       iters=iters,
+       printer=display,
+       filterMode=filterMode,
+       label=label,
+       )
 
-  # stack hits to form 'total field' of hits
-  if returnAngles:
-    result.stackedHits, result.stackedAngles = painter.StackHits(
-      result.correlated,paramDict,iters,display=display,returnAngles=returnAngles)
+      # stack hits to form 'total field' of hits
+    if returnAngles:
+      result.stackedHits, result.stackedAngles = painter.StackHits(
+                  result.correlated,paramDict,iters,display=display,returnAngles=returnAngles)
+    else:
+      result.stackedHits= painter.StackHits(result.correlated,paramDict,iters,
+        display=display)
+
   else:
-    result.stackedHits= painter.StackHits(result.correlated,paramDict,iters,
-      display=display)
-    
+    import threeDtense as tdt
+    result,timeElapsed = tdt.doTFloop(
+            inputs,
+            paramDict,
+            ziters=iters
+            )
+    # since routine gives correlated > 0 for snr > snrThresh then all nonzero correlated pixels are hits
+    result.stackedHits[np.nonzero(result.stackedHits)] = 2 * paramDict['snrThresh']
+
   return result
 
 def GetHits(aboveThresholdPoints):

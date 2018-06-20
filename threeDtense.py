@@ -138,17 +138,13 @@ def tfMF(img,mf,dimensions=3):
 
   if dimensions == 3:
     xF = tf.fft3d(img)
-    #Why are we taking the complex conjugate here??
-    xFc = tf.conj(xF)
     mFF = tf.fft3d(mf)
-    out = tf.multiply(xFc,mFF)
+    out = tf.multiply(xF,mFF)
     xR = tf.ifft3d(out)
   else:
     xF = tf.fft2d(img)
-    #Why are we taking the complex conjugate here??
-    xFc = tf.conj(xF)
     mFF = tf.fft2d(mf)
-    out = tf.multiply(xFc,mFF)
+    out = tf.multiply(xF,mFF)
     xR = tf.ifft2d(out)
 
   return xR
@@ -271,12 +267,6 @@ def doTFloop(inputs,
     else:
       cnt,stackedHits,bestAngles = tf.while_loop(condition, body2D,
                                       [cnt,stackedHits,bestAngles], parallel_iterations=10)
-
-    # now set up stackedHits and bestAngles to be flipped to propper orientation
-    myStack = tf.stack([stackedHits,bestAngles],axis=2)
-    myStack = tf.image.flip_left_right(myStack)
-    myStack = tf.image.flip_up_down(myStack)
-    stackedHits,bestAngles = tf.unstack(myStack, axis=2)
 
     compStart = time.time()
     cnt,stackedHits,bestAngles =  sess.run([cnt,stackedHits,bestAngles])
@@ -403,7 +393,7 @@ def punishmentFilterTensor(inputs,paramDict,dimensions=3):
   corr = tfMF(inputs.tfImg,inputs.tfFilt,dimensions=dimensions)
   corrPunishment = tfMF(inputs.tfImg,paramDict['mfPunishment'],dimensions=dimensions)
   # calculate signal to noise ratio
-  snr = corr / (paramDict['covarianceMatrix'] + paramDict['gamma'] * corrPunishment)
+  snr = tf.divide(corr,tf.add(paramDict['covarianceMatrix'],tf.multiply(paramDict['gamma'], corrPunishment)))
   return snr
 
 def simpleDetectTensor(inputs,paramDict,dimensions=3):

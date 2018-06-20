@@ -122,7 +122,10 @@ def Pad(imgR,
       xyzroll = np.roll(xyroll,-hfwz, axis=2)
     else:
       xyzroll = xyroll
-    
+
+    # I don't think you need to shift this at all
+    #xyzroll = filterPadded
+
     return xyzroll
 
 def tfMF(img,mf,dimensions=3):
@@ -139,11 +142,15 @@ def tfMF(img,mf,dimensions=3):
   if dimensions == 3:
     xF = tf.fft3d(img)
     mFF = tf.fft3d(mf)
+    # this is something to do with the shifting done previously
+    xFc = tf.conj(xF)
     out = tf.multiply(xF,mFF)
     xR = tf.ifft3d(out)
   else:
     xF = tf.fft2d(img)
     mFF = tf.fft2d(mf)
+    # this is something to do with the shifting done previously
+    xFc = tf.conj(xF)
     out = tf.multiply(xF,mFF)
     xR = tf.ifft2d(out)
 
@@ -200,6 +207,11 @@ def doTFloop(inputs,
     else:
       bigIters = ziters
 
+    # convert iterations from degrees into radians
+    bigIters = np.asarray(bigIters,dtype=np.float32)
+    bigIters = bigIters * np.pi / 180.
+
+
     # have to convert to a tensor so that the rotations can be indexed during tf while loop
     bigIters = tf.Variable(tf.convert_to_tensor(bigIters,dtype=tf.float32))
 
@@ -220,7 +232,7 @@ def doTFloop(inputs,
 
     # While loop that counts down to zero and computes reverse and forward fft's
     def condition(cnt,stackedHits,bestAngles):
-      return cnt > 0
+      return cnt >= 0
 
     def body3D(cnt,stackedHits,bestAngles):
       # pick out rotation to use
@@ -246,7 +258,9 @@ def doTFloop(inputs,
       rotatedMF = util.rotateFilter2D(inputs.tfFilt,rotation)
 
       snr = doDetection(inputs,paramDict,dimensions=2)
-      stackedHitsNew,bestAnglesNew = doStackingHits(inputs,paramDict,stackedHits,bestAngles,snr,cnt)
+      #stackedHitsNew,bestAnglesNew = doStackingHits(inputs,paramDict,stackedHits,bestAngles,snr,cnt)
+      stackedHitsNew = tf.cast(snr,dtype=tf.float64)
+      bestAnglesNew = stackedHitsNew
       cntnew=cnt-1
       return cntnew,stackedHitsNew,bestAnglesNew
 
@@ -269,7 +283,7 @@ def doTFloop(inputs,
                                       [cnt,stackedHits,bestAngles], parallel_iterations=10)
 
     compStart = time.time()
-    cnt,stackedHits,bestAngles =  sess.run([cnt,stackedHits,bestAngles])
+    cntF,stackedHitsF,bestAnglesF =  sess.run([cnt,stackedHits,bestAngles])
     compFin = time.time()
     print "Time for tensor flow to execute run:{}s".format(compFin-compStart)
 
@@ -277,9 +291,9 @@ def doTFloop(inputs,
     #results.stackedHits = np.real(stackedHits) 
     #stackedHits[stackedHits < paramDict['snrThresh']] = 0
     
-    results.stackedHits = stackedHits
+    results.stackedHits = stackedHitsF
     # TODO: pull out best angles from bigIters
-    results.stackedAngles = bestAngles
+    results.stackedAngles = bestAnglesF
 
     #start = time.time()
     tElapsed = time.time()-start
@@ -391,9 +405,10 @@ def doDetection(inputs,paramDict,dimensions=3):
 def punishmentFilterTensor(inputs,paramDict,dimensions=3):
   # call generalized tensorflow matched filter routine
   corr = tfMF(inputs.tfImg,inputs.tfFilt,dimensions=dimensions)
-  corrPunishment = tfMF(inputs.tfImg,paramDict['mfPunishment'],dimensions=dimensions)
+  #corrPunishment = tfMF(inputs.tfImg,paramDict['mfPunishment'],dimensions=dimensions)
   # calculate signal to noise ratio
-  snr = tf.divide(corr,tf.add(paramDict['covarianceMatrix'],tf.multiply(paramDict['gamma'], corrPunishment)))
+  #snr = tf.divide(corr,tf.add(paramDict['covarianceMatrix'],tf.multiply(paramDict['gamma'], corrPunishment)))
+  snr = corr
   return snr
 
 def simpleDetectTensor(inputs,paramDict,dimensions=3):
@@ -435,14 +450,12 @@ def doStackingHits(inputs,paramDict,stackedHits,bestAngles,snr,cnt):
   '''
   Function to threshold the calculated snr and apply to the stackedHits container
   '''
-  snr = tf.cast(snr,dtype=tf.float64)
-  #stackedHits[tf.where(snr > paramDict['snrThresh'])] = 255 
-
-  #stackedHits = tf.logical_or(stackedHits,snr>paramDict['snrThresh'])
+  snr = tf.cast(tf.real(snr),dtype=tf.float64)
+  #snrCopy = tf.cast(tf.real(snr),dtype=tf.float64)
 
   whereSNRgreater = tf.greater(snr,stackedHits)
   stackedHits = tf.where(whereSNRgreater,snr,stackedHits)
-  cntHolder = tf.ones_like(stackedHits) * tf.cast(cnt,tf.float64)
+  cntHolder = tf.multiply(tf.ones_like(stackedHits), tf.cast(cnt,tf.float64))
   bestAngles = tf.where(whereSNRgreater,cntHolder,bestAngles)
   return stackedHits,bestAngles
 

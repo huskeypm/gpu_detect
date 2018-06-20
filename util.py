@@ -209,7 +209,7 @@ def rotateFilter2D(img,rotation):
   #rotated = tf.cast(img,dtype=tf.float64)
   #rotated = tf.cast(img,dtype=tf.float32)
   rotated = tf.to_float(img)
-  rotated = tf.contrib.image.rotate(rotated,rotation)
+  rotated = tf.contrib.image.rotate(rotated,rotation,interpolation="BILINEAR")
   rotated = tf.cast(rotated,dtype=tf.complex64)
   return rotated
 

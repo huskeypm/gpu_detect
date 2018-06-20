@@ -36,7 +36,17 @@ def DetectFilter(
   result.stackedDict = dict()
 
   # do correlations across all iter
-  if not paramDict['useGPU']:
+  if paramDict['useGPU']:
+    import threeDtense as tdt
+    result,timeElapsed = tdt.doTFloop(
+            inputs,
+            paramDict,
+            ziters=iters
+            )
+    # since routine gives correlated > 0 for snr > snrThresh then all nonzero correlated pixels are hits
+    result.stackedHits[result.stackedHits < paramDict['snrThresh']] = 0.
+
+  else:
     result.correlated = painter.correlateThresher(
        inputs,
        paramDict,
@@ -54,15 +64,7 @@ def DetectFilter(
       result.stackedHits= painter.StackHits(result.correlated,paramDict,iters,
         display=display)
 
-  else:
-    import threeDtense as tdt
-    result,timeElapsed = tdt.doTFloop(
-            inputs,
-            paramDict,
-            ziters=iters
-            )
-    # since routine gives correlated > 0 for snr > snrThresh then all nonzero correlated pixels are hits
-    result.stackedHits[np.nonzero(result.stackedHits)] = 2 * paramDict['snrThresh']
+
 
   return result
 

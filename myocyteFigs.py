@@ -846,9 +846,8 @@ def giveMarkedMyocyte(
  
   start = time.time()
    
-
   ### Read in preprocessed image
-  img = util.ReadImg(testImage,renorm=False)
+  img = util.ReadImg(testImage,renorm=True)
 
   ### defining inputs to be read by DetectFilter function
   inputs = empty()
@@ -865,8 +864,13 @@ def giveMarkedMyocyte(
   if wtGamma != None:
     WTparams['gamma'] = wtGamma
   print "WT Filtering"
+  #iters = [0]
+  #WTparams['gamma'] = 0.
+  #WTparams['filterMode'] = 'simple'
   WTresults = bD.DetectFilter(inputs,WTparams,iters,returnAngles=returnAngles)  
   WTstackedHits = WTresults.stackedHits
+  #print np.max(WTstackedHits)
+  #print np.mean(WTstackedHits)
   #plt.figure()
   #plt.imshow(WTstackedHits)
   #plt.colorbar()

@@ -169,6 +169,7 @@ def do3DGPUFiltering():
   results,tElapsed = tdt.doTFloop(inputs,paramDict)
 
   #print "HOORAY!!!!!!"
+  print "Ryan: How do we pull out the hits and save them in z-stack that can be interpreted by imageJ?"
   holder = np.zeros_like(results.stackedHits,dtype=np.uint8)
   holder[results.stackedHits] = 255
   print np.shape(holder)
@@ -184,29 +185,31 @@ def do2DGPUFiltering():
   Prototyping right now
   '''
   import threeDtense as tdt
+  import tissue
 
   inputs = empty()
   paramDict = optimizer.ParamDict(typeDict="WT")
 
-  import tissue
+  # grab image, store colored image, work with gray image
+  tisParams = tissue.params
   case = empty()
   case.loc_um = [2577,279]
   case.extent_um = [250,250]
-  tissue.SetupCase(case)
+  case.cImg = util.ReadImg(tisParams.imgName,cvtColor=False)
+  case.gray = cv2.cvtColor(case.cImg.copy(),cv2.COLOR_BGR2GRAY)
+  tisParams.dim = np.shape(case.gray)
+  tisParams.px_per_um = tisParams.dim/tisParams.fov
+  case.gray = cv2.cvtColor(case.cImg.copy(),cv2.COLOR_BGR2GRAY)
+  case.subregion = tissue.get_fiji(case.gray,case.loc_um,case.extent_um)
   img = case.subregion
+
+  # preprocess image for algorithm
   import preprocessing as pp
   img,_ = pp.reorient(img)
   img,_,_,idxs = pp.resizeToFilterSize(img,25)
   img = pp.applyCLAHE(img,25)
   img2 = pp.normalizeToStriations(img,idxs,25)
   img2 /= np.max(img2)
-  import matplotlib.pyplot as plt
-  plt.imshow(img)
-  plt.show()
-  plt.imshow(img2)
-  plt.show()
-  #quit()
-  # take 2d slice of img
   inputs.imgOrig = img2
 
   # 2D WT filters
@@ -222,21 +225,34 @@ def do2DGPUFiltering():
 
   # call filtering code
   results,tElapsed = tdt.doTFloop(inputs,paramDict,ziters=iters)
+  print results.stackedHits
 
-  #print "HOORAY!!!!!!"
-  holder = np.zeros_like(results.stackedHits,dtype=np.uint8)
-  holder[results.stackedHits] = 255
-  #print np.shape(holder)
-  #print type(holder)
-  #print holder
-  #dummyVar = np.zeros_like(case.subregion)
-  #coloredImage = markPastedFilters(dummyVar.copy(),dummyVar.copy(),
 
-  coloredImage = img.copy()
-  coloredImage[results.stackedHits] = 255
+  # crop image to subsection size
+  loc = tissue.conv_fiji(case.loc_um[0],case.loc_um[1])
+  d = tissue.conv_fiji(case.extent_um[0],case.extent_um[1])
+  grayDims = np.shape(img)
+  cSubregion = np.zeros((grayDims[0],grayDims[1],3))
+  for i in range(3):
+      #cSubregion[:,:,i] = case.cImg[loc[0]:(loc[0]+d[0]),loc[1]:(loc[1]+d[1]),i]
+      cSubregion[:,:,i] = img
+  #cSubregion = [case.cImg[loc[0]:(loc[0]+d[0]),loc[1]:(loc[1]+d[1]),channel] for channel in range(3)]
+  holder = cSubregion[:,:,2]
+  holder[results.stackedHits] = np.max(case.cImg)
+  #case.cImg[:,:,results.stackedHits] = np.max(case.cImg)
+
+
 
   import matplotlib.pyplot as plt
-  plt.imshow(coloredImage,cmap='gray')
+  plt.figure()
+  plt.imshow(results.stackedHits)
+  plt.show()
+  quit()
+
+
+  #plt.imshow(coloredImage,cmap='gray')
+  plt.figure()
+  plt.imshow(cSubregion)
   plt.colorbar()
   plt.show()
   quit()

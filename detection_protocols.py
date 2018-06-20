@@ -232,13 +232,13 @@ def regionalDeviation(inputs,paramDict):
 
   ### Perform simple detection
   img = inputs.img
-  demeanedImg = inputs.demeanedImg
   mf = inputs.mf
   results = empty()
 
   if paramDict['useGPU'] == False:
     simpleCorr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF'])
   else:
+    print "deprecated. Switch GPU filtering over to new scheme"
     simpleCorr = sMF.MF(img,mf,useGPU=True)
 
 

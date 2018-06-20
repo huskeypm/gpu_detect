@@ -165,6 +165,14 @@ def doTFloop(inputs,
            yiters=[0],
            ziters=[0]
            ):
+  '''
+  Function that performs filtering across all rotations of a given filter
+    using tensorflow routines and GPU speedup
+  '''
+
+  # TODO: Once TF 1.9 is out and stable, change complex data types to 128 instead of 64
+  #       I believe there is some small error arising from this
+
 
   # We may potentially want to incorporate all 3 filters into this low level
   # loop to really speed things up
@@ -176,13 +184,15 @@ def doTFloop(inputs,
     paddedFilter = Pad(inputs.imgOrig,inputs.mfOrig)
     tfFilt = tf.Variable(paddedFilter, dtype=tf.complex64)
     stackedHitsDummy = np.zeros_like(inputs.imgOrig)
-    stackedHits = tf.Variable(stackedHitsDummy, dtype=tf.bool)
+    stackedHits = tf.Variable(stackedHitsDummy, dtype=tf.float64)
+    bestAngles = tf.Variable(np.zeros_like(inputs.imgOrig),dtype=tf.float64)
+    snr = tf.Variable(np.zeros_like(tfImg),dtype=tf.complex64)
 
     # make big angle container
     numXits = np.shape(xiters)[0]
     numYits = np.shape(yiters)[0]
     numZits = np.shape(ziters)[0]
-    cnt = tf.Variable(tf.constant(numXits * numYits * numZits-1))
+    cnt = tf.Variable(tf.constant(numXits * numYits * numZits-1,dtype=tf.int64))
 
     # It's late and I'm getting lazy
     bigIters = []
@@ -205,7 +215,7 @@ def doTFloop(inputs,
       paramDict['gamma'] = tf.Variable(paramDict['gamma'],dtype=tf.complex64)
       sess.run(tf.variables_initializer([paramDict['mfPunishment'],paramDict['covarianceMatrix'],paramDict['gamma']]))
 
-    sess.run(tf.variables_initializer([tfImg,tfFilt,cnt,bigIters,stackedHits]))
+    sess.run(tf.variables_initializer([tfImg,tfFilt,cnt,bigIters,stackedHits,bestAngles,snr]))
 
     inputs.tfImg = tfImg
     inputs.tfFilt = tfFilt
@@ -213,10 +223,10 @@ def doTFloop(inputs,
 
 
     # While loop that counts down to zero and computes reverse and forward fft's
-    def condition(cnt,stackedHits):
+    def condition(cnt,stackedHits,bestAngles):
       return cnt > 0
 
-    def body3D(cnt,stackedHits):
+    def body3D(cnt,stackedHits,bestAngles):
       # pick out rotation to use
       rotations = bigIters[cnt]
 
@@ -228,21 +238,21 @@ def doTFloop(inputs,
 
       # get detection/snr results
       snr = doDetection(inputs,paramDict,dimensions=3)
-      stackedHitsNew = doStackingHits(inputs,paramDict,stackedHits,snr)
+      stackedHitsNew,bestAnglesNew = doStackingHits(inputs,paramDict,stackedHits,bestAngles,snr,cnt)
       #stackedHitsNew = stackedHits
 
       cntnew=cnt-1
-      return cntnew,stackedHitsNew
+      return cntnew,stackedHitsNew,bestAnglesNew
 
-    def body2D(cnt,stackedHits):
+    def body2D(cnt,stackedHits,bestAngles):
       rotation = bigIters[cnt]
 
       rotatedMF = util.rotateFilter2D(inputs.tfFilt,rotation)
 
       snr = doDetection(inputs,paramDict,dimensions=2)
-      stackedHitsNew = doStackingHits(inputs,paramDict,stackedHits,snr)
+      stackedHitsNew,bestAnglesNew = doStackingHits(inputs,paramDict,stackedHits,bestAngles,snr,cnt)
       cntnew=cnt-1
-      return cntnew,stackedHitsNew
+      return cntnew,stackedHitsNew,bestAnglesNew
 
     # can we optimize parallel_iterations based on memory allocation?
     '''
@@ -256,22 +266,37 @@ def doTFloop(inputs,
     #       and cleverly determine the sweetspot to where we don't have to offload tensors to cpu
     #       but can also efficiently determine parallel_iterations number
     if len(np.shape(inputs.imgOrig)) == 3:
-      cnt,stackedHits = tf.while_loop(condition, body3D,
-                                      [cnt,stackedHits], parallel_iterations=10)
+      cnt,stackedHits,bestAngles = tf.while_loop(condition, body3D,
+                                      [cnt,stackedHits,bestAngles], parallel_iterations=10)
     else:
-      cnt,stackedHits = tf.while_loop(condition, body2D,
-                                      [cnt,stackedHits], parallel_iterations=10)
+      cnt,stackedHits,bestAngles = tf.while_loop(condition, body2D,
+                                      [cnt,stackedHits,bestAngles], parallel_iterations=10)
+
+    # now set up stackedHits and bestAngles to be flipped to propper orientation
+    myStack = tf.stack([stackedHits,bestAngles],axis=2)
+    myStack = tf.image.flip_left_right(myStack)
+    myStack = tf.image.flip_up_down(myStack)
+    stackedHits,bestAngles = tf.unstack(myStack, axis=2)
 
     compStart = time.time()
-    cnt,stackedHits =  sess.run([cnt,stackedHits])
+    cnt,stackedHits,bestAngles =  sess.run([cnt,stackedHits,bestAngles])
     compFin = time.time()
     print "Time for tensor flow to execute run:{}s".format(compFin-compStart)
 
     results = empty()
-    results.stackedHits = np.real(stackedHits) 
+    #results.stackedHits = np.real(stackedHits) 
+    stackedHits[stackedHits < paramDict['snrThresh']] = 0
+    
+    results.stackedHits = stackedHits
+    # TODO: pull out best angles from bigIters
+    results.stackedAngles = bestAngles
 
     #start = time.time()
     tElapsed = time.time()-start
+
+    ### something weird is going on and image is flipped in each direction
+
+
     print 'Total time for tensorflow to run:{}s'.format(tElapsed)
 
 
@@ -386,18 +411,50 @@ def simpleDetectTensor(inputs,paramDict,dimensions=3):
   return snr
 
 
-def regionalDeviationTensor(inputs,paramDict):
-  2
+def regionalDeviationTensor(inputs,paramDict,dimensions=3):
+  ### Perform simple detection
+  img = inputs.tfImg
+  mf = inputs.tfFilt
+  corr = tfMF(img, mf,dimensions=dimensions)
 
-def doStackingHits(inputs,paramDict,stackedHits,snr):
+  ### construct new kernel for standard deviation calculation
+  # find where filter > 0
+  kernelLocs = tf.greater(tf.cast(mf,tf.float64),0.)
+  kernel = tf.where(kernelLocs,tf.ones_like(mf),tf.zeros_like(mf))
+  kernel = tf.cast(kernel,tf.complex64)
+
+  ### construct array that contains number of elements in each window
+  n = tfMF(tf.ones_like(img),kernel,dimensions=dimensions)
+
+  ### square image for standard deviation calculation
+  imgSquared = tf.square(img)
+
+  ### Calculate standard deviation
+  s = tfMF(img,kernel,dimensions=dimensions)
+  q = tfMF(imgSquared,kernel,dimensions=dimensions)
+  stdDev = tf.sqrt( tf.divide( tf.subtract(q, tf.divide(tf.square(s),n)), tf.subtract(n,1)))
+
+  ### since this is dually conditional, I'll have to mask out the super threshold std Dev hits
+  stdDevHits = tf.less(tf.cast(stdDev,tf.float64),paramDict['stdDevThresh'])
+  maskedOutHits = tf.where(stdDevHits,corr,tf.zeros_like(corr))
+
+  return maskedOutHits
+
+
+def doStackingHits(inputs,paramDict,stackedHits,bestAngles,snr,cnt):
   '''
   Function to threshold the calculated snr and apply to the stackedHits container
   '''
   snr = tf.cast(snr,dtype=tf.float64)
   #stackedHits[tf.where(snr > paramDict['snrThresh'])] = 255 
 
-  stackedHits = tf.logical_or(stackedHits,snr>paramDict['snrThresh'])
-  return stackedHits
+  #stackedHits = tf.logical_or(stackedHits,snr>paramDict['snrThresh'])
+
+  whereSNRgreater = tf.greater(snr,stackedHits)
+  stackedHits = tf.where(whereSNRgreater,snr,stackedHits)
+  cntHolder = tf.ones_like(stackedHits) * tf.cast(cnt,tf.float64)
+  bestAngles = tf.where(whereSNRgreater,cntHolder,bestAngles)
+  return stackedHits,bestAngles
 
 ###################################################################################################
 ###

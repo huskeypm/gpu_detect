@@ -44,7 +44,11 @@ def DetectFilter(
             ziters=iters
             )
     # since routine gives correlated > 0 for snr > snrThresh then all nonzero correlated pixels are hits
-    result.stackedHits[result.stackedHits < paramDict['snrThresh']] = 0.
+    print paramDict['inverseSNR']
+    if paramDict['inverseSNR']:
+      result.stackedHits[result.stackedHits > paramDict['snrThresh']] = 0.
+    else:
+      result.stackedHits[result.stackedHits < paramDict['snrThresh']] = 0.
 
   else:
     result.correlated = painter.correlateThresher(
@@ -74,18 +78,8 @@ def GetHits(aboveThresholdPoints):
   hits = np.argwhere(aboveThresholdPoints.flatten()>0)
   mylocs[hits] = 1
   
-  #locs = mylocs.reshape((100,100,1))
   dims = np.shape(aboveThresholdPoints)  
-  #locs = mylocs.reshape((dims[0],dims[1],1))  
   locs = mylocs.reshape(dims)  
-  #print np.sum(locs)    
-  #print np.shape(locs)  
-  #plt.imshow(locs)  
-  #print np.shape(please)
-  #Not sure why this is needed  
-  #zeros = np.zeros_like(locs)
-  #please = np.concatenate((locs,zeros,zeros),axis=2)
-  #print np.shape(please)
   return locs
 
 # color red channel 

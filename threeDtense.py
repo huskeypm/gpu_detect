@@ -189,8 +189,10 @@ def doTFloop(inputs,
     tfFilt = tf.Variable(paddedFilter, dtype=tf.complex64)
 
     if paramDict['inverseSNR']:
-      stackedHitsDummy = np.ones_like(inputs.imgOrig) 
+      # if we are using an inverse threshold, we need a storage container that contains pixels > thresh
+      stackedHitsDummy = np.ones_like(inputs.imgOrig) * 2. * paramDict['snrThresh']
     else:
+      # otherwise, we need a container that contains pixels < thresh
       stackedHitsDummy = np.zeros_like(inputs.imgOrig)
     stackedHits = tf.Variable(stackedHitsDummy, dtype=tf.float64)
 
@@ -223,7 +225,7 @@ def doTFloop(inputs,
     bigIters = tf.Variable(tf.convert_to_tensor(bigIters,dtype=tf.float32))
 
     # initialize paramDict variables
-    paramDict['inverseSNR'] = tf.Variable(paramDict['inverseSNR'], dtype=tf.bool)
+    paramDict['inverseSNRTF'] = tf.Variable(paramDict['inverseSNR'], dtype=tf.bool)
 
     # set up filtering variables
     if paramDict['filterMode'] == 'punishmentFilter':
@@ -233,7 +235,7 @@ def doTFloop(inputs,
       paramDict['gamma'] = tf.Variable(paramDict['gamma'],dtype=tf.complex64)
       sess.run(tf.variables_initializer([paramDict['mfPunishment'],paramDict['covarianceMatrix'],paramDict['gamma']]))
 
-    sess.run(tf.variables_initializer([tfImg,tfFilt,cnt,bigIters,stackedHits,bestAngles,snr,paramDict['inverseSNR']]))
+    sess.run(tf.variables_initializer([tfImg,tfFilt,cnt,bigIters,stackedHits,bestAngles,snr,paramDict['inverseSNRTF']]))
 
     inputs.tfImg = tfImg
     inputs.tfFilt = tfFilt
@@ -451,7 +453,7 @@ def doStackingHits(inputs,paramDict,stackedHits,bestAngles,snr,cnt):
   snr = tf.cast(tf.real(snr),dtype=tf.float64)
 
   # check inverse snr toggle, if true, find snr < stackedHits, if false, find snr > stackedHits
-  snrHits = tf.cond(paramDict['inverseSNR'], 
+  snrHits = tf.cond(paramDict['inverseSNRTF'], 
                     lambda: tf.less(snr,stackedHits),
                     lambda: tf.greater(snr,stackedHits))
   stackedHits = tf.where(snrHits,snr,stackedHits)

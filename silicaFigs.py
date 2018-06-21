@@ -270,6 +270,7 @@ def validate():
 
   # 122217
   # 0.05 0.3 0.710752318791 0.0043 0.764521193093 0.0728
+  print filter1PS
   assert(np.abs(filter1PS-0.710) <0.001), "Test1 failed"
   assert(np.abs(filter2NS-0.0043)<0.001), "Test2 failed"
   assert(np.abs(filter2PS-0.765) <0.001), "Test3 failed"

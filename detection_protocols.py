@@ -128,17 +128,8 @@ def punishmentFilter(
   ):
     # get data 
     img = inputs.imgOrig # raw (preprocessed image) 
-    #plt.figure()
-    #plt.title('Preprocessed Image')
-    #plt.imshow(img)
-    #plt.colorbar()
-    #plt.show()
     mf  = inputs.mf  # raw (preprocessed image) 
-    #plt.figure()
-    #plt.title('Matched filter')
-    #plt.imshow(mf)
-    #plt.colorbar()
-    #plt.show()
+
     try:
       mfPunishment = paramDict['mfPunishment']
     except:
@@ -154,38 +145,11 @@ def punishmentFilter(
                           within paramDict")
     results=empty()
     ## get correlation plane w filter 
-    if paramDict['useGPU'] == False:
-      results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF']) 
-      results.corrPunishment = mF.matchedFilter(img,mfPunishment,parsevals=False,demean=False)
-      #results.corr = sMF.MF(img,mf,useGPU=False)
-      #results.corrPunishment = sMF.MF(img,mfPunishment,useGPU=False)
-    elif paramDict['useGPU'] == True:
-      results.corr = sMF.MF(img,mf,useGPU=True)
-      results.corrPunishment = sMF.MF(img,mfPunishment,useGPU=True)
-
-    ## get correlation plane w filter 
-    #corr = mF.matchedFilter(img,mf,parsevals=False,demean=False)
-    #print np.max(corr)
-
-    ## get correlation plane w punishment filter
-    
-    #corrPunishment = mF.matchedFilter(img,mfPunishment,parsevals=False,demean=False)
-    #print "corrPunishment Max:", np.max(corrPunishment)
-
-    ## calculate snr
-    #snr = corr / (cM + gamma * corrPunishment)
+    results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF']) 
+    results.corrPunishment = mF.matchedFilter(img,mfPunishment,parsevals=False,demean=False)
 
     ######
     snr = results.corr / (cM + gamma * results.corrPunishment)
-
-    #plt.figure()
-    #plt.imshow(mf)
-    #plt.colorbar()
-    #plt.show()
-
-    #print "SNR Max:", np.max(snr)
-
-    #results = empty()
 
     results.snr = snr
     #results.corr = corr
@@ -205,11 +169,7 @@ def simpleDetect(
 
   ## get correlation plane w filter 
   results = empty()
-  if paramDict['useGPU'] == False:
-    results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF']) 
-    #results.corr = sMF.MF(img,mf,useGPU=False)
-  elif paramDict['useGPU'] == True:
-    results.corr = sMF.MF(img,mf,useGPU=True)
+  results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF']) 
   
   if paramDict['useFilterInv']:
       results.snr = CalcInvFilter(inputs,paramDict,results.corr)
@@ -295,8 +255,6 @@ def filterRatio(inputs,paramDict):
   elif paramDict['useGPU'] == True:
     results.corr = sMF.MF(img,mf,useGPU=True)
     results.corrPunishment = sMF.MF(img,mfPunish,useGPU=True)
-
-    
 
   results.snr = results.corr  / results.corrPunishment
 

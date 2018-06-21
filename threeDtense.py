@@ -291,8 +291,6 @@ def doTFloop(inputs,
     print "Time for tensor flow to execute run:{}s".format(compFin-compStart)
 
     results = empty()
-    #results.stackedHits = np.real(stackedHits) 
-    #stackedHits[stackedHits < paramDict['snrThresh']] = 0
     
     results.stackedHits = stackedHitsF
     # TODO: pull out best angles from bigIters
@@ -358,15 +356,6 @@ def MF(
       tElapsed = time.time()-start
       print 'fftp:{}s'.format(tElapsed)
        
-    # for some reason output seems to be rotated by 180 deg?
-    #if dim==2:
-    #  corr = imutils.rotate(corr,180.)
-    #else:
-      #corr = tf.flip_left_right(corr)
-      #print "Stubbornly refusing to do anything since 3D" 
-      #this = np.flip(corr,1)
-
-      #return this, tElapsed
     return corr,tElapsed    
 
 ###################################################################################################
@@ -408,10 +397,9 @@ def doDetection(inputs,paramDict,dimensions=3):
 def punishmentFilterTensor(inputs,paramDict,dimensions=3):
   # call generalized tensorflow matched filter routine
   corr = tfMF(inputs.tfImg,inputs.tfFilt,dimensions=dimensions)
-  #corrPunishment = tfMF(inputs.tfImg,paramDict['mfPunishment'],dimensions=dimensions)
+  corrPunishment = tfMF(inputs.tfImg,paramDict['mfPunishment'],dimensions=dimensions)
   # calculate signal to noise ratio
-  #snr = tf.divide(corr,tf.add(paramDict['covarianceMatrix'],tf.multiply(paramDict['gamma'], corrPunishment)))
-  snr = corr
+  snr = tf.divide(corr,tf.add(paramDict['covarianceMatrix'],tf.multiply(paramDict['gamma'], corrPunishment)))
   return snr
 
 def simpleDetectTensor(inputs,paramDict,dimensions=3):

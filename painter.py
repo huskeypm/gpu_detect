@@ -49,7 +49,7 @@ def correlateThresher(
     # Store all 'hits' at each angle 
     correlated = []
 
-    inputs.imgOrig = util.renorm(np.array(img,dtype=float),scale=1.)
+    #inputs.imgOrig = util.renorm(np.array(img,dtype=float),scale=1.)
     inputs.demeanedImg = np.abs(np.subtract(inputs.imgOrig, np.mean(inputs.imgOrig)))
     #print np.max(inputs.demeanedImg)
     #print np.min(inputs.demeanedImg)

@@ -93,25 +93,18 @@ def makeMask(threshold = 245,
     else:
       raise RuntimeError("Need to pass in arg") 
 
-    #imgDim = (100,100),
     imgDim = np.shape(correlated)
 
-    #print 'correlated', np.shape(correlated)
     corr = np.copy(correlated.flatten())
-    #print "corrmax",np.max(corr), "rhresh",threshold
     masker = (np.zeros_like(corr))
-    #print 'masker', np.shape(masker)
     if inverseThresh == False:
       pts =np.argwhere(corr>threshold)
-      masker[pts] = corr[pts]
+      #masker[pts] = corr[pts]
     else:
       pts =np.argwhere(corr<threshold)
-      masker[pts] = 1.
-    #print np.shape(masker) 
+      #masker[pts] = 1.
+    masker[pts] = corr[pts]
     newmasker= np.reshape(masker,imgDim)            
-    #print np.shape(newmasker) 
-    #it.myplot(newmasker)
-    #plt.imshow(newmasker)
 
     if doKMeans ==False:
       return newmasker     

@@ -113,10 +113,6 @@ def rotateFilterCube3D(image,rot1,rot2,rot3):
   https://stackoverflow.com/questions/34801342/tensorflow-how-to-rotate-an-image-for-data-augmentation
   '''
 
-  #rot1 = tf.constant(-rot1 / 180. * np.pi,dtype=tf.float64)
-  #rot2 = tf.constant(-rot2 / 180. * np.pi,dtype=tf.float64)
-  #rot3 = tf.constant(-rot3 / 180. * np.pi,dtype=tf.float64)
-
   rot1 = tf.multiply(-rot1, np.pi/180.)
   rot2 = tf.multiply(-rot2, np.pi/180.)
   rot3 = tf.multiply(-rot3, np.pi/180.)

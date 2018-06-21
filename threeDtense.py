@@ -182,12 +182,19 @@ def doTFloop(inputs,
   
   with tf.Session() as sess:
     start = time.time()
-    # Create and initialize variables
+
+    ### Create and initialize variables
     tfImg = tf.Variable(inputs.imgOrig, dtype=tf.complex64)
     paddedFilter = Pad(inputs.imgOrig,inputs.mfOrig)
     tfFilt = tf.Variable(paddedFilter, dtype=tf.complex64)
-    stackedHitsDummy = np.zeros_like(inputs.imgOrig)
+
+    if paramDict['inverseSNR']:
+      stackedHitsDummy = np.ones_like(inputs.imgOrig) 
+    else:
+      stackedHitsDummy = np.zeros_like(inputs.imgOrig)
     stackedHits = tf.Variable(stackedHitsDummy, dtype=tf.float64)
+
+
     bestAngles = tf.Variable(np.zeros_like(inputs.imgOrig),dtype=tf.float64)
     snr = tf.Variable(np.zeros_like(tfImg),dtype=tf.complex64)
 
@@ -442,14 +449,6 @@ def doStackingHits(inputs,paramDict,stackedHits,bestAngles,snr,cnt):
   Function to threshold the calculated snr and apply to the stackedHits container
   '''
   snr = tf.cast(tf.real(snr),dtype=tf.float64)
-  #snrCopy = tf.cast(tf.real(snr),dtype=tf.float64)
-
-  #if paramDict['inverseSNR']:
-    # pull out snr less than threshold
-  #  snrHits = tf.less(snr,stackedHits)
-  #else:
-    # pull out snr greater than threshold
-  #  snrHits = tf.greater(snr,stackedHits)
 
   # check inverse snr toggle, if true, find snr < stackedHits, if false, find snr > stackedHits
   snrHits = tf.cond(paramDict['inverseSNR'], 

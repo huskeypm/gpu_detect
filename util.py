@@ -121,6 +121,11 @@ def rotateFilterCube3D(image,rot1,rot2,rot3):
   rot2 = tf.multiply(-rot2, np.pi/180.)
   rot3 = tf.multiply(-rot3, np.pi/180.)
 
+  rot1 = tf.cast(rot1,dtype=tf.float64)
+  rot2 = tf.cast(rot2,dtype=tf.float64)
+  rot3 = tf.cast(rot3,dtype=tf.float64)
+
+
   #image = tf.convert_to_tensor(image,dtype=tf.float64)
   image = tf.cast(image, dtype=tf.float64)
 

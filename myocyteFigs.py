@@ -845,13 +845,16 @@ def giveMarkedMyocyte(
       ):
  
   start = time.time()
-   
+
   ### Read in preprocessed image
   img = util.ReadImg(testImage,renorm=True)
 
   ### defining inputs to be read by DetectFilter function
   inputs = empty()
   inputs.imgOrig = ReadResizeApplyMask(img,testImage,25,25) # just applies mask
+  ### TEMPORARY TYPECASTING. REMOVE ME AFTER DEBUG
+  useGPU = False
+  inputs.imgOrig = np.asarray(inputs.imgOrig,dtype=np.complex64)
 
   ### WT filtering
   inputs.mfOrig = util.LoadFilter(ttFilterName)

@@ -46,13 +46,11 @@ def correlateThresher(
     
     ##
     ## Iterate over all filter rotations desired 
-    ## TODO - here is the place to stick in the GPU shizzle 
-    ## 
     # Store all 'hits' at each angle 
     correlated = []
 
-    inputs.img = util.renorm(np.array(img,dtype=float),scale=1.)
-    inputs.demeanedImg = np.abs(np.subtract(inputs.img, np.mean(inputs.img)))
+    inputs.imgOrig = util.renorm(np.array(img,dtype=float),scale=1.)
+    inputs.demeanedImg = np.abs(np.subtract(inputs.imgOrig, np.mean(inputs.imgOrig)))
     #print np.max(inputs.demeanedImg)
     #print np.min(inputs.demeanedImg)
     for i, angle in enumerate(iters):

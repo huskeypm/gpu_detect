@@ -215,6 +215,9 @@ def doTFloop(inputs,
     # have to convert to a tensor so that the rotations can be indexed during tf while loop
     bigIters = tf.Variable(tf.convert_to_tensor(bigIters,dtype=tf.float32))
 
+    # initialize paramDict variables
+    paramDict['inverseSNR'] = tf.Variable(paramDict['inverseSNR'], dtype=tf.bool)
+
     # set up filtering variables
     if paramDict['filterMode'] == 'punishmentFilter':
       paramDict['mfPunishment'] = Pad(inputs.imgOrig,paramDict['mfPunishment'])
@@ -223,7 +226,7 @@ def doTFloop(inputs,
       paramDict['gamma'] = tf.Variable(paramDict['gamma'],dtype=tf.complex64)
       sess.run(tf.variables_initializer([paramDict['mfPunishment'],paramDict['covarianceMatrix'],paramDict['gamma']]))
 
-    sess.run(tf.variables_initializer([tfImg,tfFilt,cnt,bigIters,stackedHits,bestAngles,snr]))
+    sess.run(tf.variables_initializer([tfImg,tfFilt,cnt,bigIters,stackedHits,bestAngles,snr,paramDict['inverseSNR']]))
 
     inputs.tfImg = tfImg
     inputs.tfFilt = tfFilt
@@ -453,10 +456,20 @@ def doStackingHits(inputs,paramDict,stackedHits,bestAngles,snr,cnt):
   snr = tf.cast(tf.real(snr),dtype=tf.float64)
   #snrCopy = tf.cast(tf.real(snr),dtype=tf.float64)
 
-  whereSNRgreater = tf.greater(snr,stackedHits)
-  stackedHits = tf.where(whereSNRgreater,snr,stackedHits)
+  #if paramDict['inverseSNR']:
+    # pull out snr less than threshold
+  #  snrHits = tf.less(snr,stackedHits)
+  #else:
+    # pull out snr greater than threshold
+  #  snrHits = tf.greater(snr,stackedHits)
+
+  # check inverse snr toggle, if true, find snr < stackedHits, if false, find snr > stackedHits
+  snrHits = tf.cond(paramDict['inverseSNR'], 
+                    lambda: tf.less(snr,stackedHits),
+                    lambda: tf.greater(snr,stackedHits))
+  stackedHits = tf.where(snrHits,snr,stackedHits)
   cntHolder = tf.multiply(tf.ones_like(stackedHits), tf.cast(cnt,tf.float64))
-  bestAngles = tf.where(whereSNRgreater,cntHolder,bestAngles)
+  bestAngles = tf.where(snrHits,cntHolder,bestAngles)
   return stackedHits,bestAngles
 
 ###################################################################################################

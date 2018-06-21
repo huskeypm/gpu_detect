@@ -22,7 +22,7 @@ def lobeDetect(
   paramDict  # dictionary of parameters needed for detection
   ):
     # get data 
-    img = inputs.img # raw (preprocessed image) 
+    img = inputs.imgOrig # raw (preprocessed image) 
     mf  = inputs.mf  # raw (preprocessed image) 
     lobemf  = inputs.lobemf  # raw (preprocessed image) 
     results = empty()
@@ -89,7 +89,7 @@ def CalcInvFilter(inputs,paramDict,corr):
       penaltyscale = paramDict['penaltyscale'] 
       sigma_n  = paramDict['sigma_n']
       angle  = paramDict['angle']
-      tN = inputs.img
+      tN = inputs.imgOrig
       filterRef = inputs.mfOrig
       yP = corr
     
@@ -127,7 +127,7 @@ def punishmentFilter(
   paramDict  # dictionary of parameters needed for detection
   ):
     # get data 
-    img = inputs.img # raw (preprocessed image) 
+    img = inputs.imgOrig # raw (preprocessed image) 
     #plt.figure()
     #plt.title('Preprocessed Image')
     #plt.imshow(img)
@@ -200,7 +200,7 @@ def simpleDetect(
   paramDict  # dictionary of parameters needed for detection
   ):
   # get data 
-  img = inputs.img # raw (preprocessed image) 
+  img = inputs.imgOrig # raw (preprocessed image) 
   mf  = inputs.mf  # raw (preprocessed image) 
 
   ## get correlation plane w filter 
@@ -231,7 +231,7 @@ def regionalDeviation(inputs,paramDict):
   '''
 
   ### Perform simple detection
-  img = inputs.img
+  img = inputs.imgOrig
   mf = inputs.mf
   results = empty()
 
@@ -282,7 +282,7 @@ def regionalDeviation(inputs,paramDict):
 
 def filterRatio(inputs,paramDict):
   # get data 
-  img = inputs.img # raw (preprocessed image) 
+  img = inputs.imgOrig # raw (preprocessed image) 
   mf  = inputs.mf 
   mfPunish = paramDict['mfPunishment']  
 

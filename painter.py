@@ -49,27 +49,14 @@ def correlateThresher(
     # Store all 'hits' at each angle 
     correlated = []
 
-    #inputs.imgOrig = util.renorm(np.array(img,dtype=float),scale=1.)
     inputs.demeanedImg = np.abs(np.subtract(inputs.imgOrig, np.mean(inputs.imgOrig)))
-    #print np.max(inputs.demeanedImg)
-    #print np.min(inputs.demeanedImg)
     for i, angle in enumerate(iters):
       result = empty()
-      # copy of original image 
 
       # pad/rotate 
       params['angle'] = angle
-      #plt.figure()
-      #plt.imshow(filterRef)
-      #plt.colorbar()
-      #plt.show()
       rFN = util.PadRotate(filterRef,angle)  
       inputs.mf = rFN  
-      #plt.figure()
-      #plt.imshow(rFN)
-      #plt.colorbar()
-      #plt.show()
-      #quit()
       
       # matched filtering 
       result = dps.FilterSingle(inputs,params)      

@@ -99,11 +99,10 @@ def makeMask(threshold = 245,
     masker = (np.zeros_like(corr))
     if inverseThresh == False:
       pts =np.argwhere(corr>threshold)
-      #masker[pts] = corr[pts]
+      masker[pts] = corr[pts]
     else:
       pts =np.argwhere(corr<threshold)
-      #masker[pts] = 1.
-    masker[pts] = corr[pts]
+      masker[pts] = 1.
     newmasker= np.reshape(masker,imgDim)            
 
     if doKMeans ==False:

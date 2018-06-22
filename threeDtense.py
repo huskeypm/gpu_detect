@@ -196,8 +196,9 @@ def doTFloop(inputs,
       stackedHitsDummy = np.zeros_like(inputs.imgOrig)
     stackedHits = tf.Variable(stackedHitsDummy, dtype=tf.float64)
 
-
-    bestAngles = tf.Variable(np.zeros_like(inputs.imgOrig),dtype=tf.float64)
+    # create an array for best angle storage = -1 so we know where no hits were found
+    bestAngles = np.zeros_like(inputs.imgOrig) - 1.
+    bestAngles = tf.Variable(bestAngles,dtype=tf.float64)
     snr = tf.Variable(np.zeros_like(tfImg),dtype=tf.complex64)
 
     # make big angle container

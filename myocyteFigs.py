@@ -22,6 +22,8 @@ import painter
 import time
 import matchedFilter as mF
 import tissue
+import preprocessing as pp
+import imutils
 class empty:pass
 
 #root = "myoimages/"
@@ -144,9 +146,9 @@ def fig5():
   images = [DImage, MImage, PImage]
 
   # BE SURE TO UPDATE TESTMF WITH OPTIMIZED PARAMS
-  Dimg = giveMarkedMyocyte(testImage=DImageName,useGPU=True)
-  Mimg = giveMarkedMyocyte(testImage=MImageName,useGPU=True)
-  Pimg = giveMarkedMyocyte(testImage=PImageName,useGPU=True)
+  Dimg = giveMarkedMyocyte(testImage=DImageName)
+  Mimg = giveMarkedMyocyte(testImage=MImageName)
+  Pimg = giveMarkedMyocyte(testImage=PImageName)
 
   results = [Dimg, Mimg, Pimg]
   keys = ['Distal', 'Medial', 'Proximal']
@@ -202,48 +204,214 @@ def fig5():
   plt.close()
 
 def fig6():
-  ### taking notch filtered image and marking where WT is located
-  root = "./myoimages/"
-  name = "testingNotchFilter.png"
+  '''
+  Doing some major reorganizing of this figure s.t. we can take from raw image,
+    preprocess this image, then run through the algorithm without having to go through 
+    external preprocessing routines in different steps
+  '''
+  ### Setup cases for use
+  filterTwoSarcomereSize = 25
+  cases = dict()
   
-  ## opting to write specific routine since the stacked hits have to be pulled out separately
-  ttFilterName = root+"WTFilter.png"
+  cases['WTLike'] = empty()
+  cases['WTLike'].loc_um = [3723,0]
+  cases['WTLike'].extent_um = [400,400]
+  
+  #cases['MILike'] = empty()
+  #cases['MILike'].loc_um = [2100,3200]
+  #cases['MILike'].extent_um = [400,400]
+
+  import tissue
+
+  tissue.SetupCase(cases['WTLike'])
+  #tissue.SetupCase(cases['MILike'])
+
+  ### Store subregions for later marking
+  cases['WTLike'].subregionOrig = cases['WTLike'].subregion.copy()
+  #cases['MILike'].subregionOrig = cases['MILike'].subregion.copy()
+
+  ### Preprocess subregions
+  cases['WTLike'].subregion, cases['WTLike'].degreesOffCenter = pp.reorient(
+          cases['WTLike'].subregion
+          )
+  # have to resize based on manual measuring due to loss of striations
+  filterTwoSarcomereSize = 25
+  imgTwoSarcomereSize = 22
+  scale = float(filterTwoSarcomereSize) / float(imgTwoSarcomereSize)
+  cases['WTLike'].subregion = cv2.resize(cases['WTLike'].subregion,None,fx=scale,fy=scale,
+                                         interpolation=cv2.INTER_CUBIC)
+  cases['WTLike'].subregion = pp.applyCLAHE(cases['WTLike'].subregion, filterTwoSarcomereSize)
+  # store CLAHED image for later display of figure
+  cases['WTLike'].displayImg = cases['WTLike'].subregion.copy()
+  # additionally have to manually define the ceiling and floor values since the striations are not apparent
+  ceilingValue = 7
+  floorValue = 0
+  cases['WTLike'].subregion[cases['WTLike'].subregion > ceilingValue] = ceilingValue
+  cases['WTLike'].subregion[cases['WTLike'].subregion < floorValue] = floorValue
+  cases['WTLike'].subregion -= np.min(cases['WTLike'].subregion)
+  cases['WTLike'].subregion = cases['WTLike'].subregion.astype(float) / float(np.max(cases['WTLike'].subregion))
+
+  #plt.figure()
+  #plt.imshow(cases['WTLike'].subregion)
+  #plt.colorbar()
+  #plt.show()
+  #quit()
+
+  #cases['MILike'].subregion, cases['MILike'].degreesOffCenter = pp.reorient(
+  #        cases['MILike'].subregion
+  #        )
+  # have to resize based on manual measuring due to loss of striations
+  #filterTwoSarcomereSize = 25
+  #imgTwoSarcomereSize = 22
+  #scale = float(filterTwoSarcomereSize) / float(imgTwoSarcomereSize)
+  #cases['MILike'].subregion = cv2.resize(cases['MILike'].subregion,None,fx=scale,fy=scale,
+  #                                       interpolation=cv2.INTER_CUBIC)
+  #cases['MILike'].subregion = pp.applyCLAHE(cases['MILike'].subregion, filterTwoSarcomereSize)
+  # additionally have to manually define the ceiling and floor values since the striations are not apparent
+  #ceilingValue = 7
+  #floorValue = 0
+  #cases['MILike'].subregion[cases['MILike'].subregion > ceilingValue] = ceilingValue
+  #cases['MILike'].subregion[cases['MILike'].subregion < floorValue] = floorValue
+  #cases['MILike'].subregion -= np.min(cases['MILike'].subregion)
+  #cases['MILike'].subregion = cases['MILike'].subregion.astype(float) / float(np.max(cases['MILike'].subregion))
+
+  #plt.figure()
+  #plt.imshow(cases['MILike'].subregion)
+  #plt.colorbar()
+  #plt.show()
+  #quit()
+
+
+  ### Setup Filters
+  root = "./myoimages/"
+  ttFilterName = root+"newSimpleWTFilter.png"
+  ttPunishmentFilterName = root+"newSimpleWTPunishmentFilter.png"
   iters = [-25,20,-15,-10-5,0,5,10,15,20,25]
-  returnAngles = False
-  img = util.ReadImg(name,renorm=False)
-  inputs = empty()
-  inputs.imgOrig = img
+  returnAngles = True
+  ttFilter = util.LoadFilter(ttFilterName)
+  ttPunishmentFilter = util.LoadFilter(ttPunishmentFilterName)
 
-  nonFilteredImg = util.ReadImg('rotatedTissue.png', renorm=False)
+  ### Setup parameter dictionaries
+  cases['WTLike'].params = optimizer.ParamDict(typeDict="WT")
+  cases['WTLike'].params['covarianceMatrix'] = np.ones_like(cases['WTLike'].subregion)
+  cases['WTLike'].params['mfPunishment'] = ttPunishmentFilter
+  cases['WTLike'].params['useGPU'] = True
+  #cases['MILike'].params = optimizer.ParamDict(typeDict="WT")
+  #cases['MILike'].params['covarianceMatrix'] = np.ones_like(cases['MILike'].subregion)
+  #cases['MILike'].params['mfPunishment'] = ttPunishmentFilter
+  #cases['MILike'].params['useGPU'] = True
 
-  if np.shape(img) != np.shape(nonFilteredImg):
-    raise RuntimeError("The filtered image is not the same dimensions as the non filtered image")
+  ### Setup input classes
+  cases['WTLike'].inputs = empty()
+  cases['WTLike'].inputs.imgOrig = cases['WTLike'].subregion
+  cases['WTLike'].inputs.mfOrig = ttFilter
+  #cases['MILike'].inputs = empty()
+  #cases['MILike'].inputs.imgOrig = cases['MILike'].subregion
+  #cases['MILike'].inputs.mfOrig = ttFilter
 
-  ### setup WT parameters
-  WTparams = optimizer.ParamDict(typeDict='WT')
-  WTparams['covarianceMatrix'] = np.ones_like(img)
-  #WTparams['mfPunishment'] = util.LoadFilter("./myoimages/WTPunishmentFilter.png")
-  ### TODO change this routine to work with new util.LoadFilter function
-  WTparams['mfPunishment'] = util.ReadImg("./myoimages/WTPunishmentFilter.png",renorm=True)
-  #ttFilter = util.LoadFilter(ttFilterName)
-  ttFilter = util.ReadImg(ttFilterName,renorm=True)
-  WTparams['useGPU'] = False # for now
-  inputs.mfOrig = ttFilter
+  ### Perform filtering
+  cases['WTLike'].results = bD.DetectFilter(cases['WTLike'].inputs,
+                                            cases['WTLike'].params,
+                                            iters
+                                            )
+  #cases['MILike'].results = bD.DetectFilter(cases['MILike'].inputs,
+  #                                          cases['MILike'].params,
+  #                                          iters
+  #                                          )
 
-  ### obtain super threshold filter hits
-  WTresults = bD.DetectFilter(inputs,WTparams,iters,returnAngles=returnAngles)  
-  WTstackedHits = WTresults.stackedHits
+  ### Convert subregion back into cv2 readable format
+  cases['WTLike'].subregion = np.asarray(cases['WTLike'].subregion * 255.,dtype=np.uint8)
+  #cases['MILike'].subregion = np.asarray(cases['MILike'].subregion * 255.,dtype=np.uint8)
 
-  ### Generate Figure
+  ### Smooth out hits and color onto Image
+  #cases['WTLike'].cI = np.dstack((cases['WTLike'].subregion,
+  #                                cases['WTLike'].subregion,
+  #                                cases['WTLike'].subregion
+  #                                ))
+  #plt.figure()
+  #plt.imshow(cases['WTLike'].cI)
+  #plt.show()
+
+  # make a dummy array of zeros to indicate no hits for loss or lt filters
+  #cases['WTLike'].dummy = np.zeros_like(cases['WTLike'].subregion)
+  #cases['WTLike'].cI = markPastedFilters(cases['WTLike'].dummy,
+  #                                       cases['WTLike'].dummy,
+  #                                       cases['WTLike'].results.stackedHits,
+  #                                       cases['WTLike'].cI
+  #                                       )
+  #cases['MILike'].cI = np.dstack((cases['MILike'].subregion,
+  #                                cases['MILike'].subregion,
+  #                                cases['MILike'].subregion
+  #                                ))
+  #cases['MILike'].dummy = np.zeros_like(cases['MILike'].subregion)
+  #cases['MILike'].cI = markPastedFilters(cases['MILike'].dummy,
+  #                                       cases['MILike'].dummy,
+  #                                       cases['MILike'].results.stackedHits,
+  #                                       cases['MILike'].cI
+  #                                       )
+
+  ### Mark where the filter responded and display on the images
+  ## find filter dimensions
+  TTy,TTx = util.measureFilterDimensions(ttFilter)
+  ## mark unit cells on the image where the filter responded 
+  cases['WTLike'].pasted = painter.doLabel(cases['WTLike'].results,dx=TTx,dy=TTy,
+                                           thresh=cases['WTLike'].params['snrThresh'])
+  ## convert pasted filter image to cv2 friendly format and normalize original subregion
+  cases['WTLike'].pasted = np.asarray(cases['WTLike'].pasted / np.max(cases['WTLike'].pasted) * 255.,
+                                      dtype=np.uint8)
+  cases['WTLike'].displayImg = np.asarray(
+                                  cases['WTLike'].displayImg.astype(float) \
+                                  / float(np.max(cases['WTLike'].displayImg)) \
+                                  * 255., dtype=np.uint8)
+  ## rotate both images back to the original orientation
+  cases['WTLike'].pasted = imutils.rotate(cases['WTLike'].pasted,cases['WTLike'].degreesOffCenter)
+  cases['WTLike'].displayImg = imutils.rotate(cases['WTLike'].displayImg,cases['WTLike'].degreesOffCenter)
+  ## rescale images back to original size
+  print 'scale', 1./scale
+  cases['WTLike'].pasted = cv2.resize(cases['WTLike'].pasted,None,fx=1./scale,
+                                      fy=1./scale,interpolation=cv2.INTER_CUBIC)
+  cases['WTLike'].displayImg = cv2.resize(cases['WTLike'].displayImg,None,fx=1./scale,
+                                          fy=1./scale,interpolation=cv2.INTER_CUBIC)
+  ## cut image back down to original size to get rid of borders
+  imgDims = np.shape(cases['WTLike'].subregionOrig)
+  origY,origX = float(imgDims[0]), float(imgDims[1])
+  newImgDims = np.shape(cases['WTLike'].displayImg)
+  newY,newX = float(newImgDims[0]),float(newImgDims[1])
+  padY,padX = int((newY - origY)/2.), int((newX - origX)/2.)
+  cases['WTLike'].pasted = cases['WTLike'].pasted[padY:-padY,
+                                                  padX:-padX]
+  cases['WTLike'].displayImg = cases['WTLike'].displayImg[padY:-padY,
+                                                          padX:-padX]
+
   plt.figure()
-  plt.imshow(WTstackedHits)
-  plt.title('stacked hits')
+  plt.imshow(cases['WTLike'].displayImg)
   plt.show()
 
-  # utilize previously written routine to smooth hits and show WT regions
-  tissue.DisplayHits(nonFilteredImg, WTstackedHits)
-  plt.gcf().savefig("fig6.png",dpi=300)
-  plt.close()
+  import display_util as du
+  du.StackGrayRedAlpha(cases['WTLike'].displayImg,cases['WTLike'].pasted)
+  plt.gcf().savefig("fig6_WTLike_hits.png")
+
+  #cases['MILike'].pasted = painter.doLabel(cases['MILike'].results,dx=TTx,dy=TTy,
+  #                                         thresh=cases['MILike'].params['snrThresh'])
+  #du.StackGrayRedAlpha(cases['MILike'].subregion,cases['MILike'].pasted)
+  #plt.gcf().savefig("fig6_MILike_hits.png")
+
+
+  ### Find angle counts for each rotation
+  cases['WTLike'].results.stackedAngles = cases['WTLike'].results.stackedAngles[np.where(
+                                          cases['WTLike'].results.stackedAngles != -1
+                                          )]
+  #cases['MILike'].results.stackedAngles = cases['MILike'].results.stackedAngles[np.where(
+  #                                        cases['MILike'].results.stackedAngles != -1
+  #                                        )]
+
+
+  ### Write stacked angles
+
+
+  ### Write stacked angles histogram
+  giveAngleHistogram(cases['WTLike'].results.stackedAngles,iters,"fig6_WTLike")
+  #giveAngleHistogram(cases['MILike'].results.stackedAngles,iters,"fig6_MILike")
 
 ###
 ### Generates the large ROC figure for each of the annotated images
@@ -717,55 +885,6 @@ def giveMIBarChart(MI_D, MI_M, MI_P):
   ax.set_ylim([0,1])
   plt.gcf().savefig('MI_BarChart.png')
 
-def figAnalysis(
-      ttFilterName=root+"WTFilter.png",
-      ltFilterName=root+"LongFilter.png",
-      testImage=root+"MI_D_73_annotation.png",
-      ttThresh=0.06 ,
-      ltThresh=0.38 ,
-      gamma=3.,
-      ImgTwoSarcSize=None,
-      tag = "valid", # tag to prepend to images 
-      writeImage = False):
-  print "DC: Function is broken. Fix using new giveMarkedMyocyte function"
-  quit()
-  results = testMF(
-      ttFilterName=ttFilterName,#root+"WTFilter.png",
-      ltFilterName=ltFilterName,#root+"LongFilter.png",
-      testImage=testImage,#root+"MI_D_73_annotation.png",
-      ttThresh=ttThresh,#0.06 ,
-      ltThresh=ltThresh,#0.38 ,
-      gamma=gamma,
-      ImgTwoSarcSize=ImgTwoSarcSize,
-      writeImage=writeImage)        
-
-  stackedHits = results.stackedHits
-
-  ### report responses for each channel   
-  dimensions = np.shape(stackedHits.WT)
-  area = float(dimensions[0] * dimensions[1])
-  results.ttContent = np.sum(stackedHits.WT)/ area
-  #print results.ttContent
-  results.ltContent = np.sum(stackedHits.Long) / area
-  #print results.ltContent
-  results.lossContent = 0.
-
-
-  ### write bar plot of feature content  
-  fig, ax = plt.subplots()
-  ax.set_title("% content") 
-  values= np.array([ results.ttContent, results.ltContent, results.lossContent])
-  values = values/np.max( values ) 
-  ind = np.arange(np.shape ( values )[0])
-  width = 1.0
-  color = ["blue","green","red"] 
-  marks = ["WT","LT","Loss"] 
-  rects = ax.bar(ind, values, width,color=color)   
-  ax.set_xticks(ind+width)
-  ax.set_xticklabels( marks ,rotation=90 )
-  if writeImage:
-    plt.gcf().savefig(tag+"_content.png") 
-
 def markPastedFilters(
       lossMasked, ltMasked, wtMasked, cI,
       lossName="./myoimages/LossFilter.png",
@@ -852,9 +971,6 @@ def giveMarkedMyocyte(
   ### defining inputs to be read by DetectFilter function
   inputs = empty()
   inputs.imgOrig = ReadResizeApplyMask(img,testImage,25,25) # just applies mask
-  ### TEMPORARY TYPECASTING. REMOVE ME AFTER DEBUG
-  #useGPU = False
-  #inputs.imgOrig = np.asarray(inputs.imgOrig,dtype=np.complex64)
 
   ### WT filtering
   inputs.mfOrig = util.LoadFilter(ttFilterName)
@@ -867,18 +983,8 @@ def giveMarkedMyocyte(
   if wtGamma != None:
     WTparams['gamma'] = wtGamma
   print "WT Filtering"
-  #iters = [0]
-  #WTparams['gamma'] = 0.
-  #WTparams['filterMode'] = 'simple'
   WTresults = bD.DetectFilter(inputs,WTparams,iters,returnAngles=returnAngles)  
   WTstackedHits = WTresults.stackedHits
-  #print np.max(WTstackedHits)
-  #print np.mean(WTstackedHits)
-  #plt.figure()
-  #plt.imshow(WTstackedHits)
-  #plt.colorbar()
-  #plt.show()
-  #quit()
 
   ### LT filtering
   print "LT filtering"

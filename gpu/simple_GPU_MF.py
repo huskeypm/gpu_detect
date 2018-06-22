@@ -106,40 +106,6 @@ def padWithZeros(array, padwidth, iaxis, kwargs):
     return array
 
 
-def shittyPadding(dFilter):
-
-  
-
-
-  paddedFilter = np.copy(dFilter)
-  maxDim = np.max(np.shape(dFilter))
-  minDim = np.min(np.shape(dFilter))
-  maxAxis = np.argmax(np.shape(dFilter))
-  minorAxis = (1+maxAxis)%2  ####### This is effectively hard coding in 2D, revise to make 3D
-  diff = (maxDim-minDim)
-  if maxAxis == 0:
-    left = np.zeros((maxDim,(diff)/2))
-    temper = np.concatenate((left,paddedFilter,left),axis=1)
-    """
-    temper = np.lib.pad(paddedFilter,diff,padWithZeros)
-    """
-    # hack
-    shapeTemper = np.shape(temper)
-    if shapeTemper[0] != shapeTemper[1]:
-      # only case where above fails is if we need one more column, so we add zeros to one side
-      right = np.zeros((maxDim,1))
-      temper = np.concatenate((temper, right),axis=1)
-  elif maxAxis == 1:
-    top = np.zeros(((diff)/2, maxDim))
-    temper = np.concatenate((top,paddedFilter,top),axis=0)
-    shapeTemper = np.shape(temper)
-    if shapeTemper[0] != shapeTemper[1]:
-      # only case where above fails is if we need one more row, so we add zeros to bottom
-      bottom = np.zeros((maxDim,1))
-      temper = np.concatenate((temper, bottom),axis=0)
-  return temper
-
-
 ##
 ## Tensor flow part 
 ##

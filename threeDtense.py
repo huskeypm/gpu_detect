@@ -36,11 +36,27 @@ def Arrayer(fileName = '/home/AD/srbl226/GPU/gpu_detect/140722_2_2.tif'):
 from scipy.misc import toimage
 def PoreFilter(size=20,dim=3):
   img = np.zeros((size,size,dim), np.uint8)
+  #cv2.circle(img,(size/2,size/2),size/2,(-1,-1,-1),-1)#used for punishment
   cv2.circle(img,(size/2,size/2),size/4,(255,255,255),-1)  #not certain what size/4 corresponds to, maybe radius, jk I get it size/2 is center and size/4 is radius
   #plt.imshow(img)
   toimage(img).save('pore.png')
-  pore = util.ReadImg('pore.png')
+  pore = util.ReadImg('pore.png').astype(np.float64)
+  fPore = pore.flatten()
+  #print "poreMax,poreMin", np.max(pore),np.min(pore)
+  #print "this will include punishment filter"
+  #print "poreShape", np.shape(pore)
+  print "pore",pore
+
+  locs = np.argwhere(fPore<255.0)
+  print "shape locs", np.shape(locs)
+  #print "locs vals", locs
+  fPore[locs] = -100.0
+  # print "fpore at locs", fPore
+  #for i,loc in enumerate(locs):
+  #    pore[loc] = -100
   arbitrary = 10
+  pore = np.reshape(fPore,(20,20))
+  print "all fpore vals", pore
   vec = np.ones((arbitrary)) ############This is arbitrary, please make sensical
   cross = np.outer(pore,vec)
   crossFilter = np.reshape(cross,(size,size,arbitrary))

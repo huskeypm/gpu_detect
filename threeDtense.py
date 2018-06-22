@@ -15,12 +15,38 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 #import cPickle as Pickle
 
 height = 50
-#iters = [-30,-15,0,15,30]
-iters = [-10,0]
+#ters = [-30,-20,-10,0,10,20]
+iters = [0]
 
 class empty:
   pass
 
+
+#Ripped straight from stackoverflow
+from skimage import io
+
+def Arrayer(fileName = '/home/AD/srbl226/GPU/gpu_detect/140722_2_2.tif'):
+  im = io.imread(fileName)
+  i = im.transpose()
+  I = i[:512,:512,:111]
+  print "total pixels",np.shape(I)[0]*np.shape(I)[1]*np.shape(I)[2]
+  print "shape of image array",  I.shape
+  return I
+            
+from scipy.misc import toimage
+def PoreFilter(size=20,dim=3):
+  img = np.zeros((size,size,dim), np.uint8)
+  cv2.circle(img,(size/2,size/2),size/4,(255,255,255),-1)  #not certain what size/4 corresponds to, maybe radius, jk I get it size/2 is center and size/4 is radius
+  #plt.imshow(img)
+  toimage(img).save('pore.png')
+  pore = util.ReadImg('pore.png')
+  arbitrary = 10
+  vec = np.ones((arbitrary)) ############This is arbitrary, please make sensical
+  cross = np.outer(pore,vec)
+  crossFilter = np.reshape(cross,(size,size,arbitrary))
+  #util.myplot(crossFilter[:,:,5])
+  print "dimensions of filter", np.shape(crossFilter)
+  return crossFilter
 
 #import imutils
 def LoadImage(
@@ -29,6 +55,7 @@ def LoadImage(
   maxDim = 100,
   angle = -35.    
 ):
+    print "WARNING: please use util.ReadImg"
     # read image 
     img = np.array(util.ReadImg(imgName),dtype=np.float64)
     
@@ -184,30 +211,42 @@ def doTFloop(inputs,
     start = time.time()
 
     ### Create and initialize variables
+    print " pre step1", time.time()-start
     tfImg = tf.Variable(inputs.imgOrig, dtype=tf.complex64)
-    paddedFilter = Pad(inputs.imgOrig,inputs.mfOrig)
-    tfFilt = tf.Variable(paddedFilter, dtype=tf.complex64)
-
+    print " post step1/ prePad", time.time()-start
+    #paddedFilter = Pad(inputs.imgOrig,inputs.mfOrig)
+    print " postPad", time.time()-start
+    tfFilt = tf.constant(inputs.mfOrig)
+    #tfFilt = tf.Variable(paddedFilter, dtype=tf.complex64)
+    paddings = tf.constant([[0,inputs.imgOrig.shape[0]-inputs.mfOrig.shape[0]],[0,inputs.imgOrig.shape[1]-inputs.mfOrig.shape[1]],[0,inputs.imgOrig.shape[2]-inputs.mfOrig.shape[2]]])
+    padFilt = tf.pad(tfFilt,paddings,"CONSTANT")
+    rollFilt = tf.manip.roll(padFilt,shift=[-inputs.mfOrig.shape[0]/2,-inputs.mfOrig.shape[1]/2,-inputs.mfOrig.shape[2]/2],axis=[0,1,2])
+    print "post roll", time.time()-start
+    pF = tf.cast(rollFilt, dtype=tf.complex64)
+    tfFilt = tf.Variable(pF, dtype=tf.complex64)
+    
+    print "post Pad---->tf/pre stacked hits", time.time()-start
     if paramDict['inverseSNR']:
-      # if we are using an inverse threshold, we need a storage container that contains pixels > thresh
-      stackedHitsDummy = np.ones_like(inputs.imgOrig) * 2. * paramDict['snrThresh']
+      stackedHitsDummy = np.ones_like(inputs.imgOrig) 
     else:
-      # otherwise, we need a container that contains pixels < thresh
       stackedHitsDummy = np.zeros_like(inputs.imgOrig)
     stackedHits = tf.Variable(stackedHitsDummy, dtype=tf.float64)
-
-
+    print "post stacked hits", time.time()-start
     bestAngles = tf.Variable(np.zeros_like(inputs.imgOrig),dtype=tf.float64)
     snr = tf.Variable(np.zeros_like(tfImg),dtype=tf.complex64)
+    print "post snr", time.time()-start
 
     # make big angle container
     numXits = np.shape(xiters)[0]
     numYits = np.shape(yiters)[0]
     numZits = np.shape(ziters)[0]
     cnt = tf.Variable(tf.constant(numXits * numYits * numZits-1,dtype=tf.int64))
+    print "post cnt", time.time()-start
 
     # It's late and I'm getting lazy
     bigIters = []
+    print "pre bigIters", time.time()-start
+
     if len(np.shape(inputs.imgOrig)) == 3:
       for i in xiters:
         for j in yiters:
@@ -215,7 +254,7 @@ def doTFloop(inputs,
             bigIters.append([i,j,k])
     else:
       bigIters = ziters
-
+    print "post bigIters", time.time()-start
     # convert iterations from degrees into radians
     bigIters = np.asarray(bigIters,dtype=np.float32)
     bigIters = bigIters * np.pi / 180.
@@ -223,9 +262,10 @@ def doTFloop(inputs,
 
     # have to convert to a tensor so that the rotations can be indexed during tf while loop
     bigIters = tf.Variable(tf.convert_to_tensor(bigIters,dtype=tf.float32))
-
+    print "post bigIters into tf", time.time()-start
     # initialize paramDict variables
-    paramDict['inverseSNRTF'] = tf.Variable(paramDict['inverseSNR'], dtype=tf.bool)
+    print "pre big dict", time.time()-start
+    paramDict['inverseSNR'] = tf.Variable(paramDict['inverseSNR'], dtype=tf.bool)
 
     # set up filtering variables
     if paramDict['filterMode'] == 'punishmentFilter':
@@ -234,13 +274,13 @@ def doTFloop(inputs,
       paramDict['covarianceMatrix'] = tf.Variable(paramDict['covarianceMatrix'],dtype=tf.complex64)
       paramDict['gamma'] = tf.Variable(paramDict['gamma'],dtype=tf.complex64)
       sess.run(tf.variables_initializer([paramDict['mfPunishment'],paramDict['covarianceMatrix'],paramDict['gamma']]))
-
-    sess.run(tf.variables_initializer([tfImg,tfFilt,cnt,bigIters,stackedHits,bestAngles,snr,paramDict['inverseSNRTF']]))
-
+    print "post big dict, pre run", time.time()-start
+    sess.run(tf.variables_initializer([tfImg,tfFilt,cnt,bigIters,stackedHits,bestAngles,snr,paramDict['inverseSNR']]))
+   
     inputs.tfImg = tfImg
     inputs.tfFilt = tfFilt
     inputs.bigIters = bigIters
-
+    print "post run", time.time()-start
 
     # While loop that counts down to zero and computes reverse and forward fft's
     def condition(cnt,stackedHits,bestAngles):
@@ -289,7 +329,7 @@ def doTFloop(inputs,
     #       but can also efficiently determine parallel_iterations number
     if len(np.shape(inputs.imgOrig)) == 3:
       cnt,stackedHits,bestAngles = tf.while_loop(condition, body3D,
-                                      [cnt,stackedHits,bestAngles], parallel_iterations=10)
+                                      [cnt,stackedHits,bestAngles], parallel_iterations=1)
     else:
       cnt,stackedHits,bestAngles = tf.while_loop(condition, body2D,
                                       [cnt,stackedHits,bestAngles], parallel_iterations=10)
@@ -307,6 +347,7 @@ def doTFloop(inputs,
 
     #start = time.time()
     tElapsed = time.time()-start
+    print 'tensorflow:{}s'.format(tElapsed)
 
     ### something weird is going on and image is flipped in each direction
 
@@ -331,7 +372,7 @@ def MF(
     #       Potentially a use for tf.dynamic_stitch?
     lx = len(xiters); ly = len(yiters); lz = len(ziters)
     numRots = lx * ly * lz
-    filt = Pad(dImage,dFilter)
+    filt = dFilter#Pad(dImage,dFilter)
 
     inputs = empty()
     inputs.imgOrig = dImage
@@ -341,7 +382,9 @@ def MF(
        paramDict['filterMode'] = 'simple'
        corr,tElapsed = doTFloop(inputs,paramDict,xiters=xiters,yiters=yiters,ziters=ziters)
        corr = np.real(corr)
-    else:        
+       #print "POST FILTER"
+    else:
+      pass        
       start = time.time()
       filtTF = tf.convert_to_tensor(filt)
       for i,x in enumerate(xiters):
@@ -453,7 +496,7 @@ def doStackingHits(inputs,paramDict,stackedHits,bestAngles,snr,cnt):
   snr = tf.cast(tf.real(snr),dtype=tf.float64)
 
   # check inverse snr toggle, if true, find snr < stackedHits, if false, find snr > stackedHits
-  snrHits = tf.cond(paramDict['inverseSNRTF'], 
+  snrHits = tf.cond(paramDict['inverseSNR'], 
                     lambda: tf.less(snr,stackedHits),
                     lambda: tf.greater(snr,stackedHits))
   stackedHits = tf.where(snrHits,snr,stackedHits)
@@ -477,6 +520,7 @@ def writer(testImage,name="out.tif"):
     # convert to unsigned image 
     out = np.array(imgN,dtype=np.uint8)
     cv2.imwrite(name,out)
+    #import matplotlib.pylab as plt
     #plt.pcolormesh(out)
     #plt.gcf().savefig("x.png")
 
@@ -486,6 +530,7 @@ def writer(testImage,name="out.tif"):
 
 
 #!/usr/bin/env python
+import sys
 ##################################
 #
 # Revisions
@@ -507,8 +552,9 @@ def runner(dims):
   times =[]
   f = open("GPU_Benchmark.txt","w")
   f.write('Dims:{}'.format(dims))
-  f.write('\nCPU:')
+  #f.write('\nCPU:')
   for i,d in enumerate(dims):
+    continue
     print "dim", d
     testImage = MakeTestImage(d)
     dFilter = MakeFilter()
@@ -517,7 +563,7 @@ def runner(dims):
     #if dim == dims[-1]:
     #f.write('\ndim:{},time:{};'.format(dim,time))
     #f.write('dim:{},time:{};'.format(dim,time))
-  f.write('{}'.format(times))
+  #f.write('{}'.format(times))
 
   timesGPU =[]
   f.write('\nGPU:') 
@@ -542,7 +588,41 @@ def test1(maxDim=100):
   writer(corr)
   return testImage,corr, dFilter
 
+def testReal(dims=[1]):
+  times =[]
+  f = open("GPU_Benchmark.txt","w")
+  f.write('Dims:{}'.format(dims))
+  f.write('\nCPU:')
+  for i,d in enumerate(dims):
+    continue
+    print "dim", d
+    testImage = Arrayer()
+    dFilter = PoreFilter()
+    corr,time = MF(testImage,dFilter,useGPU=False,dim=3,xiters=iters,yiters=iters,ziters=iters)
+    times.append(time)
+    #if dim == dims[-1]:
+    #f.write('\ndim:{},time:{};'.format(dim,time))
+    #f.write('dim:{},time:{};'.format(dim,time))
+  f.write('{}'.format(times))
 
+  timesGPU =[]
+  f.write('\nGPU:')
+  for j,d in enumerate(dims):
+    print "dim", d
+    testImage = Arrayer()
+    dFilter = PoreFilter()
+
+    print " we testin"
+    corr,time = MF(testImage,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters)
+    timesGPU.append(time)
+    #f.write('\ndim:{},time:{};'.format(dim,time))
+  f.write('{}'.format(timesGPU))
+
+  #Results = { "CPU":"%s"%(str(times)),"GPU":"%s"%str(timesGPU)}
+  #pickle.dump(Results, open("%Benchmark.p"%(str(R),str(length/nm),str(cKCl)),"wb"))
+
+
+  return times, timesGPU
 
 
 #
@@ -568,6 +648,7 @@ Notes:
 # MAIN routine executed when launching this script from command line 
 #
 if __name__ == "__main__":
+  import sys
   msg = helpmsg()
   remap = "none"
 
@@ -583,9 +664,15 @@ if __name__ == "__main__":
   for i,arg in enumerate(sys.argv):
     # calls 'test0' with the next argument following the argument '-validation'
     if(arg=="-validation"):
-      test0()      
-      test0(useGPU = False)
+      #dims = [5,6,7,8,9,10]
+      dims = [1]#[6,7]
+      dims = map(lambda x: 2**x,dims)
+      print "bouta testREal"
+      times,timesGPU = testReal(dims)
+      #print "CPU", times
+      print"\n" + "GPU",timesGPU
       quit()
+
 
 
     if(arg=="-test1"):
@@ -596,7 +683,7 @@ if __name__ == "__main__":
       quit()
     if(arg=="-running"):
       #dims = [5,6,7,8,9,10]
-      dims = [6,7]
+      dims = [1]
       dims = map(lambda x: 2**x,dims)
       times,timesGPU = runner(dims)
       print "CPU", times

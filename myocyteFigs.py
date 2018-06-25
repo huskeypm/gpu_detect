@@ -1121,13 +1121,16 @@ def Myocyte():
     root = "myoimages/"
 
     # name of data used for testing algorithm 
-    filter1TestName = root + 'MI_D_73_annotation.png'
+    #filter1TestName = root + 'MI_D_73_annotation.png'
     #filter1TestName = root + "MI_D_73_annotated_May30.png"
+    filter1TestName = root + "MI_annotation_testImg.png"
+
     # version of filter1TestName marked 'white' where you expect to get hits for filter1
     # or by marking 'positive' channel 
-    filter1PositiveTest = root+"MI_D_73_annotation_channels.png"
+    #filter1PositiveTest = root+"MI_D_73_annotation_channels.png"
     #filter1PositiveTest = root + "MI_D_73_annotated_channels_May30.png"
     #filter1PositiveTest = setupAnnotatedImage(filter1PositiveTest,filter1TestName)
+    filter1PositiveTest = root + "MI_annotation_trueImg.png"
 
     dataSet = optimizer.DataSet(
         root = root,
@@ -1144,7 +1147,7 @@ def Myocyte():
         filter2PositiveTest = filter1PositiveTest,
         filter2PositiveChannel= 1,  # green, longi
         filter2Label = "LT",
-        filter2Name = root+'LongFilter.png',        
+        filter2Name = root+'newLTfilter.png',        
         filter2Thresh=0.38 
     )
 
@@ -1180,10 +1183,10 @@ def rocData():
         dataSet,
         paramDict,
         filter1Label = dataSet.filter1Label,
-  #      f1ts = np.linspace(0.13,0.35,15),
-        f1ts = np.linspace(15,30, 10),
+        f1ts = np.linspace(0.1,0.45, 10),
         iters=iters,
         )
+  quit()
 
   ## Testing LT now
   dataSet.filter1PositiveChannel=1

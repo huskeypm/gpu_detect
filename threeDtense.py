@@ -195,8 +195,25 @@ def doTFloop(inputs,
 
     ### Create and initialize variables
     tfImg = tf.Variable(inputs.imgOrig, dtype=tf.complex64)
-    paddedFilter = Pad(inputs.imgOrig,inputs.mfOrig)
-    tfFilt = tf.Variable(paddedFilter, dtype=tf.complex64)
+    
+
+
+
+
+
+    #paddedFilter = Pad(inputs.imgOrig,inputs.mfOrig)
+    tfFilt = tf.constant(inputs.mfOrig)
+    paddings = tf.constant([[0,inputs.imgOrig.shape[0]-inputs.mfOrig.shape[0]],[0,inputs.imgOrig.shape[1]-inputs.mfOrig.shape[1]]])
+    padFilt = tf.pad(tfFilt,paddings,"CONSTANT")
+    rollFilt = tf.manip.roll(padFilt,shift=[-inputs.mfOrig.shape[0]/2,-inputs.mfOrig.shape[1]/2],axis=[0,1])
+    print "post roll", time.time()-start
+    pF = tf.cast(rollFilt, dtype=tf.complex64)
+    tfFilt = tf.Variable(pF, dtype=tf.complex64)
+
+
+
+
+    #tfFilt = tf.Variable(paddedFilter, dtype=tf.complex64)
 
     if paramDict['inverseSNR']:
       # if we are using an inverse threshold, we need a storage container that contains pixels > thresh

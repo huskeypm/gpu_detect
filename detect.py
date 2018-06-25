@@ -24,7 +24,7 @@ def DisplayHits(img,threshed,
         sadf=mf.matchedFilter(threshed,daround,parsevals=False,demean=False)
 
         # merge two fields 
-        du.StackGrayRedAlpha(img,sadf)
+        du.StackGrayRedAlpha(img,sadf,alpha=0.5)
 
 
 class empty:pass    
@@ -64,7 +64,7 @@ def docalc(img,
     
     print "Writing file %s"%fileName
     #plt.figure()
-    DisplayHits(img,results.threshed)
+    DisplayHits(img,results.threshed,smooth=smooth)
     plt.gcf().savefig(fileName,dpi=300)
 
 

@@ -1,7 +1,7 @@
 imgName: myoimages/Sham_11_processed.png 
 mfName: myoimages/newSimpleWTFilter.png 
 thresh: 0.35
-debug: True
+debug: False
 outName: exYaml.png
 filterTwoSarcomereSize: 25
 

@@ -48,7 +48,7 @@ def LoadImage(
 
 # In[132]:
 
-def MakeTestImage(dim = 400):
+def MakeTestImage(dim = 400,height = height):
     l = np.zeros(2); l[0:0]=1.
     z = l
     # there are smarter ways of doing this 
@@ -61,11 +61,16 @@ def MakeTestImage(dim = 400):
     striped = np.outer(np.ones(dim),l)
     #cv2.imshow(striped)
     img2 = striped
-    height3 = np.ones((height))
-    cross = np.outer(img2, height3)
-    
-    imgR = np.reshape(cross,(dim,dim,height))
-    imgR[:,(dim/2):,:(height/2)] = 0
+
+    if height != 0:
+      height3 = np.ones((height))
+      cross = np.outer(img2, height3)
+      imgR = np.reshape(cross,(dim,dim,height))
+      imgR[:,(dim/2):,:(height/2)] = 0
+    else:
+      imgR = img2
+      imgR[:,(dim/2):] = 0
+
     #print "Made test Image"
     return imgR
 
@@ -82,12 +87,17 @@ def MakeFilter(
     fdim = 14,
     height=10
   ): 
-    dFilter = np.zeros([fdim,fdim,height])
-    dFilter[:,0:fw,0:fw]=1.
-    # test 
-    #dFilter[:] = 1 # basically just blur image
-    yFilter = np.roll(dFilter,-np.int(fw/2.),axis=1)
-    #cv2.imshow(dFilter,cmap="gray")
+    if height != 0:
+      dFilter = np.zeros([fdim,fdim,height])
+      dFilter[:,0:fw,0:fw]=1.
+      # test 
+      #dFilter[:] = 1 # basically just blur image
+      yFilter = np.roll(dFilter,-np.int(fw/2.),axis=1)
+      #cv2.imshow(dFilter,cmap="gray")
+    else:
+      dFilter = np.zeros([fdim,fdim])
+      dFilter[0:fw,0:fw] = 1.
+      yFilter = np.roll(dFilter,-np.int(fw/2.),axis=1)
     
     return dFilter
 
@@ -268,12 +278,10 @@ def doTFloop(inputs,
     def body2D(cnt,stackedHits,bestAngles):
       rotation = bigIters[cnt]
 
-      rotatedMF = util.rotateFilter2D(inputs.tfFilt,rotation)
+      rotatedMF = util.rotateTFFilter2D(inputs.tfFilt,rotation)
 
       snr = doDetection(inputs,paramDict,dimensions=2)
-      #stackedHitsNew,bestAnglesNew = doStackingHits(inputs,paramDict,stackedHits,bestAngles,snr,cnt)
-      stackedHitsNew = tf.cast(snr,dtype=tf.float64)
-      bestAnglesNew = stackedHitsNew
+      stackedHitsNew,bestAnglesNew = doStackingHits(inputs,paramDict,stackedHits,bestAngles,snr,cnt)
       cntnew=cnt-1
       return cntnew,stackedHitsNew,bestAnglesNew
 
@@ -338,35 +346,73 @@ def MF(
     inputs.imgOrig = dImage
     inputs.mfOrig = filt
     if useGPU:
-       paramDict = optimizer.ParamDict(typeDict='WT')
-       paramDict['filterMode'] = 'simple'
-       corr,tElapsed = doTFloop(inputs,paramDict,xiters=xiters,yiters=yiters,ziters=ziters)
-       corr = np.real(corr)
+      # nothing special about picking WT, just need a param Dictionary to run the alg
+      paramDict = optimizer.ParamDict(typeDict='WT')
+      paramDict['filterMode'] = 'simple'
+      corr,tElapsed = doTFloop(inputs,paramDict,xiters=xiters,yiters=yiters,ziters=ziters)
+      corr = np.real(corr)
     else:        
-      start = time.time()
-      filtTF = tf.convert_to_tensor(filt)
-      for i,x in enumerate(xiters):
-        ii = tf.constant(i,dtype=tf.float64)
-        for j,y in enumerate(yiters):
-          jj = tf.constant(j,dtype=tf.float64)
-          for k,z in enumerate(ziters):
-            print "Filtering Progress:", str((i*ly*lz)+(j*lz)+k)+'/'+str(numRots)
-            # rotate filter using tensorflow routine anyway
-            # NOTE: I may change this
-            kk = tf.constant(k,dtype=tf.float64)
-            filtRot = util.rotateFilterCube3D(filtTF,ii,jj,kk)
-            filtRot = tf.Session().run(filtRot)
-            I = dImage
-            T = filtRot
-            fI = fftp.fftn(I)
-            fT = fftp.fftn(T)
-            c = np.conj(fI)*fT
-            corr = fftp.ifftn(c)
-            corr = np.real(corr)
-      tElapsed = time.time()-start
+      if dim == 3:
+        corr,tElapsed = MFSubroutine3D(dImage,filt,xiters,yiters,ziters)
+      else:
+        corr,tElapsed = MFSubroutine2D(dImage,filt,ziters)
+
       print 'fftp:{}s'.format(tElapsed)
        
     return corr,tElapsed    
+
+def MFSubroutine3D(img,filt,xiters,yiters,ziters):
+  '''
+  subroutine to perform 3D CPU matched filtering
+  '''
+
+  start = time.time()
+  filtTF = tf.convert_to_tensor(filt)
+  for i,x in enumerate(xiters):
+    ii = tf.constant(i,dtype=tf.float64)
+    for j,y in enumerate(yiters):
+      jj = tf.constant(j,dtype=tf.float64)
+      for k,z in enumerate(ziters):
+        print "Filtering Progress:", str((i*ly*lz)+(j*lz)+k)+'/'+str(numRots)
+        # rotate filter using tensorflow routine anyway
+        # NOTE: I may change this
+        kk = tf.constant(k,dtype=tf.float64)
+        filtRot = util.rotateFilterCube3D(filtTF,ii,jj,kk)
+        filtRot = tf.Session().run(filtRot)
+        I = img
+        T = filtRot
+        fI = fftp.fftn(I)
+        fT = fftp.fftn(T)
+        c = np.conj(fI)*fT
+        corr = fftp.ifftn(c)
+        corr = np.real(corr)
+  tElapsed = time.time()-start
+  print 'fftp:{}s'.format(tElapsed)
+
+  return corr,tElapsed
+
+
+def MFSubroutine2D(img,filt,iters):
+  '''
+  subroutine to perform 2D CPU matched filtering
+  '''
+
+  start = time.time()
+  for i,x in enumerate(iters):
+    print "Filtering Progress", str(i)+'/'+str(len(iters))
+    filtRot = imutils.rotate(filt,x)
+    I = img
+    T = filtRot
+    fI = fftp.fft2(I)
+    fT = fftp.fft2(T)
+    c = np.conj(fI) * fT
+    corr = fftp.ifft2(c)
+    corr = np.real(corr)
+  tElapsed = time.time()-start
+  print 'fftp:{}s'.format(tElapsed)
+
+  return corr,tElapsed
+
 
 ###################################################################################################
 ###
@@ -533,9 +579,39 @@ def runner(dims):
 
   #Results = { "CPU":"%s"%(str(times)),"GPU":"%s"%str(timesGPU)}
   #pickle.dump(Results, open("%Benchmark.p"%(str(R),str(length/nm),str(cKCl)),"wb"))
-  
-  
+    
   return times, timesGPU
+
+def runner2D(dims,iters=iters):
+  '''
+  Same basic function as runner but this is for 2D benchmarking
+  '''
+
+  times =[]
+  f = open("GPU_Benchmark.txt","w")
+  f.write('Dims:{}'.format(dims))
+  f.write('\nCPU:')
+  for i,d in enumerate(dims):
+    print "dim", d
+    testImage = MakeTestImage(d,height=0)
+    dFilter = MakeFilter(height=0)
+    corr,time = MF(testImage,dFilter,useGPU=False,dim=2,ziters=iters)
+    times.append(time)
+  f.write('{}'.format(times))
+
+  timesGPU =[]
+  f.write('\nGPU:')
+  for j,d in enumerate(dims):
+    print "dim", d
+    testImage = MakeTestImage(d,height=0)
+    dFilter = MakeFilter(height=0)
+    corr,time = MF(testImage,dFilter,useGPU=True,dim=2,ziters=iters)
+    timesGPU.append(time)
+  f.write('{}'.format(timesGPU))
+
+  return times, timesGPU
+
+
 def test1(maxDim=100):
   testImage = LoadImage(maxDim=maxDim)
   dFilter = MakeFilter()
@@ -602,6 +678,17 @@ if __name__ == "__main__":
       times,timesGPU = runner(dims)
       print "CPU", times
       print"\n" + "GPU",timesGPU
+      quit()
+
+    if(arg=="-2DBenchmark"):
+      dims = np.arange(5,13)
+      dims = map(lambda x: 2**x,dims)
+      iters = [-25,-20,-15,-10,-5,0,5,10,15,20,25]
+      CPUtimes,GPUtimes = runner2D(dims,iters=iters)
+      print "CPU Times:",CPUtimes
+      print "\n" + "GPU Times:", GPUtimes
+
+
       quit()
   
 

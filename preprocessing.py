@@ -121,6 +121,52 @@ def normalizeToStriations(img, subsectionIdxs,filterSize):
 ###
 ###############################################################################
 
+def autoReorient(img):
+  '''
+  Function to automatically reorient the given image based on principle component
+    analysis. This isn't incorporated into the full, 'robust' preprocessing routine
+    but is instead used for preprocessing the webserver uploaded images since 
+    we want as little user involvement as possible.
+
+  INPUTS:
+    - img: The image that is to be reoriented. Uploaded as a float with 0 <= px <= 1.
+  '''
+  raise RuntimeError( "Broken for some reason. Come back to debug")
+
+  dummy = img.copy()
+  dumDims = np.shape(dummy)
+  minDim = np.min(dumDims)
+  maxDim = np.max(dumDims)
+  argMaxDim = np.argmax(dumDims)
+  diff = maxDim - minDim
+  padding = int(round(diff / 2.))
+  if argMaxDim == 1:
+    padded = np.zeros((minDim+2*padding,maxDim))
+    padded[padding:-padding,:] = dummy
+  else:
+    padded = np.zeros((maxDim,minDim+2*padding))
+    padded[:,padding:-padding] = dummy
+  plt.figure()
+  plt.imshow(padded)
+  plt.show()
+  quit()
+  
+
+  pca = PCA(n_components=2)
+  pca.fit(padded)
+  majorAxDirection = pca.explained_variance_
+  yAx = np.array([0,1])
+  degreeOffCenter = (180./np.pi) * np.arccos(np.dot(yAx,majorAxDirection)\
+                    / (np.linalg.norm(majorAxDirection)))
+
+  print "Image is", degreeOffCenter," degrees off center"
+
+  ### convert img to cv2 acceptable format
+  acceptableImg = np.asarray(img * 255.,dtype=np.uint8)
+  rotated = imutils.rotate_bound(acceptableImg, -degreeOffCenter)
+
+  return rotated
+
 def setup(array):
     #px = pygame.image.load(path)
     px = pygame.surfarray.make_surface(array)
@@ -298,12 +344,21 @@ def resizeToFilterSize(img,filterTwoSarcomereSize):
   # best to normalize the subsection for display purposes
   subsection /= np.max(subsection)
 
-  ### 2. Using this subsection, calculate the periodogram
+  ### 2. Resize based on the subsection
+  resized, scale, newIndexes = resizeGivenSubsection(img,subsection,filterTwoSarcomereSize,indexes)
+  
+  return resized,scale,subsection,newIndexes
+
+def resizeGivenSubsection(img,subsection,filterTwoSarcomereSize,indexes):
+  '''
+  Function to resize img given a subsection of the image
+  '''
+  ### Using this subsection, calculate the periodogram
   fBig, psd_Big = signal.periodogram(subsection)
   # finding sum, will be easier to identify striation length with singular dimensionality
   bigSum = np.sum(psd_Big,axis=0)
 
-  ### 3. Mask out the noise in the subsection periodogram
+  ### Mask out the noise in the subsection periodogram
   # NOTE: These are imposed assumptions on the resizing routine
   maxStriationSize = 50.
   minStriationSize = 5.
@@ -319,23 +374,26 @@ def resizeToFilterSize(img,filterTwoSarcomereSize):
     plt.title("Collapsed Periodogram of Subsection")
     plt.show()
 
-  ### 4. Find peak value of periodogram and calculate striation size
+  ### Find peak value of periodogram and calculate striation size
   striationSize = 1. / fBig[np.argmax(bigSum)]
   imgTwoSarcomereSize = int(round(2 * striationSize))
   print "Two Sarcomere size:", imgTwoSarcomereSize,"Pixels per Two Sarcomeres"
+
   if imgTwoSarcomereSize > 70 or imgTwoSarcomereSize < 10:
     print "WARNING: Image likely failed to be properly resized. Manual resizing",\
            "may be necessary!!!!!"
 
-  ### 5. Using peak value, resize the image
+  ### Using peak value, resize the image
   scale = float(filterTwoSarcomereSize) / float(imgTwoSarcomereSize)
   resized = cv2.resize(img,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
 
-  ### 6. Find new indexes in image
+  ### Find new indexes in image
   newIndexes = indexes * scale
   newIndexes = np.round(newIndexes).astype(np.int32)
- 
-  return resized,scale,subsection,newIndexes
+
+  return resized, scale, newIndexes
+
+
 
 ###############################################################################
 ###

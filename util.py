@@ -203,7 +203,7 @@ def rotateFilterCube3D(image,rot1,rot2,rot3):
   rotated = tf.cast(rotated,tf.complex64)
   return rotated
 
-def rotateFilter2D(img,rotation):
+def rotateTFFilter2D(img,rotation):
   '''
   Function to 'tensorize' the rotation of the filter
   '''

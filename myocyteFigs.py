@@ -13,7 +13,7 @@ import os
 #
 import numpy as np
 import cv2
-import matplotlib.pylab as plt
+import matplotlib.pyplot as plt
 import pandas as pd
 import bankDetect as bD
 import util

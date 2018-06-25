@@ -160,9 +160,12 @@ def ParamDict(typeDict=None):
     paramDict['doCLAHE'] = True
   elif typeDict=='WT':
     paramDict['filterMode'] = 'punishmentFilter'
-    # optimized as of June 5, 2018
+    # optimized as of June 25, 2018
+    #paramDict['gamma'] = 3.6842
+    #paramDict['snrThresh'] = 0.3526316 
+    # Keeping old parameters from June 5, 2018 for simplicity's sake
     paramDict['gamma'] = 3.
-    paramDict['snrThresh'] = 0.35 
+    paramDict['snrThresh'] = 0.35
   elif typeDict=='LT':
     paramDict['filterMode'] = 'regionalDeviation'
     # optimized as of June 5, 2018 
@@ -301,11 +304,12 @@ def TestParams_Single(
       
       paramDict = paramDict    
     )        
-    dataSet.pasteFilters = False
+    #dataSet.pasteFilters = False
     if dataSet.pasteFilters:
       hits = painter.doLabel(filter1_filter1Test, dx=dataSet.filter1x,dy=dataSet.filter1y,thresh=0)
     else:
       hits = filter1_filter1Test.stackedHits
+    filter1_filter1Test.stackedHits = hits
 
     # assess score for ROC  
     filter1PS, filter1NS= ScoreOverlap_SingleFilter(

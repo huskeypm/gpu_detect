@@ -299,15 +299,19 @@ def figS1():
   root = "./myoimages/"
 
   # images that were hand annotated
-  imgNames = {'HF':'HF_1_annotation.png',
-              'Control':'Sham_M_65_annotation.png',
-              'MI':'MI_D_73_annotation.png'
-               }
+  #imgNames = {'HF':'HF_1_annotation.png',
+  #            'Control':'Sham_M_65_annotation.png',
+  #            'MI':'MI_D_73_annotation.png'
+  #             }
+  imgNames = {'HF':"HF_annotation_testImg.png",
+              'MI':"MI_annotation_testImg.png",
+              'Control':"Sham_annotation_testImg.png"
+              }
 
   # images that have hand annotation marked
-  annotatedImgNames = {'HF':'HF_1_annotation_channels.png',
-                       'Control':'Sham_M_65_annotation_channels.png',
-                       'MI':'MI_D_73_annotation_channels.png'
+  annotatedImgNames = {'HF':'HF_annotation_trueImg.png',
+                       'Control':'Sham_annotation_trueImg.png',
+                       'MI':'MI_annotation_trueImg.png'
                        }
 
   for key,imgName in imgNames.iteritems():
@@ -321,7 +325,7 @@ def figS1():
                   )
 
       ### run func that writes scores to hdf5 file
-      myocyteROC(dataSet,key,threshes = np.linspace(5,30,15))
+      myocyteROC(dataSet,key,threshes = np.linspace(0.05,0.7,30))
   
   ### read data from hdf5 files
   # make big ol' dictionary
@@ -335,6 +339,11 @@ def figS1():
     nestDict['LT'] = pd.read_hdf(key+"_LT.h5",'table')
     nestDict['Loss'] = pd.read_hdf(key+"_Loss.h5",'table')
 
+  ### Go through and normalize all false positives and true positives
+  for key,nestDict in bigData.iteritems():
+    for key2,nestDict2 in nestDict.iteritems():
+      nestDict2[key]['filter1PS'] /= np.max(nestDict2[key]['filter1PS'])
+      nestDict2[key]['filter1NS'] /= np.max(nestDict2[key]['filter1NS'])
 
   ### Figure generation
   f, axs = plt.subplots(3,2,figsize=[7,12])
@@ -369,8 +378,8 @@ def figS1():
 
     axs[loc,1].set_xlim([0,1])
     axs[loc,1].set_ylim([0,1])
-    axs[loc,1].set_xlabel('False Positive Rate')
-    axs[loc,1].set_ylabel('True Positive Rate')
+    axs[loc,1].set_xlabel('False Positive Rate (Normalized)')
+    axs[loc,1].set_ylabel('True Positive Rate (Normalized)')
 
   #plt.show()
   plt.gcf().savefig('figS1.png',dpi=300)
@@ -1172,26 +1181,25 @@ def rocData():
   ## Testing TT first 
   dataSet.filter1PositiveChannel= 0
   dataSet.filter1Label = "TT"
-  dataSet.filter1Name = root+'WTFilter.png'
-  optimizer.SetupTests(dataSet,meanFilter=False)
-  #optimizer.SetupTests(dataSet,meanFilter=True)
+  dataSet.filter1Name = root+'newSimpleWTFilter.png'
+  optimizer.SetupTests(dataSet,meanFilter=True)
   paramDict = optimizer.ParamDict(typeDict='WT')
   paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
-  paramDict['mfPunishment'] = util.LoadFilter(root+"WTPunishmentFilter.png")
+  paramDict['mfPunishment'] = util.LoadFilter(root+"newSimpleWTPunishmentFilter.png")
   
   optimizer.GenFigROC_TruePos_FalsePos(
         dataSet,
         paramDict,
         filter1Label = dataSet.filter1Label,
-        f1ts = np.linspace(0.1,0.45, 10),
+        f1ts = np.linspace(0.1,0.45, 25),
         iters=iters,
         )
-  quit()
 
   ## Testing LT now
   dataSet.filter1PositiveChannel=1
   dataSet.filter1Label = "LT"
   dataSet.filter1Name = root+'LongitudinalFilter.png'
+  #dataSet.filter1Name = root+'newLTfilter.png'
   optimizer.SetupTests(dataSet,meanFilter=True)
   paramDict = optimizer.ParamDict(typeDict='LT')  
 
@@ -1199,7 +1207,7 @@ def rocData():
         dataSet,
         paramDict,
         filter1Label = dataSet.filter1Label,
-        f1ts = np.linspace(0.1, 0.5, 15),
+        f1ts = np.linspace(0.01, 0.4, 25),
         iters=iters
       )
 
@@ -1215,7 +1223,7 @@ def rocData():
          dataSet,
          paramDict,
          filter1Label = dataSet.filter1Label,
-         f1ts = np.linspace(0.01,0.2,15),
+         f1ts = np.linspace(0.005,0.1,25),
          iters=lossIters,
        )
 
@@ -1228,16 +1236,18 @@ def myocyteROC(data, myoName,
                threshes = np.linspace(5,30,10),
                iters=[-25,-20,-15,-10,-5,0,5,10,15,20,25]
                ):
-  # TODO: Fix thresholds so < 1
+  root = "./myoimages/"
+
   ### WT
   # setup WT data in class structure
   data.filter1PositiveChannel= 0
   data.filter1Label = "TT"
-  data.filter1Name = root+'WTFilter.png'
-  optimizer.SetupTests(data)
+  data.filter1Name = root + 'newSimpleWTFilter.png'
+  optimizer.SetupTests(data,meanFilter=True)
   WTparams = optimizer.ParamDict(typeDict='WT')
   WTparams['covarianceMatrix'] = np.ones_like(data.filter1TestData)
-  WTparams['mfPunishment'] = util.LoadFilter(root+"WTPunishmentFilter.png")
+  WTparams['mfPunishment'] = util.LoadFilter(root+"newSimpleWTPunishmentFilter.png")
+
 
   # write filter performance data for WT into hdf5 file
   optimizer.Assess_Single(data, 
@@ -1251,11 +1261,9 @@ def myocyteROC(data, myoName,
   # setup LT data
   data.filter1PositiveChannel=1
   data.filter1Label = "LT"
-  #dataSet.filter1Name = root+'LongFilter.png'
-  # opting to test H filter now
-  #dataSet.filter1Name = root+'newLTfilter.png'
-  data.filter1Name = root+'simpleLTfilter.png'
-  optimizer.SetupTests(data)
+  data.filter1Name = root+'LongitudinalFilter.png'
+  optimizer.SetupTests(data,meanFilter=True)
+  data.meanFilter = True
   LTparams = optimizer.ParamDict(typeDict='LT')
 
   # write filter performance data for LT into hdf5 file
@@ -1271,7 +1279,7 @@ def myocyteROC(data, myoName,
   data.filter1PositiveChannel = 2
   data.filter1Label = "Loss"
   data.filter1Name = root+"LossFilter.png"
-  optimizer.SetupTests(data)
+  optimizer.SetupTests(data,meanFilter=True)
   Lossparams = optimizer.ParamDict(typeDict='Loss')
   LossIters = [0,45]
 
@@ -1429,28 +1437,31 @@ def optimizeWT():
   dataSet = Myocyte()
   dataSet.filter1PositiveChannel= 0
   dataSet.filter1Label = "TT"
-  dataSet.filter1Name = root+'WTFilter.png'
-  #optimizer.SetupTests(dataSet,meanFilter=True)
-  optimizer.SetupTests(dataSet)
-  #print dataSet.pasteFilters
-  dataSet.pasteFilters = False
+  dataSet.filter1Name = root+'newSimpleWTFilter.png'
+  optimizer.SetupTests(dataSet,meanFilter=True)
 
   paramDict = optimizer.ParamDict(typeDict='WT')
   paramDict['covarianceMatrix'] = np.ones_like(dataSet.filter1TestData)
-  paramDict['mfPunishment'] = util.LoadFilter(root+"WTPunishmentFilter.png") 
+  paramDict['mfPunishment'] = util.LoadFilter(root+"newSimpleWTPunishmentFilter.png") 
   #snrThreshRange = np.linspace(0.01, 0.15, 35)
   #gammaRange = np.linspace(4., 25., 35)
-  snrThreshRange = np.linspace(.1, 10, 20)
-  gammaRange = np.linspace(0.75, 3, 20)
+  snrThreshRange = np.linspace(.1, 0.7, 20)
+  gammaRange = np.linspace(1., 4., 20)
 
   optimumSNRthresh, optimumGamma, distToPerfect= minDistanceROC(dataSet,paramDict,
                                                   snrThreshRange,gammaRange,
                                                   param1="snrThresh",
                                                   param2="gamma", FPthresh=1.)
 
-  distToPerfect *= 255
-  distToPerfect = np.asarray(distToPerfect, dtype=np.uint8)
-  cv2.imwrite("ROC_Optimization_WT.png",distToPerfect)
+  #distToPerfect *= 255
+  #distToPerfect = np.asarray(distToPerfect, dtype=np.uint8)
+  #cv2.imwrite("ROC_Optimization_WT.png",distToPerfect)
+
+  plt.figure()
+  plt.imshow(distToPerfect)
+  plt.colorbar()
+  plt.gcf().savefig("ROC_Optimization_WT.png")
+  
 
 def optimizeLT():
   root = "./myoimages/"
@@ -1460,15 +1471,14 @@ def optimizeLT():
   dataSet.filter1Name = root+'LongitudinalFilter.png'
   #optimizer.SetupTests(dataSet,meanFilter=True)
   optimizer.SetupTests(dataSet)
-  #print dataSet.pasteFilters
-  dataSet.pasteFilters = False
 
   paramDict = optimizer.ParamDict(typeDict='LT')
-  snrThreshRange = np.linspace(2, 7, 30)
-  stdDevThreshRange = np.linspace(0.05, 0.4, 30)
+  snrThreshRange = np.linspace(0.4, 0.8, 20)
+  stdDevThreshRange = np.linspace(0.05, 0.4, 20)
 
   # maximum rate of false positives
-  FPthresh = 0.3
+  #FPthresh = 0.3
+  FPthresh = 1.
 
   optimumSNRthresh, optimumGamma, distToPerfect= minDistanceROC(dataSet,paramDict,
                                                   snrThreshRange,stdDevThreshRange,
@@ -1476,9 +1486,14 @@ def optimizeLT():
                                                   param2="stdDevThresh",
                                                   FPthresh=FPthresh)
 
-  distToPerfect *= 255
-  distToPerfect = np.asarray(distToPerfect, dtype=np.uint8)
-  cv2.imwrite("ROC_Optimization_LT.png",distToPerfect)
+  #distToPerfect *= 255
+  #distToPerfect = np.asarray(distToPerfect, dtype=np.uint8)
+
+  plt.figure()
+  plt.imshow(distToPerfect)
+  plt.colorbar()
+  plt.gcf().savefig("ROC_Optimization_LT.png")
+  #cv2.imwrite("ROC_Optimization_LT.png",distToPerfect)
 
 def optimizeLoss():
   root = "./myoimages/"
@@ -1488,12 +1503,10 @@ def optimizeLoss():
   dataSet.filter1Name = root+'LossFilter.png'
   #optimizer.SetupTests(dataSet,meanFilter=True)
   optimizer.SetupTests(dataSet)
-  #print dataSet.pasteFilters
-  dataSet.pasteFilters = False
 
   paramDict = optimizer.ParamDict(typeDict='Loss')
-  snrThreshRange = np.linspace(1, 10, 20)
-  stdDevThreshRange = np.linspace(0.05, 0.5, 20)
+  snrThreshRange = np.linspace(0.05,0.3, 20)
+  stdDevThreshRange = np.linspace(0.05, 0.2, 20)
 
   optimumSNRthresh, optimumGamma, distToPerfect= minDistanceROC(dataSet,paramDict,
                                                   snrThreshRange,stdDevThreshRange,
@@ -1501,10 +1514,14 @@ def optimizeLoss():
                                                   param2="stdDevThresh",
                                                   FPthresh=1.)
 
-  distToPerfect *= 255
-  distToPerfect = np.asarray(distToPerfect, dtype=np.uint8)
-  cv2.imwrite("ROC_Optimization_Loss.png",distToPerfect)
+  #distToPerfect *= 255
+  #distToPerfect = np.asarray(distToPerfect, dtype=np.uint8)
+  #cv2.imwrite("ROC_Optimization_Loss.png",distToPerfect)
 
+  plt.figure()
+  plt.imshow(distToPerfect)
+  plt.colorbar()
+  plt.gcf().savefig("ROC_Optimization_Loss.png")
 
 # function to validate that code has not changed since last commit
 def validate(testImage="./myoimages/MI_D_78_processed.png",

@@ -27,6 +27,14 @@ import imutils
 import display_util as du
 class empty:pass
 
+### Change default matplotlib settings to display figures
+plt.rcParams['font.size'] = 18
+#plt.rcParams['font.weight'] = 500 # slightly darker than normal
+#plt.rcParams['axes.labelweight'] = 500
+plt.rcParams['axes.labelsize'] = 'large'
+plt.rcParams['axes.labelpad'] = 12.0 
+plt.rcParams['figure.autolayout'] = True
+
 #root = "myoimages/"
 #root = "/net/share/dfco222/data/TT/LouchData/processed/"
 root = "/net/share/dfco222/data/TT/LouchData/processedWithIntelligentThresholding/"
@@ -70,15 +78,28 @@ def fig3():
   plt.close()
 
   ### displaying raw, marked, and marked angle images
-  fig, axarr = plt.subplots(3,1)
-  axarr[0].imshow(rawImg,cmap='gray')
-  axarr[0].axis('off')
-  axarr[1].imshow(correctColoredImg)
-  axarr[1].axis('off')
-  axarr[2].imshow(correctColoredAngles)
-  axarr[2].axis('off')
-  plt.gcf().savefig("fig3_RawAndMarked.png",dpi=300)
-  plt.close()
+  #fig, axarr = plt.subplots(3,1)
+  #axarr[0].imshow(rawImg,cmap='gray')
+  #axarr[0].axis('off')
+  #axarr[1].imshow(correctColoredImg)
+  #axarr[1].axis('off')
+  #axarr[2].imshow(correctColoredAngles)
+  #axarr[2].axis('off')
+  #plt.gcf().savefig("fig3_RawAndMarked.png",dpi=300)
+  #plt.close()
+
+  ### opting to save files individually and arrange using image magick montage command
+  plt.figure()
+  plt.imshow(rawImg,cmap='gray')
+  plt.gcf().savefig("fig3_Raw.png",dpi=300)
+
+  plt.figure()
+  plt.imshow(correctColoredImg)
+  plt.gcf().savefig("fig3_ColoredImage.png",dpi=300)
+
+  plt.figure()
+  plt.imshow(correctColoredAngles)
+  plt.gcf().savefig("fig3_ColoredAngles.png",dpi=300)
 
   ### save histogram of angles
   giveAngleHistogram(angleCounts,iters,"fig3")
@@ -411,6 +432,64 @@ def figS2():
   plt.imshow(case.displayImg,cmap='gray')
   plt.gcf().savefig('figS2_enhancedImg.png',dpi=300)
 
+def shaveFig(fileName,padY=None,padX=None,whiteSpace=None):
+  '''
+  Aggravating way of shaving a figure's white space down to an acceptable level
+    and adding in enough whitespace to label the figure
+  '''
+
+  img = util.ReadImg(fileName,cvtColor=False)
+  imgDims = np.shape(img)
+
+  ### get sum along axis
+  rowSum = np.sum(img[:,:,0],axis=1).astype(np.float32)
+  colSum = np.sum(img[:,:,0],axis=0).astype(np.float32)
+
+  ### get average along axis
+  rowAvg = rowSum / float(imgDims[1])
+  colAvg = colSum / float(imgDims[0])
+
+  ### find where the first occurrence of non-white space is
+  firstNonWhiteRowIdx = np.argmax((rowAvg-255.)**2. != 0)
+  firstNonWhiteColIdx = np.argmax((colAvg-255.)**2. != 0)
+  invNonWhiteRowIdx = np.argmax((rowAvg[::-1]-255.)**2. != 0)
+  invNonWhiteColIdx = np.argmax((colAvg[::-1]-255.)**2. != 0)
+
+  ### add some padding in
+  if padX == None:
+    padX = 20
+  if padY == None:
+    padY = 60 
+  firstNonWhiteRowIdx -= padY
+  firstNonWhiteColIdx -= padX
+  invNonWhiteRowIdx -= padY
+  invNonWhiteColIdx -= padX
+
+  idxs = [firstNonWhiteRowIdx, invNonWhiteRowIdx, firstNonWhiteColIdx, invNonWhiteColIdx]
+  for i,idx in enumerate(idxs):
+    if idx <= 0:
+      idxs[i] = 1
+
+  if whiteSpace == None:
+    extraWhiteSpace = 100
+  else:
+    extraWhiteSpace = whiteSpace
+  
+  newImg = np.zeros((imgDims[0]-idxs[0]-idxs[1]+extraWhiteSpace,
+                     imgDims[1]-idxs[2]-idxs[3],3),
+                    dtype=np.uint8)
+
+  for channel in range(3):
+    newImg[extraWhiteSpace:,:,channel] = img[idxs[0]:-idxs[1],
+                                             idxs[2]:-idxs[3],channel]
+    newImg[:extraWhiteSpace,:,channel] = 255
+  
+  #plt.figure()
+  #plt.imshow(newImg)
+  #plt.show()
+  #quit()
+
+  cv2.imwrite(fileName,newImg)
 
 
 
@@ -1761,5 +1840,18 @@ if __name__ == "__main__":
 
     if(arg=="-noPrint"):
       sys.stdout = open(os.devnull, 'w')
+
+    if(arg=="-shaveFig"):
+      fileName = sys.argv[i+1]
+      try:
+        padY = int(sys.argv[i+2])
+        padX = int(sys.argv[i+3])
+        whiteSpace = int(sys.argv[i+4])
+      except:
+        padY = None
+        padX = None
+        whiteSpace = None
+      shaveFig(fileName,padY=padY,padX=padX,whiteSpace=whiteSpace)
+      quit()
 
   raise RuntimeError("Arguments not understood")

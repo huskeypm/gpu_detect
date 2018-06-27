@@ -12,7 +12,10 @@ import util
 import imutils
 import optimizer
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-#import cPickle as Pickle
+#from PIL import Image
+#from skimage.external.tifffile import TiffWriter
+#from skimage.io._plugins.tifffile_plugin import imsave
+#import SimpleITK as sitk
 
 height = 50
 #ters = [-30,-20,-10,0,10,20]
@@ -28,7 +31,8 @@ from skimage import io
 def Arrayer(fileName = '/home/AD/srbl226/GPU/gpu_detect/140722_2_2.tif'):
   im = io.imread(fileName)
   i = im.transpose()
-  I = i[:512,:512,:111]
+  I = i[512:1024,:512,:111]
+  I/= np.max(I)
   print "total pixels",np.shape(I)[0]*np.shape(I)[1]*np.shape(I)[2]
   print "shape of image array",  I.shape
   return I
@@ -45,10 +49,10 @@ def PoreFilter(size=20,dim=3):
   #print "poreMax,poreMin", np.max(pore),np.min(pore)
   #print "this will include punishment filter"
   #print "poreShape", np.shape(pore)
-  print "pore",pore
+  #print "pore",pore
 
   locs = np.argwhere(fPore<255.0)
-  print "shape locs", np.shape(locs)
+  #print "shape locs", np.shape(locs)
   #print "locs vals", locs
   fPore[locs] = -100.0
   # print "fpore at locs", fPore
@@ -56,12 +60,13 @@ def PoreFilter(size=20,dim=3):
   #    pore[loc] = -100
   arbitrary = 10
   pore = np.reshape(fPore,(20,20))
-  print "all fpore vals", pore
+  #print "all fpore vals", pore
   vec = np.ones((arbitrary)) ############This is arbitrary, please make sensical
   cross = np.outer(pore,vec)
   crossFilter = np.reshape(cross,(size,size,arbitrary))
   #util.myplot(crossFilter[:,:,5])
   print "dimensions of filter", np.shape(crossFilter)
+  crossFilter/=np.max(crossFilter)
   return crossFilter
 
 #import imutils
@@ -341,7 +346,7 @@ def doTFloop(inputs,
           the sweet spot between NOT offloading the memory eating tensors and NOT bricking the computer.
     '''
     # TODO: See if there is a way to grab maximum available memory for the GPU to automatically
-    #       and cleverly determine the sweetspot to where we don't have to offload tensors to cpu
+    #       and cleverly determin the sweetspot to where we don't have to offload tensors to cpu
     #       but can also efficiently determine parallel_iterations number
     if len(np.shape(inputs.imgOrig)) == 3:
       cnt,stackedHits,bestAngles = tf.while_loop(condition, body3D,
@@ -354,7 +359,36 @@ def doTFloop(inputs,
     cntF,stackedHitsF,bestAnglesF =  sess.run([cnt,stackedHits,bestAngles])
     compFin = time.time()
     print "Time for tensor flow to execute run:{}s".format(compFin-compStart)
-
+    print "stackedHits type  ", type(stackedHits), "  stackedHits shape  ", np.shape(stackedHits) 
+    sHits = stackedHits.eval()
+    print "type sHits ", type(sHits)
+    
+    ###############THIS IS A STUPID HACK
+    coolLoc = np.argmax(sHits,axis=0) 
+    coolLoc =np.argmax(coolLoc,axis=0)
+    coolLoc =np.argmax(coolLoc,axis=0)
+    import tifffile as tiff
+    #i = sHits.transpose() 
+    #print "shape for tiff", np.shape(ti)
+    #im = Image.fromarray(sHits, mode='F')
+    #forTiff = sitk.Cast(sHits,sitk.sitkFloat32)
+    forTiff = np.asarray(sHits,dtype=np.uint8)
+    myTiff = forTiff.transpose()    
+    print "a fortiff val", forTiff[50,50,50]
+    print "forTiff dims ", np.shape(forTiff)
+    #imsave('convolved.tif',forTiff)
+    print "dtype forTiff", forTiff.dtype
+     
+    tiff.imsave("convolved.tiff",myTiff)
+    #sitk.WriteImage(forTiff,'convolved.tif')  
+  
+    #with TiffWriter('convolved.tif',imagej=True) as tif:
+    #  for i in range(forTiff.shape[0]):
+    #    tif.save(forTiff[i])
+   
+    sHits/=np.max(sHits)
+    print "coolLoc shape", np.shape(coolLoc), "coolLoc ",coolLoc
+    #util.myplot(sHits[:,:,coolLoc])
     results = empty()
     
     results.stackedHits = stackedHitsF
@@ -396,6 +430,7 @@ def MF(
     if useGPU:
        paramDict = optimizer.ParamDict(typeDict='WT')
        paramDict['filterMode'] = 'simple'
+       paramDict['snrThresh'] = 0.0
        corr,tElapsed = doTFloop(inputs,paramDict,xiters=xiters,yiters=yiters,ziters=ziters)
        corr = np.real(corr)
        #print "POST FILTER"

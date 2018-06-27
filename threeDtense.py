@@ -16,7 +16,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 #from skimage.external.tifffile import TiffWriter
 #from skimage.io._plugins.tifffile_plugin import imsave
 #import SimpleITK as sitk
-
+import tifffile as tiff
 height = 50
 #ters = [-30,-20,-10,0,10,20]
 iters = [0]
@@ -28,10 +28,10 @@ class empty:
 #Ripped straight from stackoverflow
 from skimage import io
 
-def Arrayer(fileName = '/home/AD/srbl226/GPU/gpu_detect/140722_2_2.tif'):
+def Arrayer(fileName = '/home/AD/srbl226/GPU/gpu_detect/140722_2_2.tif',picDims = [0,512,0,512,0,111]):
   im = io.imread(fileName)
   i = im.transpose()
-  I = i[512:1024,:512,:111]
+  I = i[picDims[0]:picDims[1],picDims[2]:picDims[3],picDims[4]:picDims[5]]
   I/= np.max(I)
   print "total pixels",np.shape(I)[0]*np.shape(I)[1]*np.shape(I)[2]
   print "shape of image array",  I.shape
@@ -236,13 +236,13 @@ def doTFloop(inputs,
     tfImg = tf.Variable(inputs.imgOrig, dtype=tf.complex64)
     print " post step1/ prePad", time.time()-start
     #paddedFilter = Pad(inputs.imgOrig,inputs.mfOrig)
-    print " postPad", time.time()-start
+    #print " postPad", time.time()-start
     tfFilt = tf.constant(inputs.mfOrig)
     #tfFilt = tf.Variable(paddedFilter, dtype=tf.complex64)
     paddings = tf.constant([[0,inputs.imgOrig.shape[0]-inputs.mfOrig.shape[0]],[0,inputs.imgOrig.shape[1]-inputs.mfOrig.shape[1]],[0,inputs.imgOrig.shape[2]-inputs.mfOrig.shape[2]]])
     padFilt = tf.pad(tfFilt,paddings,"CONSTANT")
     rollFilt = tf.manip.roll(padFilt,shift=[-inputs.mfOrig.shape[0]/2,-inputs.mfOrig.shape[1]/2,-inputs.mfOrig.shape[2]/2],axis=[0,1,2])
-    print "post roll", time.time()-start
+    #print "post roll", time.time()-start
     pF = tf.cast(rollFilt, dtype=tf.complex64)
     tfFilt = tf.Variable(pF, dtype=tf.complex64)
     
@@ -252,21 +252,21 @@ def doTFloop(inputs,
     else:
       stackedHitsDummy = np.zeros_like(inputs.imgOrig)
     stackedHits = tf.Variable(stackedHitsDummy, dtype=tf.float64)
-    print "post stacked hits", time.time()-start
+    #print "post stacked hits", time.time()-start
     bestAngles = tf.Variable(np.zeros_like(inputs.imgOrig),dtype=tf.float64)
     snr = tf.Variable(np.zeros_like(tfImg),dtype=tf.complex64)
-    print "post snr", time.time()-start
+    #print "post snr", time.time()-start
 
     # make big angle container
     numXits = np.shape(xiters)[0]
     numYits = np.shape(yiters)[0]
     numZits = np.shape(ziters)[0]
     cnt = tf.Variable(tf.constant(numXits * numYits * numZits-1,dtype=tf.int64))
-    print "post cnt", time.time()-start
+    #print "post cnt", time.time()-start
 
     # It's late and I'm getting lazy
     bigIters = []
-    print "pre bigIters", time.time()-start
+    #print "pre bigIters", time.time()-start
 
     if len(np.shape(inputs.imgOrig)) == 3:
       for i in xiters:
@@ -275,7 +275,7 @@ def doTFloop(inputs,
             bigIters.append([i,j,k])
     else:
       bigIters = ziters
-    print "post bigIters", time.time()-start
+    #print "post bigIters", time.time()-start
     # convert iterations from degrees into radians
     bigIters = np.asarray(bigIters,dtype=np.float32)
     bigIters = bigIters * np.pi / 180.
@@ -283,9 +283,9 @@ def doTFloop(inputs,
 
     # have to convert to a tensor so that the rotations can be indexed during tf while loop
     bigIters = tf.Variable(tf.convert_to_tensor(bigIters,dtype=tf.float32))
-    print "post bigIters into tf", time.time()-start
+    #print "post bigIters into tf", time.time()-start
     # initialize paramDict variables
-    print "pre big dict", time.time()-start
+    #print "pre big dict", time.time()-start
     paramDict['inverseSNR'] = tf.Variable(paramDict['inverseSNR'], dtype=tf.bool)
 
     # set up filtering variables
@@ -295,7 +295,7 @@ def doTFloop(inputs,
       paramDict['covarianceMatrix'] = tf.Variable(paramDict['covarianceMatrix'],dtype=tf.complex64)
       paramDict['gamma'] = tf.Variable(paramDict['gamma'],dtype=tf.complex64)
       sess.run(tf.variables_initializer([paramDict['mfPunishment'],paramDict['covarianceMatrix'],paramDict['gamma']]))
-    print "post big dict, pre run", time.time()-start
+    #print "post big dict, pre run", time.time()-start
     sess.run(tf.variables_initializer([tfImg,tfFilt,cnt,bigIters,stackedHits,bestAngles,snr,paramDict['inverseSNR']]))
    
     inputs.tfImg = tfImg
@@ -359,27 +359,26 @@ def doTFloop(inputs,
     cntF,stackedHitsF,bestAnglesF =  sess.run([cnt,stackedHits,bestAngles])
     compFin = time.time()
     print "Time for tensor flow to execute run:{}s".format(compFin-compStart)
-    print "stackedHits type  ", type(stackedHits), "  stackedHits shape  ", np.shape(stackedHits) 
+    #print "stackedHits type  ", type(stackedHits), "  stackedHits shape  ", np.shape(stackedHits) 
     sHits = stackedHits.eval()
-    print "type sHits ", type(sHits)
+    #print "type sHits ", type(sHits)
     
     ###############THIS IS A STUPID HACK
     coolLoc = np.argmax(sHits,axis=0) 
     coolLoc =np.argmax(coolLoc,axis=0)
     coolLoc =np.argmax(coolLoc,axis=0)
-    import tifffile as tiff
     #i = sHits.transpose() 
     #print "shape for tiff", np.shape(ti)
     #im = Image.fromarray(sHits, mode='F')
     #forTiff = sitk.Cast(sHits,sitk.sitkFloat32)
     forTiff = np.asarray(sHits,dtype=np.uint8)
-    myTiff = forTiff.transpose()    
-    print "a fortiff val", forTiff[50,50,50]
-    print "forTiff dims ", np.shape(forTiff)
+    #myTiff = forTiff.transpose()    
+    #print "a fortiff val", forTiff[50,50,50]
+    #print "forTiff dims ", np.shape(forTiff)
     #imsave('convolved.tif',forTiff)
-    print "dtype forTiff", forTiff.dtype
+    #print "dtype forTiff", forTiff.dtype
      
-    tiff.imsave("convolved.tiff",myTiff)
+    #tiff.imsave("convolved.tiff",myTiff)
     #sitk.WriteImage(forTiff,'convolved.tif')  
   
     #with TiffWriter('convolved.tif',imagej=True) as tif:
@@ -387,13 +386,13 @@ def doTFloop(inputs,
     #    tif.save(forTiff[i])
    
     sHits/=np.max(sHits)
-    print "coolLoc shape", np.shape(coolLoc), "coolLoc ",coolLoc
+    #print "coolLoc shape", np.shape(coolLoc), "coolLoc ",coolLoc
     #util.myplot(sHits[:,:,coolLoc])
-    results = empty()
+    #results = empty()
     
-    results.stackedHits = stackedHitsF
+    #results.stackedHits = stackedHitsF
     # TODO: pull out best angles from bigIters
-    results.stackedAngles = bestAnglesF
+    #results.stackedAngles = bestAnglesF
 
     #start = time.time()
     tElapsed = time.time()-start
@@ -405,7 +404,7 @@ def doTFloop(inputs,
     print 'Total time for tensorflow to run:{}s'.format(tElapsed)
 
 
-    return results, tElapsed
+    return forTiff, tElapsed #results, tElapsed
 
 
 def MF(
@@ -675,6 +674,31 @@ def testReal(dims=[1]):
 
   return times, timesGPU
 
+def pictureMaker(dims=[1]): ### This fxn makes a convolved pic to compare to OG image
+  dFilter = PoreFilter()
+  for i  in [0,1]:
+      for j in [0,1]:
+          for k in [0,1]:
+            testImage = Arrayer('/home/AD/srbl226/GPU/gpu_detect/140722_2_2.tif',[i*512,(i+1)*512,j*512,(j+1)*512,111*k,(k+1)*111])
+            im,time = MF(testImage,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters) 
+            #im = convolved ### grab convolved im here
+            if not k:
+                imZ = im
+            else:
+                imZ = np.concatenate((imZ,im),axis=2)
+          if not j:
+            imY = imZ
+          else:
+            imY = np.concatenate((imY,imZ),axis=1)
+      if not i:
+          imX = imY
+      else:
+          imX = np.concatenate((imX,imY),axis=0)
+  print "final Dims", np.shape(imX)
+  finalImage = imX.transpose()
+  tiff.imsave('convolved.tiff', finalImage)
+
+
 
 #
 # Message printed when program run without arguments 
@@ -724,7 +748,10 @@ if __name__ == "__main__":
       print"\n" + "GPU",timesGPU
       quit()
 
-
+    if(arg=="-pic"):
+      pictureMaker()
+      print " made pic"
+      quit()
 
     if(arg=="-test1"):
       test1()

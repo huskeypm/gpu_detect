@@ -32,7 +32,8 @@ plt.rcParams['font.size'] = 18
 #plt.rcParams['font.weight'] = 500 # slightly darker than normal
 #plt.rcParams['axes.labelweight'] = 500
 plt.rcParams['axes.labelsize'] = 'large'
-plt.rcParams['axes.labelpad'] = 12.0 
+print "Comment out for HESSE"
+#plt.rcParams['axes.labelpad'] = 12.0 
 plt.rcParams['figure.autolayout'] = True
 
 #root = "myoimages/"
@@ -440,34 +441,44 @@ def figS3():
   ### setup case
   caseGPU = empty()
   caseGPU.loc_um = [2477,179]
-  caseGPU.extent_um = [150,150]
+  caseGPU.extent_um = [350,350]
   caseGPU.orig = tissue.Setup()
   caseGPU.subregion = tissue.get_fiji(caseGPU.orig,caseGPU.loc_um,caseGPU.extent_um)
 
   ### Store subregions for later marking
   caseGPU.subregionOrig = caseGPU.subregion.copy()
 
-  ### Preprocess and analyze the case
-  caseGPU = analyzeTissueCase(caseGPU)
+  ### Preprocess 
+  caseGPU = preprocessTissueCase(caseGPU)
+
+  ### make necessary copies for CPU case
+  caseCPU = empty()
+  caseCPU.loc_um = [2477,179]
+  caseCPU.extent_um = [350,350]
+  caseCPU.orig = caseGPU.orig.copy()
+  caseCPU.degreesOffCenter = caseGPU.degreesOffCenter
+  caseCPU.scale = caseGPU.scale
+  caseCPU.subregionOrig = caseGPU.subregionOrig.copy()
+  caseCPU.subregion = caseGPU.subregion.copy()
+  caseCPU.displayImg = caseGPU.displayImg.copy()
+  
+  ### analyze the case
+  caseGPU = analyzeTissueCase(caseGPU,preprocess=False)
 
   ### display the hits of the case
   displayTissueCaseHits(caseGPU,"figS3_GPU")
 
-  ### setup case
-  caseCPU = empty()
-  caseCPU.loc_um = [2477,179]
-  caseCPU.extent_um = [150,150]
-  caseCPU.orig = tissue.Setup()
-  caseCPU.subregion = tissue.get_fiji(caseCPU.orig,caseCPU.loc_um,caseCPU.extent_um)
-
-  ### Store subregions for later marking
-  caseCPU.subregionOrig = caseCPU.subregion.copy()
+  ### store results
+  GPUstackedHits = caseGPU.results.stackedHits
 
   ### Preprocess and analyze the case
-  caseCPU = analyzeTissueCase(caseCPU,useGPU=False)
+  caseCPU = analyzeTissueCase(caseCPU,preprocess=False,useGPU=False)
 
   ### display the hits of the case
   displayTissueCaseHits(caseCPU,"figS3_CPU")
+
+  ### store results
+  CPUstackedHits = caseCPU.results.stackedHits
 
   ### save original enhanced image for comparison
   plt.figure()
@@ -475,10 +486,9 @@ def figS3():
   plt.gcf().savefig('figS3_enhancedImg.png',dpi=300)
   
   ### do comparison between GPU and CPU results
-  comparison = np.abs(caseGPU.results.stackedHits - caseCPU.results.stackedHits)
+  comparison = np.abs(GPUstackedHits - CPUstackedHits)
   plt.figure()
-  plt.imshow(comparison)
-  plt.colorbar()
+  plt.imshow(comparison,cmap='gray')
   plt.colorbar()
   plt.gcf().savefig('figS3_comparison.png',dpi=300)
   
@@ -542,12 +552,7 @@ def shaveFig(fileName,padY=None,padX=None,whiteSpace=None):
 
   cv2.imwrite(fileName,newImg)
 
-
-
-def analyzeTissueCase(case,useGPU=True):
-  import tensorflow_mf as tmf
-  import threeDtense as tdt
-
+def preprocessTissueCase(case):
   ### Preprocess subregions
   case.subregion, case.degreesOffCenter = pp.reorient(
           case.subregion
@@ -569,11 +574,21 @@ def analyzeTissueCase(case,useGPU=True):
   case.subregion -= np.min(case.subregion)
   case.subregion = case.subregion.astype(float) / float(np.max(case.subregion))
 
+  return case
+
+def analyzeTissueCase(case,preprocess=True,useGPU=True):
+  import tensorflow_mf as tmf
+  import threeDtense as tdt
+
+  if preprocess:
+    case = preprocessTissueCase(case)
+
   ### Setup Filters
   root = "./myoimages/"
   ttFilterName = root+"newSimpleWTFilter.png"
   ttPunishmentFilterName = root+"newSimpleWTPunishmentFilter.png"
-  case.iters = [-25,20,-15,-10-5,0,5,10,15,20,25]
+  case.iters = [-25,-20,-15,-10-5,0,5,10,15,20,25]
+  #case.iters = [-20,0,20]
   returnAngles = True
   ttFilter = util.LoadFilter(ttFilterName)
   ttPunishmentFilter = util.LoadFilter(ttPunishmentFilterName)

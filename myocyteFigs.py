@@ -432,6 +432,57 @@ def figS2():
   plt.imshow(case.displayImg,cmap='gray')
   plt.gcf().savefig('figS2_enhancedImg.png',dpi=300)
 
+def figS3():
+  '''
+  Routine to compare the GPU and CPU implementation of code
+  '''
+
+  ### setup case
+  caseGPU = empty()
+  caseGPU.loc_um = [2477,179]
+  caseGPU.extent_um = [350,350]
+  caseGPU.orig = tissue.Setup()
+  caseGPU.subregion = tissue.get_fiji(caseGPU.orig,caseGPU.loc_um,caseGPU.extent_um)
+
+  ### Store subregions for later marking
+  caseGPU.subregionOrig = case.subregionGPU.copy()
+
+  ### Preprocess and analyze the case
+  caseGPU = analyzeTissueCase(caseGPU)
+
+  ### display the hits of the case
+  displayTissueCaseHits(caseGPU,"figS3_GPU")
+
+  ### setup case
+  caseCPU = empty()
+  caseCPU.loc_um = [2477,179]
+  caseCPU.extent_um = [350,350]
+  caseCPU.orig = tissue.Setup()
+  caseCPU.subregion = tissue.get_fiji(caseCPU.orig,caseCPU.loc_um,caseCPU.extent_um)
+
+  ### Store subregions for later marking
+  caseCPU.subregionOrig = case.subregionCPU.copy()
+
+  ### Preprocess and analyze the case
+  caseCPU = analyzeTissueCase(caseCPU,useGPU=False)
+
+  ### display the hits of the case
+  displayTissueCaseHits(caseCPU,"figS3_CPU")
+
+  ### save original enhanced image for comparison
+  plt.figure()
+  plt.imshow(caseGPU.displayImg,cmap='gray')
+  plt.gcf().savefig('figS3_enhancedImg.png',dpi=300)
+  
+  ### do comparison between GPU and CPU results
+  comparison = np.abs(caseGPU.results.stackedHits - caseCPU.results.stackedHits)
+  plt.figure()
+  plt.imshow(comparison)
+  plt.colorbar()
+  plt.colorbar()
+  plt.gcf().savefig('figS3_comparison.png',dpi=300)
+  
+
 def shaveFig(fileName,padY=None,padX=None,whiteSpace=None):
   '''
   Aggravating way of shaving a figure's white space down to an acceptable level
@@ -493,7 +544,7 @@ def shaveFig(fileName,padY=None,padX=None,whiteSpace=None):
 
 
 
-def analyzeTissueCase(case):
+def analyzeTissueCase(case,useGPU=True):
   import tensorflow_mf as tmf
   import threeDtense as tdt
 
@@ -531,7 +582,7 @@ def analyzeTissueCase(case):
   case.params = optimizer.ParamDict(typeDict="WT")
   case.params['covarianceMatrix'] = np.ones_like(case.subregion)
   case.params['mfPunishment'] = ttPunishmentFilter
-  case.params['useGPU'] = True
+  case.params['useGPU'] = useGPU
 
   ### Setup input classes
   case.inputs = empty()
@@ -1054,6 +1105,12 @@ def giveMarkedMyocyte(
     WTparams['gamma'] = wtGamma
   print "WT Filtering"
   WTresults = bD.DetectFilter(inputs,WTparams,iters,returnAngles=returnAngles)  
+  #print np.sum(WTresults.stackedAngles)
+  #plt.figure()
+  #plt.imshow(WTresults.stackedAngles)
+  #plt.colorbar()
+  #plt.show()
+  #quit()
   WTstackedHits = WTresults.stackedHits
 
   ### LT filtering
@@ -1134,9 +1191,6 @@ def giveMarkedMyocyte(
       cv2.imwrite(tag+"_output.png",cI)       
 
   if returnAngles:
-    print "Consider using the previously computed rigorous WT hits as a mask",\
-          "and rerun with a simple WT filter or the same filter without punishment.",\
-          "Using the punishment filter results in wonky striation angles."
     cImg = util.ReadImg(testImage,cvtColor=False)
     coloredAngles = painter.colorAngles(cImg,WTresults.stackedAngles,iters)
     coloredAnglesMasked = ReadResizeApplyMask(coloredAngles,testImage,
@@ -1760,6 +1814,10 @@ if __name__ == "__main__":
       figS2()
       quit()
 
+    if(arg=="-figS3"):
+      figS3()
+      quit()
+
     # generates all figs
     if(arg=="-allFigs"):
       fig3()     
@@ -1767,6 +1825,8 @@ if __name__ == "__main__":
       fig5()
       fig6()     
       figS1()
+      figS2()
+      figS3()
       quit()
 
     if(arg=="-workflowFig"):

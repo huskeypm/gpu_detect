@@ -196,10 +196,10 @@ def regionalDeviation(inputs,paramDict):
   results = empty()
 
   if paramDict['useGPU'] == False:
-    simpleCorr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF'])
+    results.corr = mF.matchedFilter(img,mf,parsevals=False,demean=paramDict['demeanMF'])
   else:
     print "deprecated. Switch GPU filtering over to new scheme"
-    simpleCorr = sMF.MF(img,mf,useGPU=True)
+    results.corr = sMF.MF(img,mf,useGPU=True)
 
 
   ####### FINAL ITERATION OF CONVOLUTION BASED STD DEV
@@ -224,9 +224,9 @@ def regionalDeviation(inputs,paramDict):
   ### Find common hits
   stdDevHits = stdDev < paramDict['stdDevThresh']
   if paramDict['inverseSNR'] == False:
-    simpleHits = simpleCorr > paramDict['snrThresh']
+    simpleHits = results.corr > paramDict['snrThresh']
   else:
-    simpleHits = simpleCorr < paramDict['snrThresh']
+    simpleHits = results.corr < paramDict['snrThresh']
   commonHits = np.multiply(stdDevHits, simpleHits)
 
   ### store in a resulting image with arbitrary snr

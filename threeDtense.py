@@ -32,16 +32,17 @@ def Arrayer(fileName = '/home/AD/srbl226/GPU/gpu_detect/140722_2_2.tif',picDims 
   im = io.imread(fileName)
   i = im.transpose()
   I = i[picDims[0]:picDims[1],picDims[2]:picDims[3],picDims[4]:picDims[5]]
+  print "max of array" 
   I/= np.max(I)
   print "total pixels",np.shape(I)[0]*np.shape(I)[1]*np.shape(I)[2]
   print "shape of image array",  I.shape
   return I
             
 from scipy.misc import toimage
-def PoreFilter(size=20,dim=3):
+def PoreFilter(size=40,dim=3):
   img = np.zeros((size,size,dim), np.uint8)
   #cv2.circle(img,(size/2,size/2),size/2,(-1,-1,-1),-1)#used for punishment
-  cv2.circle(img,(size/2,size/2),size/4,(255,255,255),-1)  #not certain what size/4 corresponds to, maybe radius, jk I get it size/2 is center and size/4 is radius
+  cv2.circle(img,(size/2,size/2),size/20,(255,255,255),-1)  #not certain what size/4 corresponds to, maybe radius, jk I get it size/2 is center and size/4 is radius
   #plt.imshow(img)
   toimage(img).save('pore.png')
   pore = util.ReadImg('pore.png').astype(np.float64)
@@ -58,12 +59,14 @@ def PoreFilter(size=20,dim=3):
   # print "fpore at locs", fPore
   #for i,loc in enumerate(locs):
   #    pore[loc] = -100
-  arbitrary = 10
-  pore = np.reshape(fPore,(20,20))
+  arbitrary = 40
+  pore = np.reshape(fPore,(size,size))
   #print "all fpore vals", pore
   vec = np.ones((arbitrary)) ############This is arbitrary, please make sensical
   cross = np.outer(pore,vec)
   crossFilter = np.reshape(cross,(size,size,arbitrary))
+  crossFilter[:,:,:arbitrary/4] = -100.0
+  crossFilter[:,:,(arbitrary*3):] = -100.0
   #util.myplot(crossFilter[:,:,5])
   print "dimensions of filter", np.shape(crossFilter)
   crossFilter/=np.max(crossFilter)
@@ -679,7 +682,7 @@ def pictureMaker(dims=[1]): ### This fxn makes a convolved pic to compare to OG 
   for i  in [0,1]:
       for j in [0,1]:
           for k in [0,1]:
-            testImage = Arrayer('/home/AD/srbl226/GPU/gpu_detect/140722_2_2.tif',[i*512,(i+1)*512,j*512,(j+1)*512,111*k,(k+1)*111])
+            testImage = Arrayer('/home/AD/srbl226/gpu3D/gpu_detect/floored.tiff',[i*512,(i+1)*512,j*512,(j+1)*512,111*k,(k+1)*111])
             im,time = MF(testImage,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters) 
             #im = convolved ### grab convolved im here
             if not k:
@@ -696,6 +699,7 @@ def pictureMaker(dims=[1]): ### This fxn makes a convolved pic to compare to OG 
           imX = np.concatenate((imX,imY),axis=0)
   print "final Dims", np.shape(imX)
   finalImage = imX.transpose()
+  finalImage*=(255/np.max(finalImage))
   tiff.imsave('convolved.tiff', finalImage)
 
 

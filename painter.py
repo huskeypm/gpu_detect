@@ -123,6 +123,7 @@ def StackHits(correlated,  # an array of 'correlation planes'
     ## select hits based on those entries about the snrThresh 
     ##
     maskList = []
+    simpleCorrMaskList = []
     for i, iteration in enumerate(iters):
         # routine for identifying 'unique' hits
         try:
@@ -132,6 +133,10 @@ def StackHits(correlated,  # an array of 'correlation planes'
           print "DC: Using workaround for tissue param dictionary. Fix me."
           daMask = util2.makeMask(paramDict['snrThresh'], img=correlated[i].snr,
                                   doKMeans=doKMeans)
+        # pull out where there is a hit on the simple correlation for use in rotation angle
+        hitMask = daMask > 0.
+        simpleCorrMask = correlated[i].corr
+        simpleCorrMask[np.logical_not(hitMask)] = 0
                                   
         #  print debugging info                                    
         if display:
@@ -144,13 +149,11 @@ def StackHits(correlated,  # an array of 'correlation planes'
             #plt.axis("off")
             plt.gcf().savefig("stack_%d.png"%iteration)    
 
-        # i don't think this should be rotated 
-        #maskList.append((util2.rotater(daMask,iteration)))
         maskList.append(daMask)
+        simpleCorrMaskList.append(simpleCorrMask)
 
     # take maximum hit
     stacked = np.max(maskList,axis=0)
-    
     
     # default behavior (just returned stacked images) 
     if not returnAngles:
@@ -158,19 +161,15 @@ def StackHits(correlated,  # an array of 'correlation planes'
     
     # function that returns angle associated with optimal response
     if returnAngles:
-      imgDims = np.shape(stacked)
-      maskArray = np.asarray(maskList)
-      
-      # defaulting array to -1 so it is evident what is and is not a hit
-      stackedAngles = np.subtract(np.zeros_like(stacked,dtype='int'), 1)
-      #print np.shape(maskArray), imgDims
-      angleCounts = []
-      for i in range(imgDims[0]):
-        for j in range(imgDims[1]):
-          if stacked[i,j] != 0:
-            # indicates that this is a hit
-            iterIdx = int(np.argmax(maskArray[:,i,j]))
-            stackedAngles[i,j] = iterIdx
+      # have to subtract one from array so that we can use this to index rotations later on in alg
+      doSimple = False
+      if doSimple:
+        stackedAngles = np.argmax(simpleCorrMaskList,axis=0)
+        # mask out non hits
+        stackedAngles[stacked == 0] = -1
+      else:
+        stackedAngles = np.argmax(maskList,axis=0)
+        stackedAngles[stacked == 0] = -1
       return stacked, stackedAngles
   
 ###

@@ -160,11 +160,34 @@ def tfMF(img,mf,dimensions=3):
     xF = tf.fft2d(img)
     mFF = tf.fft2d(mf)
     # this is something to do with the shifting done previously
-    xFc = tf.conj(xF)
+    #xFc = tf.conj(xF)
     out = tf.multiply(xF,mFF)
     xR = tf.ifft2d(out)
 
   return xR
+
+def convertToTFFilter(imgOrig,mfOrig):
+  '''
+  Routine to take CPU computation ready filter and convert to a filter ready for
+    calculation with tensorflow
+  '''
+  tfFilt = tf.constant(mfOrig)
+  ## sticks filter in upper left corner of padded image with same shape as original image
+  paddings = tf.constant([[0,imgOrig.shape[0]-mfOrig.shape[0]],
+                          [0,imgOrig.shape[1]-mfOrig.shape[1]]])
+  padFilt = tf.pad(tfFilt,paddings,"CONSTANT")
+  ## roll the filter in comparable way to FFT shifting
+  #rollFilt = tf.manip.roll(padFilt,shift=[-mfOrig.shape[0]/2,-mfOrig.shape[1]/2],axis=[0,1])
+  ## roll the filter to the middle of the image so that we can apply rotations later on
+  #shiftY = imgOrig.shape[0]/2 - mfOrig.shape[0]/2
+  #shiftX = imgOrig.shape[1]/2 - mfOrig.shape[1]/2
+  shiftY = -mfOrig.shape[0]/2
+  shiftX = -mfOrig.shape[1]/2
+  rollFilt = tf.manip.roll(padFilt,shift=[shiftY,shiftX],axis=[0,1])
+  pF = tf.cast(rollFilt, dtype=tf.complex64)
+  tfFilt = tf.Variable(pF, dtype=tf.complex64)
+
+  return tfFilt
 
 
 ##
@@ -195,25 +218,7 @@ def doTFloop(inputs,
 
     ### Create and initialize variables
     tfImg = tf.Variable(inputs.imgOrig, dtype=tf.complex64)
-    
-
-
-
-
-
-    #paddedFilter = Pad(inputs.imgOrig,inputs.mfOrig)
-    tfFilt = tf.constant(inputs.mfOrig)
-    paddings = tf.constant([[0,inputs.imgOrig.shape[0]-inputs.mfOrig.shape[0]],[0,inputs.imgOrig.shape[1]-inputs.mfOrig.shape[1]]])
-    padFilt = tf.pad(tfFilt,paddings,"CONSTANT")
-    rollFilt = tf.manip.roll(padFilt,shift=[-inputs.mfOrig.shape[0]/2,-inputs.mfOrig.shape[1]/2],axis=[0,1])
-    print "post roll", time.time()-start
-    pF = tf.cast(rollFilt, dtype=tf.complex64)
-    tfFilt = tf.Variable(pF, dtype=tf.complex64)
-
-
-
-
-    #tfFilt = tf.Variable(paddedFilter, dtype=tf.complex64)
+    tfFilt = convertToTFFilter(inputs.imgOrig,inputs.mfOrig)
 
     if paramDict['inverseSNR']:
       # if we are using an inverse threshold, we need a storage container that contains pixels > thresh
@@ -257,8 +262,7 @@ def doTFloop(inputs,
 
     # set up filtering variables
     if paramDict['filterMode'] == 'punishmentFilter':
-      paramDict['mfPunishment'] = Pad(inputs.imgOrig,paramDict['mfPunishment'])
-      paramDict['mfPunishment'] = tf.Variable(paramDict['mfPunishment'],dtype=tf.complex64)
+      paramDict['mfPunishment'] = convertToTFFilter(inputs.imgOrig,paramDict['mfPunishment'])
       paramDict['covarianceMatrix'] = tf.Variable(paramDict['covarianceMatrix'],dtype=tf.complex64)
       paramDict['gamma'] = tf.Variable(paramDict['gamma'],dtype=tf.complex64)
       sess.run(tf.variables_initializer([paramDict['mfPunishment'],paramDict['covarianceMatrix'],paramDict['gamma']]))
@@ -295,7 +299,16 @@ def doTFloop(inputs,
     def body2D(cnt,stackedHits,bestAngles):
       rotation = bigIters[cnt]
 
-      rotatedMF = util.rotateTFFilter2D(inputs.tfFilt,rotation)
+      inputs.rotatedMF = util.rotateTFFilter2D(inputs.tfFilt,rotation)
+      ### shift the rotated mf
+      #inputs.rotatedMF = tf.manip.roll(inputs.rotatedMF,
+      #        shift=[inputs.imgOrig.shape[0],inputs.imgOrig.shape[1]],axis=[0,1])
+
+      if paramDict['filterMode'] == "punishmentFilter":
+        inputs.rotatedPunishment = util.rotateTFFilter2D(paramDict['mfPunishment'],rotation)
+        ### shift the rotated punishment mf
+        #inputs.rotatedPunishment = tf.manip.roll(inputs.rotatedPunishment,
+        #        shift=[inputs.imgOrig.shape[0],inputs.imgOrig.shape[1]],axis=[0,1])
 
       snr = doDetection(inputs,paramDict,dimensions=2)
       stackedHitsNew,bestAnglesNew = doStackingHits(inputs,paramDict,stackedHits,bestAngles,snr,cnt)
@@ -469,21 +482,21 @@ def doDetection(inputs,paramDict,dimensions=3):
 
 def punishmentFilterTensor(inputs,paramDict,dimensions=3):
   # call generalized tensorflow matched filter routine
-  corr = tfMF(inputs.tfImg,inputs.tfFilt,dimensions=dimensions)
-  corrPunishment = tfMF(inputs.tfImg,paramDict['mfPunishment'],dimensions=dimensions)
+  corr = tfMF(inputs.tfImg,inputs.rotatedMF,dimensions=dimensions)
+  corrPunishment = tfMF(inputs.tfImg,inputs.rotatedPunishment,dimensions=dimensions)
   # calculate signal to noise ratio
   snr = tf.divide(corr,tf.add(paramDict['covarianceMatrix'],tf.multiply(paramDict['gamma'], corrPunishment)))
   return snr
 
 def simpleDetectTensor(inputs,paramDict,dimensions=3):
-  snr = tfMF(inputs.tfImg,inputs.tfFilt,dimensions=dimensions)
+  snr = tfMF(inputs.tfImg,inputs.rotatedMF,dimensions=dimensions)
   return snr
 
 
 def regionalDeviationTensor(inputs,paramDict,dimensions=3):
   ### Perform simple detection
   img = inputs.tfImg
-  mf = inputs.tfFilt
+  mf = inputs.rotatedMF
   corr = tfMF(img, mf,dimensions=dimensions)
 
   ### construct new kernel for standard deviation calculation

@@ -440,12 +440,12 @@ def figS3():
   ### setup case
   caseGPU = empty()
   caseGPU.loc_um = [2477,179]
-  caseGPU.extent_um = [350,350]
+  caseGPU.extent_um = [150,150]
   caseGPU.orig = tissue.Setup()
   caseGPU.subregion = tissue.get_fiji(caseGPU.orig,caseGPU.loc_um,caseGPU.extent_um)
 
   ### Store subregions for later marking
-  caseGPU.subregionOrig = case.subregionGPU.copy()
+  caseGPU.subregionOrig = caseGPU.subregion.copy()
 
   ### Preprocess and analyze the case
   caseGPU = analyzeTissueCase(caseGPU)
@@ -456,12 +456,12 @@ def figS3():
   ### setup case
   caseCPU = empty()
   caseCPU.loc_um = [2477,179]
-  caseCPU.extent_um = [350,350]
+  caseCPU.extent_um = [150,150]
   caseCPU.orig = tissue.Setup()
   caseCPU.subregion = tissue.get_fiji(caseCPU.orig,caseCPU.loc_um,caseCPU.extent_um)
 
   ### Store subregions for later marking
-  caseCPU.subregionOrig = case.subregionCPU.copy()
+  caseCPU.subregionOrig = caseCPU.subregion.copy()
 
   ### Preprocess and analyze the case
   caseCPU = analyzeTissueCase(caseCPU,useGPU=False)

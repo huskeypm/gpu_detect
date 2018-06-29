@@ -253,7 +253,6 @@ def doTFloop(inputs,
     bigIters = np.asarray(bigIters,dtype=np.float32)
     bigIters = bigIters * np.pi / 180.
 
-
     # have to convert to a tensor so that the rotations can be indexed during tf while loop
     bigIters = tf.Variable(tf.convert_to_tensor(bigIters,dtype=tf.float32))
 
@@ -298,14 +297,25 @@ def doTFloop(inputs,
 
     def body2D(cnt,stackedHits,bestAngles):
       rotation = bigIters[cnt]
-
-      inputs.rotatedMF = util.rotateTFFilter2D(inputs.tfFilt,rotation)
+ 
+      ### center filter for rotation scheme
+      shiftY = inputs.imgOrig.shape[0]/2
+      shiftX = inputs.imgOrig.shape[1]/2
+      inputs.rotatedMF = tf.manip.roll(inputs.tfFilt,shift=[shiftY,shiftX],axis=[0,1])
+      ### rotate filter
+      inputs.rotatedMF = util.rotateTFFilter2D(inputs.rotatedMF,rotation)
+      ### shift filter again
+      inputs.rotatedMF = tf.manip.roll(inputs.rotatedMF,shift=[shiftY,shiftX],axis=[0,1])
       ### shift the rotated mf
       #inputs.rotatedMF = tf.manip.roll(inputs.rotatedMF,
       #        shift=[inputs.imgOrig.shape[0],inputs.imgOrig.shape[1]],axis=[0,1])
 
       if paramDict['filterMode'] == "punishmentFilter":
-        inputs.rotatedPunishment = util.rotateTFFilter2D(paramDict['mfPunishment'],rotation)
+        ### center filter for rotation scheme
+        inputs.rotatedPunishment = tf.manip.roll(paramDict['mfPunishment'],shift=[shiftY,shiftX],axis=[0,1])
+        inputs.rotatedPunishment = util.rotateTFFilter2D(inputs.rotatedPunishment,rotation)
+        inputs.rotatedPunishment = tf.manip.roll(inputs.rotatedPunishment,shift=[shiftY,shiftX],axis=[0,1])
+
         ### shift the rotated punishment mf
         #inputs.rotatedPunishment = tf.manip.roll(inputs.rotatedPunishment,
         #        shift=[inputs.imgOrig.shape[0],inputs.imgOrig.shape[1]],axis=[0,1])

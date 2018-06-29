@@ -469,7 +469,7 @@ def figS3():
   displayTissueCaseHits(caseGPU,"figS3_GPU")
 
   ### store results
-  GPUstackedHits = caseGPU.results.stackedHits
+  GPUpastedHits = caseGPU.pasted
 
   ### Preprocess and analyze the case
   caseCPU = analyzeTissueCase(caseCPU,preprocess=False,useGPU=False)
@@ -478,7 +478,7 @@ def figS3():
   displayTissueCaseHits(caseCPU,"figS3_CPU")
 
   ### store results
-  CPUstackedHits = caseCPU.results.stackedHits
+  CPUpastedHits = caseCPU.pasted
 
   ### save original enhanced image for comparison
   plt.figure()
@@ -486,7 +486,7 @@ def figS3():
   plt.gcf().savefig('figS3_enhancedImg.png',dpi=300)
   
   ### do comparison between GPU and CPU results
-  comparison = np.abs(GPUstackedHits - CPUstackedHits)
+  comparison = np.abs(GPUpastedHits - CPUpastedHits)
   plt.figure()
   plt.imshow(comparison,cmap='gray')
   plt.colorbar()

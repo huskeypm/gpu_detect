@@ -1109,7 +1109,8 @@ def giveMarkedMyocyte(
   inputs.imgOrig = ReadResizeApplyMask(img,testImage,25,25) # just applies mask
 
   ### WT filtering
-  inputs.mfOrig = util.LoadFilter(ttFilterName)
+  ttFilter = util.LoadFilter(ttFilterName)
+  inputs.mfOrig = ttFilter
   WTparams = optimizer.ParamDict(typeDict='WT')
   WTparams['covarianceMatrix'] = np.ones_like(img)
   WTparams['mfPunishment'] = util.LoadFilter(wtPunishFilterName)
@@ -1207,17 +1208,37 @@ def giveMarkedMyocyte(
 
   if returnAngles:
     cImg = util.ReadImg(testImage,cvtColor=False)
-    coloredAngles = painter.colorAngles(cImg,WTresults.stackedAngles,iters)
+
+    ### perform smoothing on the original image
+    dim = 5
+    kernel = np.ones((dim,dim),dtype=np.float32)
+    kernel /= np.sum(kernel)
+    smoothed = mF.matchedFilter(inputs.imgOrig,kernel,demean=False)
+
+    ### make longer WT filter so more robust to striation angle deviation
+    longFilter = np.concatenate((ttFilter,ttFilter))
+    
+    rotInputs = empty()
+    rotInputs.imgOrig = smoothed
+    rotInputs.mfOrig = longFilter
+
+    params = optimizer.ParamDict(typeDict='WT')
+    params['snrThresh'] = 0 # to pull out max hit
+    params['filterMode'] = 'simple' # we want no punishment since that causes high variation
+    
+    ### perform simple filtering
+    smoothedWTresults = bD.DetectFilter(rotInputs,params,iters,returnAngles=returnAngles)
+    smoothedHits = smoothedWTresults.stackedAngles
+
+    ### pull out actual hits from smoothed results
+    smoothedHits[WTstackedHits == 0] = -1
+
+    coloredAngles = painter.colorAngles(cImg,smoothedHits,iters)
+
     coloredAnglesMasked = ReadResizeApplyMask(coloredAngles,testImage,
                                               ImgTwoSarcSize,
                                               filterTwoSarcSize=ImgTwoSarcSize)
-    ### mask the container holding the angles
-    stackedAngles = np.add(WTresults.stackedAngles, 1)
-    stackedAngles = ReadResizeApplyMask(stackedAngles,testImage,
-                                            ImgTwoSarcSize,
-                                            filterTwoSarcSize=ImgTwoSarcSize)
-    stackedAngles = np.asarray(stackedAngles, dtype='int')
-    stackedAngles = np.subtract(stackedAngles, 1)
+    stackedAngles = smoothedHits
     dims = np.shape(stackedAngles)
     angleCounts = []
     for i in range(dims[0]):

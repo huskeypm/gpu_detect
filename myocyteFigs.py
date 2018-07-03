@@ -270,11 +270,11 @@ def fig6():
   
   cases['WTLike'] = empty()
   cases['WTLike'].loc_um = [3694,0]
-  cases['WTLike'].extent_um = [400,400]
+  cases['WTLike'].extent_um = [300,300]
   
   cases['MILike'] = empty()
   cases['MILike'].loc_um = [2100,3200]
-  cases['MILike'].extent_um = [400,400]
+  cases['MILike'].extent_um = [300,300]
 
   tissue.SetupCase(cases['WTLike'])
   tissue.SetupCase(cases['MILike'])
@@ -313,17 +313,19 @@ def fig6():
   #ax.set_xticks(indices,('WT Like','','MI Like'))
   #plt.setp(ax,xticks=indices, xticklabels=['WT Like','MI Like'],fontsize=24)
   plt.sca(ax)
-  plt.xticks(indices,['Conserved Structure','Perturbed Structure'],fontsize=24)
+  plt.xticks(indices,['Conserved','Perturbed'],fontsize=24)
   ax.set_ylim([0,1.2])
   plt.gcf().savefig('fig6_TTcontent.pdf',dpi=300)
 
   ### Save enhanced original images for figure 
   plt.figure()
   plt.imshow(cases['WTLike'].displayImg,cmap='gray')
+  plt.axis('off')
   plt.gcf().savefig('fig6_WTLike_enhancedImg.pdf',dpi=300)
 
   plt.figure()
   plt.imshow(cases['MILike'].displayImg,cmap='gray')
+  plt.axis('off')
   plt.gcf().savefig('fig6_MILike_enhancedImg.pdf',dpi=300)
 
   ### Find angle counts for each rotation
@@ -680,6 +682,7 @@ def displayTissueCaseHits(case,tag):
                                     padX:-padX]
 
   du.StackGrayRedAlpha(case.displayImg,case.pasted,alpha=0.5)
+  plt.axis('off')
   plt.gcf().savefig(tag+"_hits.pdf",dpi=300)
 
 

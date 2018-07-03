@@ -154,7 +154,7 @@ def updatedSimple(imgName,mfName,filterTwoSarcomereSize,threh,debug=False,smooth
 
   INPUTS:
     - imgName: Name of image that has myocyte of interest in the middle of the image
-               Myocyte can be of any orientation BUT there should be some conserved 
+               Myocyte major axis must be roughly parallel to x axis. There should be some conserved 
                striations in the middle of the image. 
     - thresh: Threshold that is utilized in the detection
   

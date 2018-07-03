@@ -75,7 +75,7 @@ def fig3():
   ax.set_ylabel('Normalized Content')
   ax.legend(marks)
   ax.set_xticks([])
-  plt.gcf().savefig('fig3_BarChart.png',dpi=300)
+  plt.gcf().savefig('fig3_BarChart.pdf',dpi=300)
   plt.close()
 
   ### displaying raw, marked, and marked angle images
@@ -92,15 +92,15 @@ def fig3():
   ### opting to save files individually and arrange using image magick montage command
   plt.figure()
   plt.imshow(rawImg,cmap='gray')
-  plt.gcf().savefig("fig3_Raw.png",dpi=300)
+  plt.gcf().savefig("fig3_Raw.pdf",dpi=300)
 
   plt.figure()
   plt.imshow(correctColoredImg)
-  plt.gcf().savefig("fig3_ColoredImage.png",dpi=300)
+  plt.gcf().savefig("fig3_ColoredImage.pdf",dpi=300)
 
   plt.figure()
   plt.imshow(correctColoredAngles)
-  plt.gcf().savefig("fig3_ColoredAngles.png",dpi=300)
+  plt.gcf().savefig("fig3_ColoredAngles.pdf",dpi=300)
 
   ### save histogram of angles
   giveAngleHistogram(angleCounts,iters,"fig3")
@@ -133,21 +133,29 @@ def fig4():
   ax.set_ylabel('Normalized Content')
   ax.legend(marks)
   ax.set_xticks([])
-  plt.gcf().savefig('fig4_BarChart.png',dpi=300)
+  plt.gcf().savefig('fig4_BarChart.pdf',dpi=300)
   plt.close()
  
   ### constructing actual figure
-  fig, axarr = plt.subplots(2,1)
-  axarr[0].imshow(rawImg,cmap='gray')
-  axarr[0].set_title("HF Raw")
-  axarr[0].axis('off') 
+  #fig, axarr = plt.subplots(2,1)
+  #axarr[0].imshow(rawImg,cmap='gray')
+  #axarr[0].set_title("HF Raw")
+  #axarr[0].axis('off') 
 
   switchedImg = switchBRChannels(markedImg)
-  axarr[1].imshow(switchedImg)
-  axarr[1].set_title("HF Marked")
-  axarr[1].axis('off')
-  plt.gcf().savefig("fig4_RawAndMarked.png",dpi=300)
-  plt.close()
+  #axarr[1].imshow(switchedImg)
+  #axarr[1].set_title("HF Marked")
+  #axarr[1].axis('off')
+  #plt.gcf().savefig("fig4_RawAndMarked.pdf",dpi=300)
+  #plt.close()
+
+  plt.figure()
+  plt.imshow(rawImg,cmap='gray')
+  plt.gcf().savefig("fig4_Raw.pdf",dpi=300)
+
+  plt.figure()
+  plt.imshow(switchedImg)
+  plt.gcf().savefig("fig4_Marked.pdf",dpi=300)
 
 ## MI 
 def fig5(): 
@@ -206,25 +214,49 @@ def fig5():
   ax.set_xticks(indices + width* 3/2)
   ax.set_xticklabels(keys)
   ax.legend(marks)
-  plt.gcf().savefig('fig5_BarChart.png',dpi=300)
+  plt.gcf().savefig('fig5_BarChart.pdf',dpi=300)
   plt.close()
 
   ### saving individual marked images
-  fig, axarr = plt.subplots(3,2)
-  for i,img in enumerate(images):
-    axarr[i,0].imshow(img,cmap='gray')
-    axarr[i,0].axis('off')
-    axarr[i,0].set_title(keys[i]+" Raw")
+  #fig, axarr = plt.subplots(3,2)
+  #for i,img in enumerate(images):
+  #  axarr[i,0].imshow(img,cmap='gray')
+  #  axarr[i,0].axis('off')
+  #  axarr[i,0].set_title(keys[i]+" Raw")
 
     ### switch color channels due to discrepency between cv2 and matplotlib conventions
-    newResult = switchBRChannels(results[i])
+  #  newResult = switchBRChannels(results[i])
 
-    axarr[i,1].imshow(newResult)
-    axarr[i,1].axis('off')
-    axarr[i,1].set_title(keys[i]+" Marked")
-  plt.tight_layout()
-  plt.gcf().savefig("fig5_RawAndMarked.png",dpi=300)
-  plt.close()
+  #  axarr[i,1].imshow(newResult)
+  #  axarr[i,1].axis('off')
+  #  axarr[i,1].set_title(keys[i]+" Marked")
+  #plt.tight_layout()
+  #plt.gcf().savefig("fig5_RawAndMarked.pdf",dpi=300)
+  #plt.close()
+
+  plt.figure()
+  plt.imshow(DImage,cmap='gray')
+  plt.gcf().savefig("fig5_Raw_D.pdf",dpi=300)
+
+  plt.figure()
+  plt.imshow(MImage,cmap='gray')
+  plt.gcf().savefig("fig5_Raw_M.pdf",dpi=300)
+
+  plt.figure()
+  plt.imshow(PImage,cmap='gray')
+  plt.gcf().savefig("fig5_Raw_P.pdf",dpi=300)
+
+  plt.figure()
+  plt.imshow(switchBRChannels(Dimg),cmap='gray')
+  plt.gcf().savefig("fig5_Marked_D.pdf",dpi=300)
+
+  plt.figure()
+  plt.imshow(switchBRChannels(Mimg),cmap='gray')
+  plt.gcf().savefig("fig5_Marked_M.pdf",dpi=300)
+
+  plt.figure()
+  plt.imshow(switchBRChannels(Pimg),cmap='gray')
+  plt.gcf().savefig("fig5_Marked_P.pdf",dpi=300)
 
 def fig6():
   '''
@@ -281,18 +313,18 @@ def fig6():
   #ax.set_xticks(indices,('WT Like','','MI Like'))
   #plt.setp(ax,xticks=indices, xticklabels=['WT Like','MI Like'],fontsize=24)
   plt.sca(ax)
-  plt.xticks(indices,['WT Like','MI Like'],fontsize=24)
+  plt.xticks(indices,['Conserved Structure','Perturbed Structure'],fontsize=24)
   ax.set_ylim([0,1.2])
-  plt.gcf().savefig('fig6_TTcontent.png',dpi=300)
+  plt.gcf().savefig('fig6_TTcontent.pdf',dpi=300)
 
   ### Save enhanced original images for figure 
   plt.figure()
   plt.imshow(cases['WTLike'].displayImg,cmap='gray')
-  plt.gcf().savefig('fig6_WTLike_enhancedImg.png',dpi=300)
+  plt.gcf().savefig('fig6_WTLike_enhancedImg.pdf',dpi=300)
 
   plt.figure()
   plt.imshow(cases['MILike'].displayImg,cmap='gray')
-  plt.gcf().savefig('fig6_MILike_enhancedImg.png',dpi=300)
+  plt.gcf().savefig('fig6_MILike_enhancedImg.pdf',dpi=300)
 
   ### Find angle counts for each rotation
   cases['WTLike'].results.stackedAngles = cases['WTLike'].results.stackedAngles[np.where(
@@ -404,7 +436,7 @@ def figS1():
     axs[loc,1].set_ylabel('True Positive Rate (Normalized)')
 
   #plt.show()
-  plt.gcf().savefig('figS1.png',dpi=300)
+  plt.gcf().savefig('figS1.pdf',dpi=300)
 
 def figS2():
   '''
@@ -431,7 +463,7 @@ def figS2():
   ### Save enhanced original images for figure
   plt.figure()
   plt.imshow(case.displayImg,cmap='gray')
-  plt.gcf().savefig('figS2_enhancedImg.png',dpi=300)
+  plt.gcf().savefig('figS2_enhancedImg.pdf',dpi=300)
 
 def figS3():
   '''
@@ -483,14 +515,14 @@ def figS3():
   ### save original enhanced image for comparison
   plt.figure()
   plt.imshow(caseGPU.displayImg,cmap='gray')
-  plt.gcf().savefig('figS3_enhancedImg.png',dpi=300)
+  plt.gcf().savefig('figS3_enhancedImg.pdf',dpi=300)
   
   ### do comparison between GPU and CPU results
   comparison = np.abs(GPUpastedHits - CPUpastedHits)
   plt.figure()
   plt.imshow(comparison,cmap='gray')
   plt.colorbar()
-  plt.gcf().savefig('figS3_comparison.png',dpi=300)
+  plt.gcf().savefig('figS3_comparison.pdf',dpi=300)
   
 
 def shaveFig(fileName,padY=None,padX=None,whiteSpace=None):
@@ -648,7 +680,7 @@ def displayTissueCaseHits(case,tag):
                                     padX:-padX]
 
   du.StackGrayRedAlpha(case.displayImg,case.pasted,alpha=0.5)
-  plt.gcf().savefig(tag+"_hits.png",dpi=300)
+  plt.gcf().savefig(tag+"_hits.pdf",dpi=300)
 
 
   
@@ -700,9 +732,18 @@ def saveWorkflowFig():
     ltCorr = ltCorr[top:bottom,left:right]
     wtCorr = wtCorr[top:bottom,left:right]
 
-  cv2.imwrite("WorkflowFig_lossCorr.png",lossCorr)
-  cv2.imwrite("WorkflowFig_ltCorr.png",ltCorr)
-  cv2.imwrite("WorkflowFig_wtCorr.png",wtCorr)
+  #cv2.imwrite("WorkflowFig_lossCorr.pdf",lossCorr)
+  plt.figure()
+  plt.imshow(lossCorr,cmap='gray')
+  plt.gcf().savefig("WorkflowFig_lossCorr.pdf")
+  #cv2.imwrite("WorkflowFig_ltCorr.pdf",ltCorr)
+  plt.figure()
+  plt.imshow(ltCorr,cmap='gray')
+  plt.gcf().savefig("WorkflowFig_ltCorr.pdf")
+  #cv2.imwrite("WorkflowFig_wtCorr.pdf",wtCorr)
+  plt.figure()
+  plt.imshow(wtCorr,cmap='gray')
+  plt.gcf().savefig("WorkflowFig_wtCorr.pdf")
 
   ### Assess content
   wtC,ltC,ldC = assessContent(colorImg,imgName=imgName)
@@ -723,12 +764,12 @@ def giveAngleHistogram(angleCounts,iters,tag):
   myBins= np.append(myBins,myBins[-1] + binSpace)
   plt.figure()
   n, bins, patches = plt.hist(angleCounts, bins=myBins,
-                              normed=1,
+                              normed=True,
                               align='mid',
                               facecolor='green', alpha=0.5)
   plt.xlabel('Rotation Angle')
   plt.ylabel('Probability')
-  plt.gcf().savefig(tag+"_angle_histogram.png",dpi=300)
+  plt.gcf().savefig(tag+"_angle_histogram.pdf",dpi=300)
   plt.close()
 
 def giveAvgStdofDicts(ShamDict,HFDict,MI_DDict,MI_MDict,MI_PDict):
@@ -775,7 +816,7 @@ def giveAvgStdofDicts(ShamDict,HFDict,MI_DDict,MI_MDict,MI_PDict):
   xtickLocations = np.arange(len(names)) * width + width*3./2.
   ax.set_xticks(xtickLocations)
   ax.set_xticklabels(names,rotation='vertical')
-  plt.gcf().savefig("Whole_Dataset_Angles.png",dpi=300)
+  plt.gcf().savefig("Whole_Dataset_Angles.pdf",dpi=300)
 
   
       
@@ -793,9 +834,11 @@ def analyzeAllMyo():
     if "mask" in name:
       continue
     print name
+    iters=[-25,-20,-15,-10,-5,0,5,10,15,20,25]
     ### iterate through names and mark the images
     markedMyocyte,_,angleCounts = giveMarkedMyocyte(testImage=root+name,
                                                     tag=name[:-4],
+                                                    iters=iters,
                                                     writeImage=True,
                                                     returnAngles=True)
 
@@ -821,6 +864,9 @@ def analyzeAllMyo():
       elif '_P' in name:
         MI_P[name] = content
         MI_P[name+'_angles'] = angleCounts
+
+    ### make angle histogram for the data
+    giveAngleHistogram(angleCounts,iters,tag=name[:-4])
 
   ### use function to construct and write bar charts for each content dictionary
   giveBarChartfromDict(Sham,'Sham')
@@ -927,7 +973,7 @@ def giveBarChartfromDict(dictionary,tag):
   ax.legend(marks)
   ax.set_xticks([])
   ax.set_ylim([0,1])
-  plt.gcf().savefig(tag+'_BarChart.png',dpi=300)
+  plt.gcf().savefig(tag+'_BarChart.pdf',dpi=300)
 
 def giveMIBarChart(MI_D, MI_M, MI_P):
   '''
@@ -1019,7 +1065,7 @@ def giveMIBarChart(MI_D, MI_M, MI_P):
   ax.set_xticks(newInd)
   ax.set_xticklabels(['D', 'M','P','','D','M','P','','D','M','P'])
   ax.set_ylim([0,1])
-  plt.gcf().savefig('MI_BarChart.png',dpi=300)
+  plt.gcf().savefig('MI_BarChart.pdf',dpi=300)
 
 def markPastedFilters(
       lossMasked, ltMasked, wtMasked, cI,
@@ -1080,7 +1126,7 @@ def markPastedFilters(
 
 def giveMarkedMyocyte(
       ttFilterName="./myoimages/newSimpleWTFilter.png",
-      ltFilterName="./myoimages/newLTfilter.png",
+      ltFilterName="./myoimages/LongitudinalFilter.png",
       lossFilterName="./myoimages/LossFilter.png",
       wtPunishFilterName="./myoimages/newSimpleWTPunishmentFilter.png",
       ltPunishFilterName="./myoimages/newLTPunishmentFilter.png",
@@ -1131,7 +1177,7 @@ def giveMarkedMyocyte(
 
   ### LT filtering
   print "LT filtering"
-  inputs.mfOrig = util.LoadFilter("./myoimages/LongitudinalFilter.png")
+  inputs.mfOrig = util.LoadFilter(ltFilterName)
   LTparams = optimizer.ParamDict(typeDict='LT')
   if ltThresh != None:
     LTparams['snrThresh'] = ltThresh
@@ -1197,14 +1243,21 @@ def giveMarkedMyocyte(
     Losscopy[lossMasked == 255] = 255
     if writeImage:
       ### write output image
-      cv2.imwrite(tag+"output.png",cI)
+      #cv2.imwrite(tag+"output.png",cI)
+      plt.figure()
+      plt.imshow(switchBRChannels(cI))
+      plt.gcf().savefig(tag+"_output.pdf")
 
   if returnPastedFilter:
     cI = markPastedFilters(lossMasked, ltMasked, wtMasked, cI)
   
     if writeImage:
       ### write outputs	  
-      cv2.imwrite(tag+"_output.png",cI)       
+      #cv2.imwrite(tag+"_output.png",cI)       
+      plt.figure()
+      plt.imshow(switchBRChannels(cI))
+      plt.gcf().savefig(tag+"_output.pdf")
+
 
   if returnAngles:
     cImg = util.ReadImg(testImage,cvtColor=False)
@@ -1216,7 +1269,7 @@ def giveMarkedMyocyte(
     smoothed = mF.matchedFilter(inputs.imgOrig,kernel,demean=False)
 
     ### make longer WT filter so more robust to striation angle deviation
-    longFilter = np.concatenate((ttFilter,ttFilter))
+    longFilter = np.concatenate((ttFilter,ttFilter,ttFilter))
     
     rotInputs = empty()
     rotInputs.imgOrig = smoothed
@@ -1249,7 +1302,10 @@ def giveMarkedMyocyte(
           angleCounts.append(iters[rotArg])
 
     if writeImage:
-      cv2.imwrite(tag+"_angles_output.png",coloredAnglesMasked)
+      #cv2.imwrite(tag+"_angles_output.png",coloredAnglesMasked)
+      plt.figure()
+      plt.imshow(switchBRChannels(coloredAnglesMasked))
+      plt.gcf().savefig(tag+"_angles_output.pdf")
     
     end = time.time()
     tElapsed = end - start

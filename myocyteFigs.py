@@ -164,7 +164,8 @@ def fig5():
   filterTwoSarcSize = 25
 
   ### Distal, Medial, Proximal
-  DImageName = root+"MI_D_73_processed.png"
+  #DImageName = root+"MI_D_73_processed.png"
+  DImageName = root+"MI_D_76_processed.png"
   MImageName = root+"MI_M_45_processed.png"
   PImageName = root+"MI_P_16_processed.png"
 

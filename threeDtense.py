@@ -354,6 +354,12 @@ def doTFloop(inputs,
     # TODO: pull out best angles from bigIters
     results.stackedAngles = bestAnglesF
 
+    #if paramDict['inverseSNR']:
+    #  bestAnglesF[stackedHitsF > paramDict['snrThresh']] = -1
+    #else:
+    #  bestAnglesF[stackedHitsF < paramDict['snrThresh']] = -1
+
+
     #start = time.time()
     tElapsed = time.time()-start
 

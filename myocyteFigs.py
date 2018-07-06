@@ -845,6 +845,14 @@ def analyzeAllMyo():
                                                     iters=iters,
                                                     writeImage=True,
                                                     returnAngles=True)
+    ### hacky way to get percent of hits within range of 5 degrees from minor axis
+    idxs = [4,5,6]
+    totalHits = len(angleCounts)
+    angleCountsNP = np.asarray(angleCounts)
+    hitsInRange =   np.count_nonzero(np.equal(angleCounts, iters[idxs[0]])) \
+                  + np.count_nonzero(np.equal(angleCounts, iters[idxs[1]])) \
+                  + np.count_nonzero(np.equal(angleCounts, iters[idxs[2]])) 
+    print "Percentage of WT hits within 5 degrees of minor axis:", float(hitsInRange)/float(totalHits) * 100.
 
     ### assess content
     wtC, ltC, lossC = assessContent(markedMyocyte,imgName=root+name)

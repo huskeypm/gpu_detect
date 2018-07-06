@@ -345,6 +345,44 @@ def fig6():
   giveAngleHistogram(cases['WTLike'].results.stackedAngles,cases['WTLike'].iters,"fig6_WTLike")
   giveAngleHistogram(cases['MILike'].results.stackedAngles,cases['MILike'].iters,"fig6_MILike")
 
+def figAngleHeterogeneity():
+  '''
+  Figure to showcase the heterogeneity of striation angle present within the tissue
+    sample
+  '''
+  ### Setup case for use
+  filterTwoSarcomereSize = 25
+  case = empty()
+  case.loc_um = [2800,3250]
+  case.extent_um = [300,300]
+
+  tissue.SetupCase(case)
+
+  ### Store subregions for later marking
+  case.subregionOrig = case.subregion.copy()
+
+  ### Preprocess and analyze tissue subsections
+  case = analyzeTissueCase(case)
+
+  ### Save hits from the analysis
+  displayTissueCaseHits(case,tag='figHeterogeneousAngles')
+
+  ### Quantify TT content per square micron
+  case.area = float(case.extent_um[0] * case.extent_um[1])
+  case.TTcontent = float(np.sum(case.pasted)) / case.area
+  ## Normalize TT content since it's fairly arbitrary
+  case.TTcontent /= case.TTcontent
+
+  plt.figure()
+  plt.imshow(case.results.stackedAngles)
+  plt.colorbar()
+  plt.show()
+
+  print case.results.stackedAngles
+
+
+
+
 ###
 ### Generates the large ROC figure for each of the annotated images
 ###
@@ -1900,6 +1938,10 @@ if __name__ == "__main__":
 
     if(arg=="-fig6"):               
       fig6()
+      quit()
+
+    if(arg=="-figAngle"):
+      figAngleHeterogeneity()
       quit()
 
     if(arg=="-figS1"):

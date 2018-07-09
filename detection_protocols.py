@@ -131,7 +131,7 @@ def punishmentFilter(
     mf  = inputs.mf  # raw (preprocessed image) 
 
     try:
-      mfPunishment = paramDict['mfPunishment']
+      mfPunishment = paramDict['mfPunishmentRot']
     except:
       raise RuntimeError("No punishment filter was found in paramDict['mfPunishment']")
     try:

@@ -1173,6 +1173,56 @@ def markPastedFilters(
 
   return cI
 
+def WT_Filtering(inputs,iters,ttFilterName,wtPunishFilterName,ttThresh,wtGamma,returnAngles):
+  '''
+  Takes inputs class that contains original image and performs WT filtering on the image
+  '''
+  ttFilter = util.LoadFilter(ttFilterName)
+  inputs.mfOrig = ttFilter
+  WTparams = optimizer.ParamDict(typeDict='WT')
+  WTparams['covarianceMatrix'] = np.ones_like(inputs.imgOrig)
+  WTparams['mfPunishment'] = util.LoadFilter(wtPunishFilterName)
+  WTparams['useGPU'] = inputs.useGPU
+  if ttThresh != None:
+    WTparams['snrThresh'] = ttThresh
+  if wtGamma != None:
+    WTparams['gamma'] = wtGamma
+  print "WT Filtering"
+  WTresults = bD.DetectFilter(inputs,WTparams,iters,returnAngles=returnAngles)  
+
+  return WTresults
+
+def LT_Filtering(inputs,iters,ltFilterName,ltThresh,returnAngles):
+  '''
+  Takes inputs class that contains original image and performs LT filtering on the image
+  '''
+
+  print "LT filtering"
+  inputs.mfOrig = util.LoadFilter(ltFilterName)
+  LTparams = optimizer.ParamDict(typeDict='LT')
+  if ltThresh != None:
+    LTparams['snrThresh'] = ltThresh
+  LTparams['useGPU'] = inputs.useGPU
+  LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)
+
+  return LTresults
+
+def Loss_Filtering(inputs,lossFilterName,lossThresh,returnAngles):
+  '''
+  Takes inputs class that contains original image and performs Loss filtering on the image
+  '''
+  print "Loss filtering"
+  inputs.mfOrig = util.LoadFilter(lossFilterName)
+  Lossparams = optimizer.ParamDict(typeDict='Loss')
+  Lossparams['useGPU'] = inputs.useGPU
+  Lossiters = [0, 45] # don't need many rotations for loss filtering
+  if lossThresh != None:
+    Lossparams['snrThresh'] = lossThresh
+  Lossresults = bD.DetectFilter(inputs,Lossparams,Lossiters,returnAngles=returnAngles)
+
+  return Lossresults
+
+
 
 def giveMarkedMyocyte(
       ttFilterName="./myoimages/newSimpleWTFilter.png",
@@ -1203,49 +1253,48 @@ def giveMarkedMyocyte(
   ### defining inputs to be read by DetectFilter function
   inputs = empty()
   inputs.imgOrig = ReadResizeApplyMask(img,testImage,25,25) # just applies mask
+  inputs.useGPU = useGPU
 
   ### WT filtering
-  ttFilter = util.LoadFilter(ttFilterName)
-  inputs.mfOrig = ttFilter
-  WTparams = optimizer.ParamDict(typeDict='WT')
-  WTparams['covarianceMatrix'] = np.ones_like(img)
-  WTparams['mfPunishment'] = util.LoadFilter(wtPunishFilterName)
-  WTparams['useGPU'] = useGPU
-  if ttThresh != None:
-    WTparams['snrThresh'] = ttThresh
-  if wtGamma != None:
-    WTparams['gamma'] = wtGamma
-  print "WT Filtering"
-  WTresults = bD.DetectFilter(inputs,WTparams,iters,returnAngles=returnAngles)  
+  WTresults = WT_Filtering(inputs,iters,ttFilterName,wtPunishFilterName,ttThresh,wtGamma,returnAngles)
+  #ttFilter = util.LoadFilter(ttFilterName)
+  #inputs.mfOrig = ttFilter
+  #WTparams = optimizer.ParamDict(typeDict='WT')
+  #WTparams['covarianceMatrix'] = np.ones_like(img)
+  #WTparams['mfPunishment'] = util.LoadFilter(wtPunishFilterName)
+  #WTparams['useGPU'] = useGPU
+  #if ttThresh != None:
+  #  WTparams['snrThresh'] = ttThresh
+  #if wtGamma != None:
+  #  WTparams['gamma'] = wtGamma
+  #print "WT Filtering"
+  #WTresults = bD.DetectFilter(inputs,WTparams,iters,returnAngles=returnAngles)  
   #print np.sum(WTresults.stackedAngles)
-  #plt.figure()
-  #plt.imshow(WTresults.stackedAngles)
-  #plt.colorbar()
-  #plt.show()
-  #quit()
   WTstackedHits = WTresults.stackedHits
 
   ### LT filtering
-  print "LT filtering"
-  inputs.mfOrig = util.LoadFilter(ltFilterName)
-  LTparams = optimizer.ParamDict(typeDict='LT')
-  if ltThresh != None:
-    LTparams['snrThresh'] = ltThresh
-  if ltGamma != None:
-    LTparams['gamma'] = ltGamma
-  LTparams['useGPU'] = useGPU
-  LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)
+  #print "LT filtering"
+  #inputs.mfOrig = util.LoadFilter(ltFilterName)
+  #LTparams = optimizer.ParamDict(typeDict='LT')
+  #if ltThresh != None:
+  #  LTparams['snrThresh'] = ltThresh
+  #if ltGamma != None:
+  #  LTparams['gamma'] = ltGamma
+  #LTparams['useGPU'] = useGPU
+  #LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)
+  LTresults = LT_Filtering(inputs,iters,ltFilterName,ltThresh,returnAngles)
   LTstackedHits = LTresults.stackedHits
 
   ### Loss filtering
-  print "Loss filtering"
-  inputs.mfOrig = util.LoadFilter(lossFilterName)
-  Lossparams = optimizer.ParamDict(typeDict='Loss')
-  Lossparams['useGPU'] = useGPU
-  Lossiters = [0, 45] # don't need many rotations for loss filtering
-  if lossThresh != None:
-    Lossparams['snrThresh'] = lossThresh
-  Lossresults = bD.DetectFilter(inputs,Lossparams,Lossiters,returnAngles=returnAngles)
+  #print "Loss filtering"
+  #inputs.mfOrig = util.LoadFilter(lossFilterName)
+  #Lossparams = optimizer.ParamDict(typeDict='Loss')
+  #Lossparams['useGPU'] = useGPU
+  #Lossiters = [0, 45] # don't need many rotations for loss filtering
+  #if lossThresh != None:
+  #  Lossparams['snrThresh'] = lossThresh
+  #Lossresults = bD.DetectFilter(inputs,Lossparams,Lossiters,returnAngles=returnAngles)
+  Lossresults = Loss_Filtering(inputs,lossFilterName,lossThresh,returnAngles)
   LossstackedHits = Lossresults.stackedHits
  
   ### Read in colored image for marking hits
@@ -1319,6 +1368,7 @@ def giveMarkedMyocyte(
     smoothed = mF.matchedFilter(inputs.imgOrig,kernel,demean=False)
 
     ### make longer WT filter so more robust to striation angle deviation
+    ttFilter = util.LoadFilter(ttFilterName)
     longFilter = np.concatenate((ttFilter,ttFilter,ttFilter))
     
     rotInputs = empty()

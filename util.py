@@ -29,9 +29,9 @@ def ReadImg(fileName,cvtColor=True,renorm=False,bound=False):
     if cvtColor:
       img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     if bound!=False:
-	img=img[bound[0]:bound[1],bound[0]:bound[1]]
+      img=img[bound[0]:bound[1],bound[0]:bound[1]]
     if renorm:# rescaling
-    	img = img / np.float(np.amax(img))
+      img = img / np.float(np.amax(img))
     return img  
 
 def LoadFilter(fileName):

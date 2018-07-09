@@ -57,6 +57,10 @@ def correlateThresher(
       params['angle'] = angle
       rFN = util.PadRotate(filterRef,angle)  
       inputs.mf = rFN  
+
+      # check for other matched filters
+      if params['filterMode'] == 'punishmentFilter':
+        params['mfPunishmentRot'] = util.PadRotate(params['mfPunishment'].copy(),angle)
       
       # matched filtering 
       result = dps.FilterSingle(inputs,params)      

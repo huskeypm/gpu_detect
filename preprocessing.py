@@ -346,6 +346,8 @@ def resizeToFilterSize(img,filterTwoSarcomereSize):
 
   ### 2. Resize based on the subsection
   resized, scale, newIndexes = resizeGivenSubsection(img,subsection,filterTwoSarcomereSize,indexes)
+
+  print "Image Two Sarcomere Size:",scale
   
   return resized,scale,subsection,newIndexes
 

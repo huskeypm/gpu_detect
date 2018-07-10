@@ -52,6 +52,8 @@ def fig3():
   coloredImg, coloredAngles, angleCounts = giveMarkedMyocyte(testImage=testImage,
                         returnAngles=True,
                         iters=iters,
+                        tag='fig3',
+                        writeImage = True
                         )
   correctColoredAngles = switchBRChannels(coloredAngles)
   correctColoredImg = switchBRChannels(coloredImg)
@@ -78,25 +80,10 @@ def fig3():
   plt.gcf().savefig('fig3_BarChart.pdf',dpi=300)
   plt.close()
 
-  ### displaying raw, marked, and marked angle images
-  #fig, axarr = plt.subplots(3,1)
-  #axarr[0].imshow(rawImg,cmap='gray')
-  #axarr[0].axis('off')
-  #axarr[1].imshow(correctColoredImg)
-  #axarr[1].axis('off')
-  #axarr[2].imshow(correctColoredAngles)
-  #axarr[2].axis('off')
-  #plt.gcf().savefig("fig3_RawAndMarked.png",dpi=300)
-  #plt.close()
-
-  ### opting to save files individually and arrange using image magick montage command
+  ### save files individually and arrange using inkscape
   plt.figure()
   plt.imshow(rawImg,cmap='gray')
   plt.gcf().savefig("fig3_Raw.pdf",dpi=300)
-
-  plt.figure()
-  plt.imshow(correctColoredImg)
-  plt.gcf().savefig("fig3_ColoredImage.pdf",dpi=300)
 
   plt.figure()
   plt.imshow(correctColoredAngles)
@@ -112,7 +99,7 @@ def fig4():
   filterTwoSarcSize = 25
   imgName = root + "HF_1_processed.png"
   rawImg = util.ReadImg(imgName)
-  markedImg = giveMarkedMyocyte(testImage=imgName)
+  markedImg = giveMarkedMyocyte(testImage=imgName,tag='fig4',writeImage=True)
 
   ### make bar chart for content
   wtContent, ltContent, lossContent = assessContent(markedImg,imgName)
@@ -398,6 +385,7 @@ def figS1():
   #            'Control':'Sham_M_65_annotation.png',
   #            'MI':'MI_D_73_annotation.png'
   #             }
+
   imgNames = {'HF':"HF_annotation_testImg.png",
               'MI':"MI_annotation_testImg.png",
               'Control':"Sham_annotation_testImg.png"
@@ -416,7 +404,8 @@ def figS1():
                   root = root,
                   filter1TestName = root + imgName,
                   filter1TestRegion=None,
-                  filter1PositiveTest = root + annotatedImgNames[key]
+                  filter1PositiveTest = root + annotatedImgNames[key],
+                  pasteFilters=True
                   )
 
       ### run func that writes scores to hdf5 file
@@ -437,10 +426,13 @@ def figS1():
   ### Go through and normalize all false positives and true positives
   for key,nestDict in bigData.iteritems():
     for key2,nestDict2 in nestDict.iteritems():
-      nestDict2[key]['filter1PS'] /= np.max(nestDict2[key]['filter1PS'])
-      nestDict2[key]['filter1NS'] /= np.max(nestDict2[key]['filter1NS'])
+      #print key
+      #print key2
+      nestDict2['filter1PS'] /= np.max(nestDict2['filter1PS'])
+      nestDict2['filter1NS'] /= np.max(nestDict2['filter1NS'])
 
   ### Figure generation
+  plt.rcParams.update(plt.rcParamsDefault)
   f, axs = plt.subplots(3,2,figsize=[7,12])
   plt.subplots_adjust(wspace=0.5,bottom=0.05,top=0.95,hspace=0.25)
   locDict = {'Control':0,'MI':1,'HF':2}
@@ -1257,43 +1249,13 @@ def giveMarkedMyocyte(
 
   ### WT filtering
   WTresults = WT_Filtering(inputs,iters,ttFilterName,wtPunishFilterName,ttThresh,wtGamma,returnAngles)
-  #ttFilter = util.LoadFilter(ttFilterName)
-  #inputs.mfOrig = ttFilter
-  #WTparams = optimizer.ParamDict(typeDict='WT')
-  #WTparams['covarianceMatrix'] = np.ones_like(img)
-  #WTparams['mfPunishment'] = util.LoadFilter(wtPunishFilterName)
-  #WTparams['useGPU'] = useGPU
-  #if ttThresh != None:
-  #  WTparams['snrThresh'] = ttThresh
-  #if wtGamma != None:
-  #  WTparams['gamma'] = wtGamma
-  #print "WT Filtering"
-  #WTresults = bD.DetectFilter(inputs,WTparams,iters,returnAngles=returnAngles)  
-  #print np.sum(WTresults.stackedAngles)
   WTstackedHits = WTresults.stackedHits
 
   ### LT filtering
-  #print "LT filtering"
-  #inputs.mfOrig = util.LoadFilter(ltFilterName)
-  #LTparams = optimizer.ParamDict(typeDict='LT')
-  #if ltThresh != None:
-  #  LTparams['snrThresh'] = ltThresh
-  #if ltGamma != None:
-  #  LTparams['gamma'] = ltGamma
-  #LTparams['useGPU'] = useGPU
-  #LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)
   LTresults = LT_Filtering(inputs,iters,ltFilterName,ltThresh,returnAngles)
   LTstackedHits = LTresults.stackedHits
 
   ### Loss filtering
-  #print "Loss filtering"
-  #inputs.mfOrig = util.LoadFilter(lossFilterName)
-  #Lossparams = optimizer.ParamDict(typeDict='Loss')
-  #Lossparams['useGPU'] = useGPU
-  #Lossiters = [0, 45] # don't need many rotations for loss filtering
-  #if lossThresh != None:
-  #  Lossparams['snrThresh'] = lossThresh
-  #Lossresults = bD.DetectFilter(inputs,Lossparams,Lossiters,returnAngles=returnAngles)
   Lossresults = Loss_Filtering(inputs,lossFilterName,lossThresh,returnAngles)
   LossstackedHits = Lossresults.stackedHits
  
@@ -1340,21 +1302,32 @@ def giveMarkedMyocyte(
     WTcopy[wtMasked == 255] = 255
     LTcopy[ltMasked == 255] = 255
     Losscopy[lossMasked == 255] = 255
+
+    ### mark mask outline on myocyte
+    cI = util.markMaskOnMyocyte(cI,testImage)
     if writeImage:
+      ### mark mask outline on myocyte
+      cI_written = util.markMaskOnMyocyte(cI,testImage)
+
       ### write output image
-      #cv2.imwrite(tag+"output.png",cI)
       plt.figure()
-      plt.imshow(switchBRChannels(cI))
+      plt.imshow(switchBRChannels(cI_written))
       plt.gcf().savefig(tag+"_output.pdf")
 
   if returnPastedFilter:
-    cI = markPastedFilters(lossMasked, ltMasked, wtMasked, cI)
+    dummy = np.zeros_like(cI)
+    dummy = markPastedFilters(lossMasked, ltMasked, wtMasked, dummy)
+    ### apply mask again so as to avoid content > 1.0
+    dummy = ReadResizeApplyMask(dummy,testImage,ImgTwoSarcSize,filterTwoSarcSize=ImgTwoSarcSize)
+    cI[dummy==255] = 255
   
     if writeImage:
+      ### mark mask outline on myocyte
+      cI_written = util.markMaskOnMyocyte(cI.copy(),testImage)
+
       ### write outputs	  
-      #cv2.imwrite(tag+"_output.png",cI)       
       plt.figure()
-      plt.imshow(switchBRChannels(cI))
+      plt.imshow(switchBRChannels(cI_written))
       plt.gcf().savefig(tag+"_output.pdf")
 
 

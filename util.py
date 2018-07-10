@@ -243,6 +243,55 @@ def renorm(img,scale=255):
     img*=scale 
     return img
 
+def markMaskOnMyocyte(img,imgName):
+  '''
+  Function that takes the image of the myocyte (either grayscale or RGB) and
+    draws the contour of the mask onto the image in yellow
+
+  INPUTS:
+    - img -> image of the myocyte (grayscale or RGB)
+    - imgName -> name of the image that was read in
+  '''
+
+  ### Read in mask
+  try:
+    maskName = imgName[:-4]+"_mask"+imgName[-4:]
+    mask = np.asarray(ReadImg(maskName,renorm=True) * 255.,dtype=np.uint8)
+  except:
+    print "No mask found, circumventing marking"
+    return img
+
+  ### ROI is marked as greatest pixel intensity, so we thresh and only keep the ROI
+  mask[mask<255] = 0
+
+  ### use cv2 to find contours
+  mask2, maskContours, hierarchy = cv2.findContours(mask,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+
+  ### find channels of image
+  imgDim = np.shape(img)
+
+  ### convert the image to RGB if grayscale
+  if len(imgDim) == 2:
+    colorImg = np.zeros((imgDim[0],imgDim[1],3),dtype=img.dtype)
+    for i in range(3):
+      colorImg[:,:,i] = img
+  else:
+    colorImg = img
+
+  ### use cv2 to draw contour on image as yellow line
+  color = (0,255,255) # NOTE: this is using matplotlibs convention of color, not cv2
+  lineThickness = 2
+  colorImg = cv2.drawContours(colorImg,maskContours,-1, color, lineThickness)
+  
+  debug = False
+  if debug:
+    cv2.imshow('Myocyte with mask drawn',colorImg)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+  return colorImg
+
+
 def GetAnnulus(region,sidx,innerMargin,outerMargin=None):
   if outerMargin==None: 
       # other function wasn't really an annulus 

@@ -140,10 +140,6 @@ def fig4():
   plt.imshow(rawImg,cmap='gray')
   plt.gcf().savefig("fig4_Raw.pdf",dpi=300)
 
-  plt.figure()
-  plt.imshow(switchedImg)
-  plt.gcf().savefig("fig4_Marked.pdf",dpi=300)
-
 ## MI 
 def fig5(): 
   ### update if need be
@@ -165,9 +161,9 @@ def fig5():
   images = [DImage, MImage, PImage]
 
   # BE SURE TO UPDATE TESTMF WITH OPTIMIZED PARAMS
-  Dimg = giveMarkedMyocyte(testImage=DImageName)
-  Mimg = giveMarkedMyocyte(testImage=MImageName)
-  Pimg = giveMarkedMyocyte(testImage=PImageName)
+  Dimg = giveMarkedMyocyte(testImage=DImageName,tag='fig5_D',writeImage=True)
+  Mimg = giveMarkedMyocyte(testImage=MImageName,tag='fig5_M',writeImage=True)
+  Pimg = giveMarkedMyocyte(testImage=PImageName,tag='fig5_P',writeImage=True)
 
   results = [Dimg, Mimg, Pimg]
   keys = ['Distal', 'Medial', 'Proximal']
@@ -205,23 +201,6 @@ def fig5():
   plt.gcf().savefig('fig5_BarChart.pdf',dpi=300)
   plt.close()
 
-  ### saving individual marked images
-  #fig, axarr = plt.subplots(3,2)
-  #for i,img in enumerate(images):
-  #  axarr[i,0].imshow(img,cmap='gray')
-  #  axarr[i,0].axis('off')
-  #  axarr[i,0].set_title(keys[i]+" Raw")
-
-    ### switch color channels due to discrepency between cv2 and matplotlib conventions
-  #  newResult = switchBRChannels(results[i])
-
-  #  axarr[i,1].imshow(newResult)
-  #  axarr[i,1].axis('off')
-  #  axarr[i,1].set_title(keys[i]+" Marked")
-  #plt.tight_layout()
-  #plt.gcf().savefig("fig5_RawAndMarked.pdf",dpi=300)
-  #plt.close()
-
   plt.figure()
   plt.imshow(DImage,cmap='gray')
   plt.gcf().savefig("fig5_Raw_D.pdf",dpi=300)
@@ -233,18 +212,6 @@ def fig5():
   plt.figure()
   plt.imshow(PImage,cmap='gray')
   plt.gcf().savefig("fig5_Raw_P.pdf",dpi=300)
-
-  plt.figure()
-  plt.imshow(switchBRChannels(Dimg),cmap='gray')
-  plt.gcf().savefig("fig5_Marked_D.pdf",dpi=300)
-
-  plt.figure()
-  plt.imshow(switchBRChannels(Mimg),cmap='gray')
-  plt.gcf().savefig("fig5_Marked_M.pdf",dpi=300)
-
-  plt.figure()
-  plt.imshow(switchBRChannels(Pimg),cmap='gray')
-  plt.gcf().savefig("fig5_Marked_P.pdf",dpi=300)
 
 def fig6():
   '''
@@ -856,10 +823,10 @@ def giveAvgStdofDicts(ShamDict,HFDict,MI_DDict,MI_MDict,MI_PDict):
       
   
 
-def analyzeAllMyo():
+def analyzeAllMyo(root="/net/share/dfco222/data/TT/LouchData/processedWithIntelligentThresholding/"):
   #root = "/home/AD/dfco222/Desktop/LouchData/processedImgs_May23/"
   #root = "/net/share/dfco222/data/TT/LouchData/processed/"
-  root = "/net/share/dfco222/data/TT/LouchData/processedWithIntelligentThresholding/"
+  #root = "/net/share/dfco222/data/TT/LouchData/processedWithIntelligentThresholding/"
 
   ### instantiate dicitionary to hold content values
   Sham = {}; MI_D = {}; MI_M = {}; MI_P = {}; HF = {};
@@ -875,6 +842,14 @@ def analyzeAllMyo():
                                                     iters=iters,
                                                     writeImage=True,
                                                     returnAngles=True)
+    ### save raw image with ROI marked
+    cImg = util.ReadImg(root+name)
+    cImg = util.markMaskOnMyocyte(cImg,root+name)
+    plt.figure()
+    plt.imshow(switchBRChannels(cImg))
+    plt.gcf().savefig(name[:-4]+'_markedMask.pdf')
+    plt.close()
+
     ### hacky way to get percent of hits within range of 5 degrees from minor axis
     idxs = [4,5,6]
     totalHits = len(angleCounts)
@@ -924,6 +899,8 @@ def analyzeDirectory(directory):
   case.
   '''
 
+  raise RuntimeError("Deprecated, use analyzeAllMyo function instead")
+
   ### instantiate dictionaries for results
   Sham = {}; HF = {}; MI_D = {}; MI_M = {}; MI_P = {}
 
@@ -958,20 +935,30 @@ def analyzeDirectory(directory):
   giveMIBarChart(MI_D,MI_M,MI_P)
 
 def analyzeSingleMyo(name,twoSarcSize):
-   realName = name+"_processed.png"
-   markedMyocyte = giveMarkedMyocyte(testImage=realName,
+   realName = name#+"_processed.png"
+   iters = [-25,-20,-15,-10,-5,0,5,10,15,20,25]
+   markedMyocyte,_,angleCounts = giveMarkedMyocyte(testImage=realName,
                                      ImgTwoSarcSize=twoSarcSize,
                                      tag=name,
                                      writeImage=True,
-                                     returnAngles=False)
+                                     returnAngles=True)
    ### assess content
-   wtC, ltC, lossC = assessContent(markedMyocyte)
-   content = np.asarray([wtC, ltC, lossC],dtype=float)
-   content /= np.max(content)
+   wtC, ltC, lossC = assessContent(markedMyocyte,imgName=realName)
+   #content = np.asarray([wtC, ltC, lossC],dtype=float)
+   #content /= np.max(content)
+
+   ### hacky way to get percent of hits within range of 5 degrees from minor axis
+   idxs = [4,5,6]
+   totalHits = len(angleCounts)
+   angleCountsNP = np.asarray(angleCounts)
+   hitsInRange =   np.count_nonzero(np.equal(angleCounts, iters[idxs[0]])) \
+                 + np.count_nonzero(np.equal(angleCounts, iters[idxs[1]])) \
+                 + np.count_nonzero(np.equal(angleCounts, iters[idxs[2]]))
+   print "Percentage of WT hits within 5 degrees of minor axis:", float(hitsInRange)/float(totalHits) * 100.
 
    ### making into dictionary to utilize bar graph function
-   dictionary = {name:content}
-   giveBarChartfromDict(dictionary,name)
+   #dictionary = {name:content}
+   #giveBarChartfromDict(dictionary,name)
 
 def giveBarChartfromDict(dictionary,tag):
   ### instantiate lists to contain contents
@@ -1312,7 +1299,7 @@ def giveMarkedMyocyte(
       ### write output image
       plt.figure()
       plt.imshow(switchBRChannels(cI_written))
-      plt.gcf().savefig(tag+"_output.pdf")
+      plt.gcf().savefig(tag+"_output.pdf",dpi=300)
 
   if returnPastedFilter:
     dummy = np.zeros_like(cI)
@@ -1328,7 +1315,7 @@ def giveMarkedMyocyte(
       ### write outputs	  
       plt.figure()
       plt.imshow(switchBRChannels(cI_written))
-      plt.gcf().savefig(tag+"_output.pdf")
+      plt.gcf().savefig(tag+"_output.pdf",dpi=300)
 
 
   if returnAngles:
@@ -2060,7 +2047,8 @@ if __name__ == "__main__":
       quit()
 
     if(arg=="-analyzeDirectory"):
-      analyzeDirectory()
+      root = sys.argv[i+1]
+      analyzeAllMyo(root=root)
       quit()
 
     ### Additional Arguments

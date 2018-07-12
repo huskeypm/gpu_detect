@@ -255,6 +255,9 @@ def fig6():
   cases['MILike'].TTcontent /= cases['WTLike'].TTcontent
   cases['WTLike'].TTcontent /= cases['WTLike'].TTcontent
 
+  print "WT TT Content:", cases['WTLike'].TTcontent
+  print "MI TT Content:", cases['MILike'].TTcontent
+
   ### Make Bar Chart of TT content
   width = 0.75
   N = 2

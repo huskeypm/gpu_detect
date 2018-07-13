@@ -82,7 +82,7 @@ def fig3():
 
   ### save files individually and arrange using inkscape
   plt.figure()
-  plt.imshow(rawImg,cmap='gray')
+  plt.imshow(switchBRChannels(util.markMaskOnMyocyte(rawImg,testImage)))
   plt.gcf().savefig("fig3_Raw.pdf",dpi=300)
 
   plt.figure()
@@ -137,7 +137,7 @@ def fig4():
   #plt.close()
 
   plt.figure()
-  plt.imshow(rawImg,cmap='gray')
+  plt.imshow(switchBRChannels(util.markMaskOnMyocyte(rawImg,imgName)))
   plt.gcf().savefig("fig4_Raw.pdf",dpi=300)
 
 ## MI 
@@ -202,15 +202,15 @@ def fig5():
   plt.close()
 
   plt.figure()
-  plt.imshow(DImage,cmap='gray')
+  plt.imshow(switchBRChannels(util.markMaskOnMyocyte(DImage,DImageName)))
   plt.gcf().savefig("fig5_Raw_D.pdf",dpi=300)
 
   plt.figure()
-  plt.imshow(MImage,cmap='gray')
+  plt.imshow(switchBRChannels(util.markMaskOnMyocyte(MImage,MImageName)))
   plt.gcf().savefig("fig5_Raw_M.pdf",dpi=300)
 
   plt.figure()
-  plt.imshow(PImage,cmap='gray')
+  plt.imshow(switchBRChannels(util.markMaskOnMyocyte(PImage,PImageName)))
   plt.gcf().savefig("fig5_Raw_P.pdf",dpi=300)
 
 def fig6():
@@ -1297,7 +1297,8 @@ def giveMarkedMyocyte(
     cI = util.markMaskOnMyocyte(cI,testImage)
     if writeImage:
       ### mark mask outline on myocyte
-      cI_written = util.markMaskOnMyocyte(cI,testImage)
+      #cI_written = util.markMaskOnMyocyte(cI,testImage)
+      cI_written = cI
 
       ### write output image
       plt.figure()
@@ -1313,7 +1314,8 @@ def giveMarkedMyocyte(
   
     if writeImage:
       ### mark mask outline on myocyte
-      cI_written = util.markMaskOnMyocyte(cI.copy(),testImage)
+      #cI_written = util.markMaskOnMyocyte(cI.copy(),testImage)
+      cI_written = cI
 
       ### write outputs	  
       plt.figure()

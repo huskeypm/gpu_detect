@@ -521,7 +521,8 @@ def figS3():
   plt.gcf().savefig('figS3_enhancedImg.pdf',dpi=300)
   
   ### do comparison between GPU and CPU results
-  comparison = np.abs(GPUpastedHits - CPUpastedHits)
+  comparison = np.abs(GPUpastedHits - CPUpastedHits).astype(np.float32)
+  comparison /= np.max(comparison)
   plt.figure()
   plt.imshow(comparison,cmap='gray')
   plt.colorbar()

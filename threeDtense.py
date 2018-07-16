@@ -30,7 +30,9 @@ from skimage import io
 
 def Arrayer(fileName = '/home/AD/srbl226/GPU/gpu_detect/140722_2_2.tif',picDims = [0,512,0,512,0,111]):
   im = io.imread(fileName)
-  i = im.transpose()
+  
+  i = im.transpose() ### the image is loaded as z,y,x transposing to become x,y,z
+  
   I = i[picDims[0]:picDims[1],picDims[2]:picDims[3],picDims[4]:picDims[5]]
   print "max of array" 
   I/= np.max(I)
@@ -40,37 +42,45 @@ def Arrayer(fileName = '/home/AD/srbl226/GPU/gpu_detect/140722_2_2.tif',picDims 
             
 from scipy.misc import toimage
 def PoreFilter(size=40,dim=3):
-  img = np.zeros((size,size,dim), np.uint8)
-  #cv2.circle(img,(size/2,size/2),size/2,(-1,-1,-1),-1)#used for punishment
-  cv2.circle(img,(size/2,size/2),size/20,(255,255,255),-1)  #not certain what size/4 corresponds to, maybe radius, jk I get it size/2 is center and size/4 is radius
-  #plt.imshow(img)
-  toimage(img).save('pore.png')
-  pore = util.ReadImg('pore.png').astype(np.float64)
-  fPore = pore.flatten()
-  #print "poreMax,poreMin", np.max(pore),np.min(pore)
-  #print "this will include punishment filter"
-  #print "poreShape", np.shape(pore)
-  #print "pore",pore
+  img = np.zeros((size,size,dim), np.uint8) ###build's an image array
 
-  locs = np.argwhere(fPore<255.0)
-  #print "shape locs", np.shape(locs)
-  #print "locs vals", locs
-  fPore[locs] = -100.0
-  # print "fpore at locs", fPore
-  #for i,loc in enumerate(locs):
-  #    pore[loc] = -100
-  arbitrary = 40
-  pore = np.reshape(fPore,(size,size))
-  #print "all fpore vals", pore
+  cv2.circle(img,(size/2,size/2),size/10,(255,255,255),-1) ### constructs a circle of radius size/20 in the center of the array
+  
+
+  ### This is probably bad practices
+  toimage(img).save('pore.png')  ### stores the image to be recast as a numpy array
+  pore = util.ReadImg('pore.png').astype(np.float64)
+  fPore = pore.flatten()  ### flattens to find indicies of non-pore points
+
+  locs = np.argwhere(fPore<255.0)  ### locating nonpore points
+  fPore[locs] = -100.0  ###setting nonpore points as arbitrarily punished locations
+  arbitrary = 10  ### arbitrary depth of filter
+  pore = np.reshape(fPore,(size,size))  ###  rebuilding 2D image
+  vec = np.ones((arbitrary)) ### generating vector to project 2D image into 3D
+  cross = np.outer(pore,vec)  ### doing the cross product
+  crossFilter = np.reshape(cross,(size,size,arbitrary))  ### building the cross product into desired dimensions in 3-space, not sure why this step was necessary
+  #crossFilter[:,:,:arbitrary/4] = -100.0  ### adding punishment "cap" to filter
+  #crossFilter[:,:,(arbitrary*3):] = -100.0
+  print "dimensions of filter", np.shape(crossFilter)
+  crossFilter/=np.max(crossFilter)  ### renorming it to be max of 1
+  return crossFilter
+
+def CubeFilter(size=8,dim=3):
+  img = np.zeros((size,size,dim), np.uint8)
+  cv2.circle(img,(size/2,size/2),size/2,(-1,-1,-1),-1)  #used for punishment
+  toimage(img).save('cube.png')
+  cube = util.ReadImg('cube.png').astype(np.float64)
+  cube[:,:] = 255
+  arbitrary =  size
   vec = np.ones((arbitrary)) ############This is arbitrary, please make sensical
-  cross = np.outer(pore,vec)
+  cross = np.outer(cube,vec)
   crossFilter = np.reshape(cross,(size,size,arbitrary))
-  crossFilter[:,:,:arbitrary/4] = -100.0
-  crossFilter[:,:,(arbitrary*3):] = -100.0
-  #util.myplot(crossFilter[:,:,5])
   print "dimensions of filter", np.shape(crossFilter)
   crossFilter/=np.max(crossFilter)
   return crossFilter
+
+
+
 
 #import imutils
 def LoadImage(
@@ -698,10 +708,60 @@ def pictureMaker(dims=[1]): ### This fxn makes a convolved pic to compare to OG 
       else:
           imX = np.concatenate((imX,imY),axis=0)
   print "final Dims", np.shape(imX)
-  finalImage = imX.transpose()
-  finalImage*=(255/np.max(finalImage))
-  tiff.imsave('convolved.tiff', finalImage)
+  finalImage = imX.transpose().astype(np.float64)
+  finalImage*=(255./np.max(finalImage))
+  tiff.imsave('convolved.tiff', finalImage.astype(np.uint8))
 
+def subset():
+  dFilter = PoreFilter()
+  testImage = io.imread('/home/AD/srbl226/gpu3D/gpu_detect/Downsampled.tiff')
+  print "testImage shape", np.shape(testImage)
+  test = testImage.transpose()
+  test/=np.max(test)
+  im,time = MF(test,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters)
+  finalImage = im.transpose().astype(np.float64)
+  finalImage *= (255./np.max(finalImage))
+  print "finalImage shape", np.shape(finalImage)
+  tiff.imsave('smallConvolved.tiff',finalImage.astype(np.uint8))
+
+
+
+def smoother(dims=[1]): ### This fxn makes a convolved pic to compare to OG image
+  dFilter = CubeFilter()
+  for i  in [0,1]:
+      for j in [0,1]:
+          for k in [0,1]:
+            testImage = Arrayer('/home/AD/srbl226/Fiji/140722_2_2.tif',[i*512,(i+1)*512,j*512,(j+1)*512,111*k,(k+1)*111])
+            im,time = MF(testImage,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters)
+            #im = convolved ### grab convolved im here
+            if not k:
+                imZ = im
+            else:
+                imZ = np.concatenate((imZ,im),axis=2)
+          if not j:
+            imY = imZ
+          else:
+            imY = np.concatenate((imY,imZ),axis=1)
+      if not i:
+          imX = imY
+      else:
+          imX = np.concatenate((imX,imY),axis=0)
+  print "final Dims", np.shape(imX)
+  finalImage = imX.transpose()
+  print "final Image shape", np.shape(finalImage)
+  flatFinal = finalImage.flatten()
+  onePercent = np.percentile(flatFinal,60)
+  locs = np.argwhere(flatFinal>onePercent)
+  newIm = io.imread('/home/AD/srbl226/Fiji/140722_2_2.tif')
+  I = np.copy(newIm) #.transpose()
+  #I.flatten()
+  
+  newLocs = np.unravel_index(locs, np.shape(finalImage))   # If breaks cry to Pete
+  I[newLocs] = 0
+  #IM = np.reshape(I,(222,1024,1024))
+  tiff.imsave('deMembraned.tiff',I) 
+  finalImage*=(255/np.max(finalImage))
+  tiff.imsave('smoother_convolved.tiff', finalImage)
 
 
 #
@@ -756,7 +816,12 @@ if __name__ == "__main__":
       pictureMaker()
       print " made pic"
       quit()
-
+    if(arg=="-smooth"):
+      smoother()
+      quit()
+    if(arg=="-sub"):
+      subset()
+      quit()
     if(arg=="-test1"):
       test1()
       quit()

@@ -1,5 +1,5 @@
 import sys
-import os 
+import os
 import cv2
 import matplotlib
 #matplotlib.use('Agg')
@@ -30,55 +30,86 @@ from skimage import io
 
 def Arrayer(fileName = '/home/AD/srbl226/GPU/gpu_detect/140722_2_2.tif',picDims = [0,512,0,512,0,111]):
   im = io.imread(fileName)
-  
+
   i = im.transpose() ### the image is loaded as z,y,x transposing to become x,y,z
-  
+
   I = i[picDims[0]:picDims[1],picDims[2]:picDims[3],picDims[4]:picDims[5]]
-  print "max of array" 
+  print "max of array: ", np.max(I)
   I/= np.max(I)
-  print "total pixels",np.shape(I)[0]*np.shape(I)[1]*np.shape(I)[2]
+  #print "total pixels",np.shape(I)[0]*np.shape(I)[1]*np.shape(I)[2]
   print "shape of image array",  I.shape
   return I
-            
+
 from scipy.misc import toimage
 def PoreFilter(size=40,dim=3):
   img = np.zeros((size,size,dim), np.uint8) ###build's an image array
 
-  cv2.circle(img,(size/2,size/2),size/10,(255,255,255),-1) ### constructs a circle of radius size/20 in the center of the array
-  
+  cv2.circle(img,(size/2,size/2),size/20,(255,255,255),-1) ### constructs a circle of radius size/20 in the center of the array
+
 
   ### This is probably bad practices
   toimage(img).save('pore.png')  ### stores the image to be recast as a numpy array
   pore = util.ReadImg('pore.png').astype(np.float64)
-  fPore = pore.flatten()  ### flattens to find indicies of non-pore points
+  #fPore = pore.flatten()  ### flattens to find indicies of non-pore points
 
-  locs = np.argwhere(fPore<255.0)  ### locating nonpore points
-  fPore[locs] = -100.0  ###setting nonpore points as arbitrarily punished locations
+  #locs = np.argwhere(fPore<255.0)  ### locating nonpore points
+  #fPore[locs] = -100.0  ###setting nonpore points as arbitrarily punished locations
   arbitrary = 10  ### arbitrary depth of filter
-  pore = np.reshape(fPore,(size,size))  ###  rebuilding 2D image
+  #pore = np.reshape(fPore,(size,size))  ###  rebuilding 2D image
   vec = np.ones((arbitrary)) ### generating vector to project 2D image into 3D
   cross = np.outer(pore,vec)  ### doing the cross product
   crossFilter = np.reshape(cross,(size,size,arbitrary))  ### building the cross product into desired dimensions in 3-space, not sure why this step was necessary
   #crossFilter[:,:,:arbitrary/4] = -100.0  ### adding punishment "cap" to filter
   #crossFilter[:,:,(arbitrary*3):] = -100.0
-  print "dimensions of filter", np.shape(crossFilter)
+  print "dimensions of pore filter", np.shape(crossFilter)
   crossFilter/=np.max(crossFilter)  ### renorming it to be max of 1
   return crossFilter
 
-def CubeFilter(size=8,dim=3):
-  img = np.zeros((size,size,dim), np.uint8)
-  cv2.circle(img,(size/2,size/2),size/2,(-1,-1,-1),-1)  #used for punishment
-  toimage(img).save('cube.png')
-  cube = util.ReadImg('cube.png').astype(np.float64)
-  cube[:,:] = 255
-  arbitrary =  size
-  vec = np.ones((arbitrary)) ############This is arbitrary, please make sensical
-  cross = np.outer(cube,vec)
-  crossFilter = np.reshape(cross,(size,size,arbitrary))
-  print "dimensions of filter", np.shape(crossFilter)
-  crossFilter/=np.max(crossFilter)
-  return crossFilter
+def PunishFilter(size = 40,dim=3):
+    img = np.zeros((size,size,dim), np.uint8)
+    img[:,:] =(255,255,255)
+    cv2.circle(img,(size/2,size/2),size/20,(0,0,0),-1)
+    toimage(img).save('punishmentFilter.png')  ### stores the image to be recast as a numpy array
+    pore = util.ReadImg('punishmentFilter.png').astype(np.float64)
+    arbitrary = 10  ### arbitrary depth of filter
+    #pore = np.reshape(fPore,(size,size))  ###  rebuilding 2D image
+    vec = np.ones((arbitrary)) ### generating vector to project 2D image into 3D
+    cross = np.outer(pore,vec)  ### doing the cross product
+    crossFilter = np.reshape(cross,(size,size,arbitrary))  ### building the cross product into desired dimensions in 3-space, not sure why this step was necessary
+    #crossFilter[:,:,:arbitrary/4] = -100.0  ### adding punishment "cap" to filter
+    #crossFilter[:,:,(arbitrary*3):] = -100.0
+    print "dimensions of punishment filter", np.shape(crossFilter)
+    crossFilter/=np.max(crossFilter)  ### renorming it to be max of 1
+    return crossFilter
 
+
+
+
+def SphereFilter(size=32,dim=3):
+  img = np.zeros((size,size,size), np.float64)
+  #cv2.circle(img,(size/2,size/2),size/2,(1,1,1),-1)  #used for punishment
+  for s in range(size):
+	for r in range(size):
+		for q in range(size):
+			if ((s-size/2.)**2.+(r-size/2.)**2.+(q-size/2.)**2.)**0.5<size/2.:
+				img[s,r,q]=1.
+
+  print "newImg max", np.max(img)
+  #toimage(img).save('sphere.png')
+  #sphere = util.ReadImg('sphere.png').astype(np.float64)
+  #cube[:,:] = 1
+  #arbitrary =  size
+  sphere = np.copy(img)
+  sphere/= np.sum(img)
+  print "sphere max", np.max(sphere)
+
+  #vec = np.ones((arbitrary)) ############This is arbitrary, please make sensical
+  #cross = np.outer(cube,vec)
+  #crossFilter = np.reshape(cross,(size,size,arbitrary))
+  #print "dimensions of filter", np.shape(crossFilter)
+  #crossFilter/=np.max(crossFilter)
+  #return crossFilter
+  return sphere
 
 
 
@@ -87,18 +118,18 @@ def LoadImage(
   imgName = "/home/AD/pmke226/DataLocker/cardiac/Sachse/171127_tissue/tissue.tif",
   mid = 10000,
   maxDim = 100,
-  angle = -35.    
+  angle = -35.
 ):
     print "WARNING: please use util.ReadImg"
-    # read image 
+    # read image
     img = np.array(util.ReadImg(imgName),dtype=np.float64)
-    
-    # extract subset 
+
+    # extract subset
     imgTrunc = img[
       (mid-maxDim):(mid+maxDim),
       (mid-maxDim):(mid+maxDim),(mid-maxDim):(mid+maxDim)]
 
-    # rotate to align TTs while we are testing code 
+    # rotate to align TTs while we are testing code
     #imgR = imutils.rotate(imgTrunc, angle)
     #cv2.imshow(imgR,cmap="gray")
 
@@ -112,7 +143,7 @@ def LoadImage(
 def MakeTestImage(dim = 400):
     l = np.zeros(2); l[0:0]=1.
     z = l
-    # there are smarter ways of doing this 
+    # there are smarter ways of doing this
     dim = int(dim)
     l = np.zeros(dim)
     for i in range(4):
@@ -124,7 +155,7 @@ def MakeTestImage(dim = 400):
     img2 = striped
     height3 = np.ones((height))
     cross = np.outer(img2, height3)
-    
+
     imgR = np.reshape(cross,(dim,dim,height))
     imgR[:,(dim/2):,:(height/2)] = 0
     #print "Made test Image"
@@ -142,14 +173,14 @@ def MakeFilter(
     fw = 4,
     fdim = 14,
     height=10
-  ): 
+  ):
     dFilter = np.zeros([fdim,fdim,height])
     dFilter[:,0:fw,0:fw]=1.
-    # test 
+    # test
     #dFilter[:] = 1 # basically just blur image
     yFilter = np.roll(dFilter,-np.int(fw/2.),axis=1)
     #cv2.imshow(dFilter,cmap="gray")
-    
+
     return dFilter
 
 
@@ -191,7 +222,7 @@ def Pad(imgR,
 
 def tfMF(img,mf,dimensions=3):
   '''
-  Generic workhorse routine that sets up the image and matched filter for 
+  Generic workhorse routine that sets up the image and matched filter for
     matched filtering using tensorflow. This routine is called by whichever
     detection scheme has been chosen. NOT by the doTFloop explicitly.
 
@@ -219,7 +250,7 @@ def tfMF(img,mf,dimensions=3):
 
 
 ##
-## Tensor flow part 
+## Tensor flow part
 ##
 def doTFloop(inputs,
            #img,# test image
@@ -240,14 +271,14 @@ def doTFloop(inputs,
 
   # We may potentially want to incorporate all 3 filters into this low level
   # loop to really speed things up
-  
+
   with tf.Session() as sess:
     start = time.time()
 
     ### Create and initialize variables
-    print " pre step1", time.time()-start
+    #print " pre step1", time.time()-start
     tfImg = tf.Variable(inputs.imgOrig, dtype=tf.complex64)
-    print " post step1/ prePad", time.time()-start
+    #print " post step1/ prePad", time.time()-start
     #paddedFilter = Pad(inputs.imgOrig,inputs.mfOrig)
     #print " postPad", time.time()-start
     tfFilt = tf.constant(inputs.mfOrig)
@@ -258,10 +289,10 @@ def doTFloop(inputs,
     #print "post roll", time.time()-start
     pF = tf.cast(rollFilt, dtype=tf.complex64)
     tfFilt = tf.Variable(pF, dtype=tf.complex64)
-    
-    print "post Pad---->tf/pre stacked hits", time.time()-start
+
+    #print "post Pad---->tf/pre stacked hits", time.time()-start
     if paramDict['inverseSNR']:
-      stackedHitsDummy = np.ones_like(inputs.imgOrig) 
+      stackedHitsDummy = np.ones_like(inputs.imgOrig)
     else:
       stackedHitsDummy = np.zeros_like(inputs.imgOrig)
     stackedHits = tf.Variable(stackedHitsDummy, dtype=tf.float64)
@@ -296,9 +327,6 @@ def doTFloop(inputs,
 
     # have to convert to a tensor so that the rotations can be indexed during tf while loop
     bigIters = tf.Variable(tf.convert_to_tensor(bigIters,dtype=tf.float32))
-    #print "post bigIters into tf", time.time()-start
-    # initialize paramDict variables
-    #print "pre big dict", time.time()-start
     paramDict['inverseSNR'] = tf.Variable(paramDict['inverseSNR'], dtype=tf.bool)
 
     # set up filtering variables
@@ -310,11 +338,11 @@ def doTFloop(inputs,
       sess.run(tf.variables_initializer([paramDict['mfPunishment'],paramDict['covarianceMatrix'],paramDict['gamma']]))
     #print "post big dict, pre run", time.time()-start
     sess.run(tf.variables_initializer([tfImg,tfFilt,cnt,bigIters,stackedHits,bestAngles,snr,paramDict['inverseSNR']]))
-   
+
     inputs.tfImg = tfImg
     inputs.tfFilt = tfFilt
     inputs.bigIters = bigIters
-    print "post run", time.time()-start
+    #print "post run", time.time()-start
 
     # While loop that counts down to zero and computes reverse and forward fft's
     def condition(cnt,stackedHits,bestAngles):
@@ -372,51 +400,22 @@ def doTFloop(inputs,
     cntF,stackedHitsF,bestAnglesF =  sess.run([cnt,stackedHits,bestAngles])
     compFin = time.time()
     print "Time for tensor flow to execute run:{}s".format(compFin-compStart)
-    #print "stackedHits type  ", type(stackedHits), "  stackedHits shape  ", np.shape(stackedHits) 
+    #print "stackedHits type  ", type(stackedHits), "  stackedHits shape  ", np.shape(stackedHits)
     sHits = stackedHits.eval()
     #print "type sHits ", type(sHits)
-    
-    ###############THIS IS A STUPID HACK
-    coolLoc = np.argmax(sHits,axis=0) 
-    coolLoc =np.argmax(coolLoc,axis=0)
-    coolLoc =np.argmax(coolLoc,axis=0)
-    #i = sHits.transpose() 
-    #print "shape for tiff", np.shape(ti)
-    #im = Image.fromarray(sHits, mode='F')
-    #forTiff = sitk.Cast(sHits,sitk.sitkFloat32)
-    forTiff = np.asarray(sHits,dtype=np.uint8)
-    #myTiff = forTiff.transpose()    
-    #print "a fortiff val", forTiff[50,50,50]
-    #print "forTiff dims ", np.shape(forTiff)
-    #imsave('convolved.tif',forTiff)
-    #print "dtype forTiff", forTiff.dtype
-     
-    #tiff.imsave("convolved.tiff",myTiff)
-    #sitk.WriteImage(forTiff,'convolved.tif')  
-  
-    #with TiffWriter('convolved.tif',imagej=True) as tif:
-    #  for i in range(forTiff.shape[0]):
-    #    tif.save(forTiff[i])
-   
-    sHits/=np.max(sHits)
-    #print "coolLoc shape", np.shape(coolLoc), "coolLoc ",coolLoc
-    #util.myplot(sHits[:,:,coolLoc])
-    #results = empty()
-    
-    #results.stackedHits = stackedHitsF
-    # TODO: pull out best angles from bigIters
-    #results.stackedAngles = bestAnglesF
 
-    #start = time.time()
+    ###############THIS IS A STUPID HACK
+    coolLoc = np.argmax(sHits,axis=0)
+    coolLoc =np.argmax(coolLoc,axis=0)
+    coolLoc =np.argmax(coolLoc,axis=0)
+
+    forTiff = np.asarray(sHits*(255/np.max(sHits)),dtype=np.uint8)
+
+    sHits/=np.max(sHits)
+
     tElapsed = time.time()-start
     print 'tensorflow:{}s'.format(tElapsed)
-
-    ### something weird is going on and image is flipped in each direction
-
-
     print 'Total time for tensorflow to run:{}s'.format(tElapsed)
-
-
     return forTiff, tElapsed #results, tElapsed
 
 
@@ -429,7 +428,7 @@ def MF(
     yiters=[0],
     ziters=[0]
     ):
-    # NOTE: May need to do this padding within tensorflow loop itself to 
+    # NOTE: May need to do this padding within tensorflow loop itself to
     #       ameliorate latency due to loading large matrices into GPU.
     #       Potentially a use for tf.dynamic_stitch?
     lx = len(xiters); ly = len(yiters); lz = len(ziters)
@@ -447,7 +446,7 @@ def MF(
        corr = np.real(corr)
        #print "POST FILTER"
     else:
-      pass        
+      pass
       start = time.time()
       filtTF = tf.convert_to_tensor(filt)
       for i,x in enumerate(xiters):
@@ -470,8 +469,8 @@ def MF(
             corr = np.real(corr)
       tElapsed = time.time()-start
       print 'fftp:{}s'.format(tElapsed)
-       
-    return corr,tElapsed    
+
+    return corr,tElapsed
 
 ###################################################################################################
 ###
@@ -513,6 +512,7 @@ def punishmentFilterTensor(inputs,paramDict,dimensions=3):
   # call generalized tensorflow matched filter routine
   corr = tfMF(inputs.tfImg,inputs.tfFilt,dimensions=dimensions)
   corrPunishment = tfMF(inputs.tfImg,paramDict['mfPunishment'],dimensions=dimensions)
+
   # calculate signal to noise ratio
   snr = tf.divide(corr,tf.add(paramDict['covarianceMatrix'],tf.multiply(paramDict['gamma'], corrPunishment)))
   return snr
@@ -559,7 +559,7 @@ def doStackingHits(inputs,paramDict,stackedHits,bestAngles,snr,cnt):
   snr = tf.cast(tf.real(snr),dtype=tf.float64)
 
   # check inverse snr toggle, if true, find snr < stackedHits, if false, find snr > stackedHits
-  snrHits = tf.cond(paramDict['inverseSNR'], 
+  snrHits = tf.cond(paramDict['inverseSNR'],
                     lambda: tf.less(snr,stackedHits),
                     lambda: tf.greater(snr,stackedHits))
   stackedHits = tf.where(snrHits,snr,stackedHits)
@@ -578,17 +578,14 @@ def writer(testImage,name="out.tif"):
     img = testImage
     imgR = img - np.min(img)
     imgN = imgR/np.max(imgR)*(2**8  - 1 ) # for 8bit channel
-    
-    
-    # convert to unsigned image 
+
+
+    # convert to unsigned image
     out = np.array(imgN,dtype=np.uint8)
     cv2.imwrite(name,out)
-    #import matplotlib.pylab as plt
-    #plt.pcolormesh(out)
-    #plt.gcf().savefig("x.png")
 
-    
-    
+
+
 
 
 
@@ -602,20 +599,18 @@ import sys
 ##################################
 
 #
-# ROUTINE  
+# ROUTINE
 #
 def test0(useGPU=True):
   testImage = MakeTestImage()
   dFilter = MakeFilter()
-  corr = MF(testImage,dFilter,useGPU=useGPU,dim=3,xiters=iters,yiters=iters,ziters=iters) 
-  #writer(corr)
+  corr = MF(testImage,dFilter,useGPU=useGPU,dim=3,xiters=iters,yiters=iters,ziters=iters)
   return testImage,corr
 
 def runner(dims):
   times =[]
   f = open("GPU_Benchmark.txt","w")
   f.write('Dims:{}'.format(dims))
-  #f.write('\nCPU:')
   for i,d in enumerate(dims):
     continue
     print "dim", d
@@ -623,31 +618,22 @@ def runner(dims):
     dFilter = MakeFilter()
     corr,time = MF(testImage,dFilter,useGPU=False,dim=3,xiters=iters,yiters=iters,ziters=iters)
     times.append(time)
-    #if dim == dims[-1]:
-    #f.write('\ndim:{},time:{};'.format(dim,time))
-    #f.write('dim:{},time:{};'.format(dim,time))
-  #f.write('{}'.format(times))
 
   timesGPU =[]
-  f.write('\nGPU:') 
+  f.write('\nGPU:')
   for j,d in enumerate(dims):
     print "dim", d
     testImage = MakeTestImage(d)
     dFilter = MakeFilter()
     corr,time = MF(testImage,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters)
     timesGPU.append(time)
-    #f.write('\ndim:{},time:{};'.format(dim,time))
   f.write('{}'.format(timesGPU))
-
-  #Results = { "CPU":"%s"%(str(times)),"GPU":"%s"%str(timesGPU)}
-  #pickle.dump(Results, open("%Benchmark.p"%(str(R),str(length/nm),str(cKCl)),"wb"))
-  
-  
   return times, timesGPU
+
 def test1(maxDim=100):
   testImage = LoadImage(maxDim=maxDim)
   dFilter = MakeFilter()
-  corr = MF(testImage,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters) 
+  corr = MF(testImage,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters)
   writer(corr)
   return testImage,corr, dFilter
 
@@ -663,9 +649,6 @@ def testReal(dims=[1]):
     dFilter = PoreFilter()
     corr,time = MF(testImage,dFilter,useGPU=False,dim=3,xiters=iters,yiters=iters,ziters=iters)
     times.append(time)
-    #if dim == dims[-1]:
-    #f.write('\ndim:{},time:{};'.format(dim,time))
-    #f.write('dim:{},time:{};'.format(dim,time))
   f.write('{}'.format(times))
 
   timesGPU =[]
@@ -678,13 +661,7 @@ def testReal(dims=[1]):
     print " we testin"
     corr,time = MF(testImage,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters)
     timesGPU.append(time)
-    #f.write('\ndim:{},time:{};'.format(dim,time))
   f.write('{}'.format(timesGPU))
-
-  #Results = { "CPU":"%s"%(str(times)),"GPU":"%s"%str(timesGPU)}
-  #pickle.dump(Results, open("%Benchmark.p"%(str(R),str(length/nm),str(cKCl)),"wb"))
-
-
   return times, timesGPU
 
 def pictureMaker(dims=[1]): ### This fxn makes a convolved pic to compare to OG image
@@ -693,7 +670,7 @@ def pictureMaker(dims=[1]): ### This fxn makes a convolved pic to compare to OG 
       for j in [0,1]:
           for k in [0,1]:
             testImage = Arrayer('/home/AD/srbl226/gpu3D/gpu_detect/floored.tiff',[i*512,(i+1)*512,j*512,(j+1)*512,111*k,(k+1)*111])
-            im,time = MF(testImage,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters) 
+            im,time = MF(testImage,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters)
             #im = convolved ### grab convolved im here
             if not k:
                 imZ = im
@@ -712,9 +689,97 @@ def pictureMaker(dims=[1]): ### This fxn makes a convolved pic to compare to OG 
   finalImage*=(255./np.max(finalImage))
   tiff.imsave('convolved.tiff', finalImage.astype(np.uint8))
 
+def kBrane(dims=[1]): ### This fxn makes a convolved pic to compare to OG image
+  dFilter = SphereFilter()
+  for i  in [0,1]:
+      for j in [0,1]:
+          for k in [0,1]:
+            testImage = Arrayer('/home/AD/srbl226/Fiji/140722_2_2.tif',[i*512,(i+1)*512,j*512,(j+1)*512,111*k,(k+1)*111])
+            im,time = MF(testImage,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters)
+            if not k:
+                imZ = im
+            else:
+                imZ = np.concatenate((imZ,im),axis=2)
+          if not j:
+            imY = imZ
+          else:
+            imY = np.concatenate((imY,imZ),axis=1)
+      if not i:
+          imX = imY
+      else:
+          imX = np.concatenate((imX,imY),axis=0)
+  finalImage = imX.transpose()
+  flatFinal = finalImage.flatten()
+  sixtyPercent = np.percentile(flatFinal,60)
+  locs = np.argwhere(flatFinal>sixtyPercent)
+  newIm = io.imread('/home/AD/srbl226/Fiji/140722_2_2.tif')
+  I = np.copy(newIm) #.transpose()
+  newLocs = np.unravel_index(locs, np.shape(finalImage))   # If breaks cry to Pete
+  I[newLocs] = 0
+  tiff.imsave('kMembraned.tiff',I)
+def kBrane2(dims=[1]):
+  dFilter = SphereFilter(size = 16)
+  for i  in [0,1]:
+      for j in [0,1]:
+          for k in [0,1]:
+            testImage = Arrayer('/home/AD/srbl226/gpu3D/gpu_detect/kMembraned.tiff',[i*512,(i+1)*512,j*512,(j+1)*512,111*k,(k+1)*111])
+            im,time = MF(testImage,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters)
+            if not k:
+                imZ = im
+            else:
+                imZ = np.concatenate((imZ,im),axis=2)
+          if not j:
+            imY = imZ
+          else:
+            imY = np.concatenate((imY,imZ),axis=1)
+      if not i:
+          imX = imY
+      else:
+          imX = np.concatenate((imX,imY),axis=0)
+  finalImage = imX.transpose()
+  flatFinal = finalImage.flatten()
+  sixtyPercent = np.percentile(flatFinal,60)
+  locs = np.argwhere(flatFinal>sixtyPercent)
+  newIm = io.imread('/home/AD/srbl226/gpu3D/gpu_detect/kMembraned.tiff')
+  I = np.copy(newIm) #.transpose()
+  newLocs = np.unravel_index(locs, np.shape(finalImage))   # If breaks cry to Pete
+  I[newLocs] = 0
+  tiff.imsave('kMembraned.tiff',I)
+
+
+def kBrane3(dims=[1]):
+  dFilter = SphereFilter(size = 8)
+  for i  in [0,1]:
+      for j in [0,1]:
+          for k in [0,1]:
+            testImage = Arrayer('/home/AD/srbl226/gpu3D/gpu_detect/kMembraned.tiff',[i*512,(i+1)*512,j*512,(j+1)*512,111*k,(k+1)*111])
+            im,time = MF(testImage,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters)
+            if not k:
+                imZ = im
+            else:
+                imZ = np.concatenate((imZ,im),axis=2)
+          if not j:
+            imY = imZ
+          else:
+            imY = np.concatenate((imY,imZ),axis=1)
+      if not i:
+          imX = imY
+      else:
+          imX = np.concatenate((imX,imY),axis=0)
+  finalImage = imX.transpose()
+  flatFinal = finalImage.flatten()
+  sixtyPercent = np.percentile(flatFinal,60)
+  locs = np.argwhere(flatFinal>sixtyPercent)
+  newIm = io.imread('/home/AD/srbl226/gpu3D/gpu_detect/kMembraned.tiff')
+  I = np.copy(newIm) #.transpose()
+  newLocs = np.unravel_index(locs, np.shape(finalImage))   # If breaks cry to Pete
+  I[newLocs] = 0
+  tiff.imsave('kMembraned.tiff',I)
+
+
 def subset():
   dFilter = PoreFilter()
-  testImage = io.imread('/home/AD/srbl226/gpu3D/gpu_detect/Downsampled.tiff')
+  testImage = io.imread('/home/AD/srbl226/gpu3D/gpu_detect/fDownsampled.tiff')
   print "testImage shape", np.shape(testImage)
   test = testImage.transpose()
   test/=np.max(test)
@@ -725,15 +790,87 @@ def subset():
   tiff.imsave('smallConvolved.tiff',finalImage.astype(np.uint8))
 
 
+def Punish():
+   dFilter = PoreFilter()
+   testImage = io.imread('/home/AD/srbl226/gpu3D/gpu_detect/fDownsampled.tiff')
+   print "testImage shape", np.shape(testImage)
+   test = testImage.transpose()
+   test/=np.max(test)
+   im,time = MF(test,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters)
+   convolvedImage = im.transpose().astype(np.float64)
+   convolvedImage *= (255./np.max(convolvedImage))
+   print "shape of convolved", np.shape(convolvedImage)
+
+   dFilter = PunishFilter()
+   #testImage = io.imread('/home/AD/srbl226/gpu3D/gpu_detect/fDownsampled.tiff')
+   print "testImage shape", np.shape(testImage)
+   #test = testImage.transpose()
+   #test/=np.max(test)
+   im,time = MF(test,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters)
+   punishImage = im.transpose().astype(np.float64)
+   punishImage *= (255./np.max(punishImage))
+   print "shape of punished", np.shape(punishImage)
+   SNR = convolvedImage/(1+5*punishImage)
+   flatSNR = SNR.flatten()
+   locs = np.argwhere(flatSNR>1.0)
+   print "90th percentile SNR: ", np.percentile(SNR,90)
+   newLocs = np.unravel_index(locs, np.shape(SNR))
+   forStacking = (testImage*(255/np.max(testImage)))
+   coloredImage = np.zeros_like(SNR)
+   coloredImage[newLocs] = 255
+
+
+
+   newImage = np.stack((coloredImage,forStacking,forStacking),axis=1)
+
+   print "finalImage shape", np.shape(newImage)
+   tiff.imsave('falseColored.tiff',newImage.astype(np.uint8))
+
+
+
+
+def membraneKnockOut():
+  testImage = io.imread('/home/AD/srbl226/gpu3D/gpu_detect/Downsampled.tiff')
+  dFilter = SphereFilter(size =32)
+  test=testImage.transpose()
+  im,time = MF(test,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters)
+  kImage = im.transpose()
+  flatK = kImage.flatten()
+  sixtyPercent = np.percentile(flatK,80)
+  locs = np.argwhere(flatK>sixtyPercent)
+  newIm = io.imread('/home/AD/srbl226/gpu3D/gpu_detect/Downsampled.tiff')
+  I = np.copy(newIm)
+  newLocs = np.unravel_index(locs, np.shape(kImage))
+  I[newLocs] = 0
+  tiff.imsave('deMembraned.tiff',I)
+  radii = [16,8]
+  for i,radius in enumerate(radii):
+    testImage = io.imread('/home/AD/srbl226/gpu3D/gpu_detect/kMembraned.tiff')
+    dFilter = SphereFilter(size =radius)
+    test=testImage.transpose()
+    im,time = MF(test,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters)
+    kImage = im.transpose()
+    flatK = kImage.flatten()
+    sixtyPercent = np.percentile(flatK,80)
+    locs = np.argwhere(flatK>sixtyPercent)
+    newIm = io.imread('/home/AD/srbl226/gpu3D/gpu_detect/Downsampled.tiff')
+    I = np.copy(newIm)
+    newLocs = np.unravel_index(locs, np.shape(kImage))
+    I[newLocs] = 0
+    tiff.imsave('deMembraned.tiff',I)
+  print "file at deMembraned.tiff"
+
 
 def smoother(dims=[1]): ### This fxn makes a convolved pic to compare to OG image
-  dFilter = CubeFilter()
+  dFilter = SphereFilter()
   for i  in [0,1]:
       for j in [0,1]:
           for k in [0,1]:
             testImage = Arrayer('/home/AD/srbl226/Fiji/140722_2_2.tif',[i*512,(i+1)*512,j*512,(j+1)*512,111*k,(k+1)*111])
             im,time = MF(testImage,dFilter,useGPU=True,dim=3,xiters=iters,yiters=iters,ziters=iters)
             #im = convolved ### grab convolved im here
+            print "max of convolved: ", np.max(im)
+            print "min of convolved: ", np.min(im)
             if not k:
                 imZ = im
             else:
@@ -748,6 +885,7 @@ def smoother(dims=[1]): ### This fxn makes a convolved pic to compare to OG imag
           imX = np.concatenate((imX,imY),axis=0)
   print "final Dims", np.shape(imX)
   finalImage = imX.transpose()
+
   print "final Image shape", np.shape(finalImage)
   flatFinal = finalImage.flatten()
   onePercent = np.percentile(flatFinal,60)
@@ -755,36 +893,36 @@ def smoother(dims=[1]): ### This fxn makes a convolved pic to compare to OG imag
   newIm = io.imread('/home/AD/srbl226/Fiji/140722_2_2.tif')
   I = np.copy(newIm) #.transpose()
   #I.flatten()
-  
+
   newLocs = np.unravel_index(locs, np.shape(finalImage))   # If breaks cry to Pete
   I[newLocs] = 0
   #IM = np.reshape(I,(222,1024,1024))
-  tiff.imsave('deMembraned.tiff',I) 
+  tiff.imsave('deMembraned.tiff',I)
   finalImage*=(255/np.max(finalImage))
-  tiff.imsave('smoother_convolved.tiff', finalImage)
+  #tiff.imsave('smoother_convolved.tiff', finalImage)
 
 
 #
-# Message printed when program run without arguments 
+# Message printed when program run without arguments
 #
 def helpmsg():
   scriptName= sys.argv[0]
   msg="""
-Purpose: 
- 
+Purpose:
+
 Usage:
 """
   msg+="  %s -validation" % (scriptName)
   msg+="""
-  
- 
+
+
 Notes:
 
 """
   return msg
 
 #
-# MAIN routine executed when launching this script from command line 
+# MAIN routine executed when launching this script from command line
 #
 if __name__ == "__main__":
   import sys
@@ -799,7 +937,7 @@ if __name__ == "__main__":
   #  1
   #  #print "arg"
 
-  # Loops over each argument in the command line 
+  # Loops over each argument in the command line
   for i,arg in enumerate(sys.argv):
     # calls 'test0' with the next argument following the argument '-validation'
     if(arg=="-validation"):
@@ -819,6 +957,20 @@ if __name__ == "__main__":
     if(arg=="-smooth"):
       smoother()
       quit()
+    if(arg=="-knocked"):
+      kBrane()
+      kBrane2()
+      kBrane3()
+      quit()
+    if(arg=="-punish"):
+      Punish()
+      quit()
+    if(arg=='-k3'):
+      kBrane3()
+      quit()
+    if(arg=="-k"):
+      membraneKnockOut()
+      quit()
     if(arg=="-sub"):
       subset()
       quit()
@@ -836,14 +988,10 @@ if __name__ == "__main__":
       print "CPU", times
       print"\n" + "GPU",timesGPU
       quit()
-  
+
 
 
 
 
 
   raise RuntimeError("Arguments not understood")
-
-
-
-

@@ -42,8 +42,8 @@ root = "/net/share/dfco222/data/TT/LouchData/processedWithIntelligentThresholdin
 
 ## WT 
 def fig3(): 
-  #root = "./myoimages/"
-  testImage = root+"Sham_M_65_processed.png"
+  root = "/net/share/dfco222/data/TT/LouchData/processedMaskedNucleus/"
+  testImage = root+"Sham_M_65_nucleus_processed.png"
   #twoSarcSize = 21
 
   rawImg = util.ReadImg(testImage,cvtColor=False)

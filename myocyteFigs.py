@@ -4,7 +4,7 @@ import os
 ##################################
 #
 # Revisions
-#       10.08.10 inception
+#       July 24,2018 inception
 #
 ##################################
 
@@ -25,26 +25,24 @@ import tissue
 import preprocessing as pp
 import imutils
 import display_util as du
+import tensorflow_mf as tmf
+import threeDtense as tdt
+import detect
 class empty:pass
 
 ### Change default matplotlib settings to display figures
 plt.rcParams['font.size'] = 18
-#plt.rcParams['font.weight'] = 500 # slightly darker than normal
-#plt.rcParams['axes.labelweight'] = 500
 plt.rcParams['axes.labelsize'] = 'large'
 print "Comment out for HESSE"
 #plt.rcParams['axes.labelpad'] = 12.0 
 plt.rcParams['figure.autolayout'] = True
 
 #root = "myoimages/"
-#root = "/net/share/dfco222/data/TT/LouchData/processed/"
 root = "/net/share/dfco222/data/TT/LouchData/processedWithIntelligentThresholding/"
 
-## WT 
-def fig3(): 
+def WT_results(): 
   root = "/net/share/dfco222/data/TT/LouchData/processedMaskedNucleus/"
   testImage = root+"Sham_M_65_nucleus_processed.png"
-  #twoSarcSize = 21
 
   rawImg = util.ReadImg(testImage,cvtColor=False)
 
@@ -92,10 +90,11 @@ def fig3():
   ### save histogram of angles
   giveAngleHistogram(angleCounts,iters,"fig3")
 
-## HF 
-def fig4(): 
+def HF_results(): 
+  '''
+  TAB results
+  '''
   ### initial arguments
-  #root = "./myoimages/"
   filterTwoSarcSize = 25
   imgName = root + "HF_1_processed.png"
   rawImg = util.ReadImg(imgName)
@@ -123,31 +122,19 @@ def fig4():
   plt.gcf().savefig('fig4_BarChart.pdf',dpi=300)
   plt.close()
  
-  ### constructing actual figure
-  #fig, axarr = plt.subplots(2,1)
-  #axarr[0].imshow(rawImg,cmap='gray')
-  #axarr[0].set_title("HF Raw")
-  #axarr[0].axis('off') 
-
   switchedImg = switchBRChannels(markedImg)
-  #axarr[1].imshow(switchedImg)
-  #axarr[1].set_title("HF Marked")
-  #axarr[1].axis('off')
-  #plt.gcf().savefig("fig4_RawAndMarked.pdf",dpi=300)
-  #plt.close()
 
   plt.figure()
   plt.imshow(switchBRChannels(util.markMaskOnMyocyte(rawImg,imgName)))
   plt.gcf().savefig("fig4_Raw.pdf",dpi=300)
 
-## MI 
-def fig5(): 
-  ### update if need be
-  #root="./myoimages/"
+def MI_results(): 
+  '''
+  MI Results
+  '''
   filterTwoSarcSize = 25
 
   ### Distal, Medial, Proximal
-  #DImageName = root+"MI_D_73_processed.png"
   DImageName = root+"MI_D_76_processed.png"
   MImageName = root+"MI_M_45_processed.png"
   PImageName = root+"MI_P_16_processed.png"
@@ -213,11 +200,9 @@ def fig5():
   plt.imshow(switchBRChannels(util.markMaskOnMyocyte(PImage,PImageName)))
   plt.gcf().savefig("fig5_Raw_P.pdf",dpi=300)
 
-def fig6():
+def tissueComparison():
   '''
-  Doing some major reorganizing of this figure s.t. we can take from raw image,
-    preprocess this image, then run through the algorithm without having to go through 
-    external preprocessing routines in different steps
+  Tissue level images for comparison between "Distal" region and "Proximal" region
   '''
   ### Setup cases for use
   filterTwoSarcomereSize = 25
@@ -261,15 +246,11 @@ def fig6():
   ### Make Bar Chart of TT content
   width = 0.75
   N = 2
-  #indices = np.asarray([width, width+width/2., width*2+width/2.]) + width
-  #indices = np.arange(N) * width + 1./2. * width
   indices = np.arange(N) + width
   fig,ax = plt.subplots()
   rects1 = ax.bar(indices[0], cases['WTLike'].TTcontent, width, color='blue',align='center')
   rects2 = ax.bar(indices[1], cases['MILike'].TTcontent, width, color='red',align='center')
   ax.set_ylabel('Normalized TT Content to WT',fontsize=24)
-  #ax.set_xticks(indices,('WT Like','','MI Like'))
-  #plt.setp(ax,xticks=indices, xticklabels=['WT Like','MI Like'],fontsize=24)
   plt.sca(ax)
   plt.xticks(indices,['Conserved','Perturbed'],fontsize=24)
   ax.set_ylim([0,1.2])
@@ -295,9 +276,6 @@ def fig6():
                                           )]
 
 
-  ### Write stacked angles
-
-
   ### Write stacked angles histogram
   giveAngleHistogram(cases['WTLike'].results.stackedAngles,cases['WTLike'].iters,"fig6_WTLike")
   giveAngleHistogram(cases['MILike'].results.stackedAngles,cases['MILike'].iters,"fig6_MILike")
@@ -306,6 +284,7 @@ def figAngleHeterogeneity():
   '''
   Figure to showcase the heterogeneity of striation angle present within the tissue
     sample
+  NOTE: Not used in paper
   '''
   ### Setup case for use
   filterTwoSarcomereSize = 25
@@ -337,24 +316,12 @@ def figAngleHeterogeneity():
 
   print case.results.stackedAngles
 
-
-
-
-###
-### Generates the large ROC figure for each of the annotated images
-###
-def figS1():
+def full_ROC():
   '''
-  Routine to generate the necessary ROC figures
+  Routine to generate the necessary ROC figures based on hand-annotated images
   '''
 
   root = "./myoimages/"
-
-  # images that were hand annotated
-  #imgNames = {'HF':'HF_1_annotation.png',
-  #            'Control':'Sham_M_65_annotation.png',
-  #            'MI':'MI_D_73_annotation.png'
-  #             }
 
   imgNames = {'HF':"HF_annotation_testImg.png",
               'MI':"MI_annotation_testImg.png",
@@ -382,7 +349,7 @@ def figS1():
       myocyteROC(dataSet,key,threshes = np.linspace(0.05,0.7,30))
   
   ### read data from hdf5 files
-  # make big ol' dictionary
+  # make big dictionary
   bigData = {}
   bigData['MI'] = {}
   bigData['HF'] = {}
@@ -419,7 +386,6 @@ def figS1():
     axs[loc,0].set_ylabel('Detection Rate')
     axs[loc,0].set_ylim([0,1])
     axs[loc,0].set_xlim(xmin=0)
-    #axs[loc,0].legend(prop={'size':8})
   
     ### writing ROC fig
     axs[loc,1].set_title(key+" ROC",size=12)
@@ -438,10 +404,9 @@ def figS1():
     axs[loc,1].set_xlabel('False Positive Rate (Normalized)')
     axs[loc,1].set_ylabel('True Positive Rate (Normalized)')
 
-  #plt.show()
   plt.gcf().savefig('figS1.pdf',dpi=300)
 
-def figS2():
+def tissueBloodVessel():
   '''
   Routine to generate the figure showcasing heterogeneity of striation angle
     in the tissue sample
@@ -468,7 +433,7 @@ def figS2():
   plt.imshow(case.displayImg,cmap='gray')
   plt.gcf().savefig('figS2_enhancedImg.pdf',dpi=300)
 
-def figS3():
+def algComparison():
   '''
   Routine to compare the GPU and CPU implementation of code
   '''
@@ -527,6 +492,12 @@ def figS3():
   plt.imshow(comparison,cmap='gray')
   plt.colorbar()
   plt.gcf().savefig('figS3_comparison.pdf',dpi=300)
+
+def YAML_example():
+  '''
+  Routine to generate the example YAML output in the supplement
+  '''
+  detect.updatedSimpleYaml("ex.yml")
   
 
 def shaveFig(fileName,padY=None,padX=None,whiteSpace=None):
@@ -581,11 +552,6 @@ def shaveFig(fileName,padY=None,padX=None,whiteSpace=None):
                                              idxs[2]:-idxs[3],channel]
     newImg[:extraWhiteSpace,:,channel] = 255
   
-  #plt.figure()
-  #plt.imshow(newImg)
-  #plt.show()
-  #quit()
-
   cv2.imwrite(fileName,newImg)
 
 def preprocessTissueCase(case):
@@ -613,9 +579,9 @@ def preprocessTissueCase(case):
   return case
 
 def analyzeTissueCase(case,preprocess=True,useGPU=True):
-  import tensorflow_mf as tmf
-  import threeDtense as tdt
-
+  '''
+  Refactored method to analyze tissue cases 
+  '''
   if preprocess:
     case = preprocessTissueCase(case)
 
@@ -624,7 +590,6 @@ def analyzeTissueCase(case,preprocess=True,useGPU=True):
   ttFilterName = root+"newSimpleWTFilter.png"
   ttPunishmentFilterName = root+"newSimpleWTPunishmentFilter.png"
   case.iters = [-25,-20,-15,-10-5,0,5,10,15,20,25]
-  #case.iters = [-20,0,20]
   returnAngles = True
   ttFilter = util.LoadFilter(ttFilterName)
   ttPunishmentFilter = util.LoadFilter(ttPunishmentFilterName)
@@ -648,6 +613,9 @@ def analyzeTissueCase(case,preprocess=True,useGPU=True):
   return case
 
 def displayTissueCaseHits(case,tag):
+  '''
+  Displays the 'hits' returned from analyzeTissueCase() function
+  '''
   ### Convert subregion back into cv2 readable format
   case.subregion = np.asarray(case.subregion * 255.,dtype=np.uint8)
   ### Mark where the filter responded and display on the images
@@ -687,8 +655,6 @@ def displayTissueCaseHits(case,tag):
   plt.axis('off')
   plt.gcf().savefig(tag+"_hits.pdf",dpi=300)
 
-
-  
 def saveWorkflowFig():
   '''
   Function that will save the images used for the workflow figure in the paper.
@@ -737,15 +703,14 @@ def saveWorkflowFig():
     ltCorr = ltCorr[top:bottom,left:right]
     wtCorr = wtCorr[top:bottom,left:right]
 
-  #cv2.imwrite("WorkflowFig_lossCorr.pdf",lossCorr)
   plt.figure()
   plt.imshow(lossCorr,cmap='gray')
   plt.gcf().savefig("WorkflowFig_lossCorr.pdf")
-  #cv2.imwrite("WorkflowFig_ltCorr.pdf",ltCorr)
+
   plt.figure()
   plt.imshow(ltCorr,cmap='gray')
   plt.gcf().savefig("WorkflowFig_ltCorr.pdf")
-  #cv2.imwrite("WorkflowFig_wtCorr.pdf",wtCorr)
+
   plt.figure()
   plt.imshow(wtCorr,cmap='gray')
   plt.gcf().savefig("WorkflowFig_wtCorr.pdf")
@@ -823,15 +788,12 @@ def giveAvgStdofDicts(ShamDict,HFDict,MI_DDict,MI_MDict,MI_PDict):
   ax.set_xticklabels(names,rotation='vertical')
   plt.gcf().savefig("Whole_Dataset_Angles.pdf",dpi=300)
 
-  
-      
-  
-
 def analyzeAllMyo(root="/net/share/dfco222/data/TT/LouchData/processedWithIntelligentThresholding/"):
-  #root = "/home/AD/dfco222/Desktop/LouchData/processedImgs_May23/"
-  #root = "/net/share/dfco222/data/TT/LouchData/processed/"
-  #root = "/net/share/dfco222/data/TT/LouchData/processedWithIntelligentThresholding/"
-
+  '''
+  Function to iterate through a directory containing images that have already
+  been preprocessed by preprocessing.py
+  This directory can contain masks but it is not necessary
+  '''
   ### instantiate dicitionary to hold content values
   Sham = {}; MI_D = {}; MI_M = {}; MI_P = {}; HF = {};
 
@@ -866,7 +828,6 @@ def analyzeAllMyo(root="/net/share/dfco222/data/TT/LouchData/processedWithIntell
     ### assess content
     wtC, ltC, lossC = assessContent(markedMyocyte,imgName=root+name)
     content = np.asarray([wtC, ltC, lossC],dtype=float)
-    
 
     ### store content in respective dictionary
     if 'Sham' in name:
@@ -895,49 +856,6 @@ def analyzeAllMyo(root="/net/share/dfco222/data/TT/LouchData/processedWithIntell
   giveMIBarChart(MI_D,MI_M,MI_P)
   giveAvgStdofDicts(Sham,HF,MI_D,MI_M,MI_P)
 
-def analyzeDirectory(directory):
-  '''
-  Function to iterate through a directory containing images that have already
-  been preprocessed by preprocessing.py
-  This directory can contain masks but it is not necessary for this to be the
-  case.
-  '''
-
-  raise RuntimeError("Deprecated, use analyzeAllMyo function instead")
-
-  ### instantiate dictionaries for results
-  Sham = {}; HF = {}; MI_D = {}; MI_M = {}; MI_P = {}
-
-  for name in os.listdir(directory):
-    if "mask" not in name:
-      ### mark myocyte
-      markedMyocyte = giveMarkedMyocyte(testImage=root+name,
-                                         tag=name[:-4],
-                                         writeImage=True,
-                                         returnAngles=False)
-
-      ### assess content
-      wtC, ltC, lossC = assessContent(markedMyocyte,imgName=root+name)
-      content = np.asarray([wtC, ltC, lossC],dtype=float)
-
-      ### store content in respective dictionary
-      if 'Sham' in name:
-        Sham[name] = content
-      elif 'HF' in name:
-        HF[name] = content
-      elif 'MI' in name:
-        if '_D' in name:
-          MI_D[name] = content
-        elif '_M' in name:
-          MI_M[name] = content
-        elif '_P' in name:
-          MI_P[name] = content
-
-  ### Make bar charts for results
-  giveBarChartFromDict(Sham,'Sham')
-  giveBarChartFromDict(HF,'HF')
-  giveMIBarChart(MI_D,MI_M,MI_P)
-
 def analyzeSingleMyo(name,twoSarcSize):
    realName = name#+"_processed.png"
    iters = [-25,-20,-15,-10,-5,0,5,10,15,20,25]
@@ -960,10 +878,6 @@ def analyzeSingleMyo(name,twoSarcSize):
                  + np.count_nonzero(np.equal(angleCounts, iters[idxs[2]]))
    print "Percentage of WT hits within 5 degrees of minor axis:", float(hitsInRange)/float(totalHits) * 100.
 
-   ### making into dictionary to utilize bar graph function
-   #dictionary = {name:content}
-   #giveBarChartfromDict(dictionary,name)
-
 def giveBarChartfromDict(dictionary,tag):
   ### instantiate lists to contain contents
   wtC = []; ltC = []; lossC = [];
@@ -973,12 +887,6 @@ def giveBarChartfromDict(dictionary,tag):
     wtC.append(content[0])
     ltC.append(content[1])
     lossC.append(content[2])
-
-  #maxContent = np.max([np.max(wtC), np.max(ltC), np.max(lossC)])
-
-  #wtC = np.divide(wtC,maxContent)
-  #ltC = np.divide(ltC,maxContent)
-  #lossC = np.divide(lossC, maxContent)
 
   wtC = np.asarray(wtC)
   ltC = np.asarray(ltC)
@@ -1205,8 +1113,6 @@ def Loss_Filtering(inputs,lossFilterName,lossThresh,returnAngles):
 
   return Lossresults
 
-
-
 def giveMarkedMyocyte(
       ttFilterName="./myoimages/newSimpleWTFilter.png",
       ltFilterName="./myoimages/LongitudinalFilter.png",
@@ -1323,7 +1229,6 @@ def giveMarkedMyocyte(
       plt.imshow(switchBRChannels(cI_written))
       plt.gcf().savefig(tag+"_output.pdf",dpi=300)
 
-
   if returnAngles:
     cImg = util.ReadImg(testImage,cvtColor=False)
 
@@ -1394,10 +1299,6 @@ def setupAnnotatedImage(annotatedName, baseImageName):
   #baseImage = util.ReadImg(baseImageName,cvtColor=False)
   markedImage = util.ReadImg(annotatedName, cvtColor=False)
   
-  ### Preprare base image for markPastedFilters function
-  #baseImage[baseImage == 0] = 1
-  #baseImage -= 1
-
   ### Divide up channels of markedImage to represent hits
   wtHits, ltHits = markedImage[:,:,0],markedImage[:,:,1]
   wtHits[wtHits > 0] = 255
@@ -1420,16 +1321,7 @@ def Myocyte():
     # where to look for images
     root = "myoimages/"
 
-    # name of data used for testing algorithm 
-    #filter1TestName = root + 'MI_D_73_annotation.png'
-    #filter1TestName = root + "MI_D_73_annotated_May30.png"
     filter1TestName = root + "MI_annotation_testImg.png"
-
-    # version of filter1TestName marked 'white' where you expect to get hits for filter1
-    # or by marking 'positive' channel 
-    #filter1PositiveTest = root+"MI_D_73_annotation_channels.png"
-    #filter1PositiveTest = root + "MI_D_73_annotated_channels_May30.png"
-    #filter1PositiveTest = setupAnnotatedImage(filter1PositiveTest,filter1TestName)
     filter1PositiveTest = root + "MI_annotation_trueImg.png"
 
     dataSet = optimizer.DataSet(
@@ -1594,8 +1486,6 @@ def switchBRChannels(img):
   newImg[:,:,2] = img[:,:,0].copy()
 
   return newImg
-  
-
 
 def ReadResizeApplyMask(img,imgName,ImgTwoSarcSize,filterTwoSarcSize=25):
   # function to apply the image mask before outputting results
@@ -1744,10 +1634,6 @@ def optimizeWT():
                                                   param1="snrThresh",
                                                   param2="gamma", FPthresh=1.)
 
-  #distToPerfect *= 255
-  #distToPerfect = np.asarray(distToPerfect, dtype=np.uint8)
-  #cv2.imwrite("ROC_Optimization_WT.png",distToPerfect)
-
   plt.figure()
   plt.imshow(distToPerfect)
   plt.colorbar()
@@ -1760,15 +1646,12 @@ def optimizeLT():
   dataSet.filter1PositiveChannel= 1
   dataSet.filter1Label = "LT"
   dataSet.filter1Name = root+'LongitudinalFilter.png'
-  #optimizer.SetupTests(dataSet,meanFilter=True)
   optimizer.SetupTests(dataSet)
 
   paramDict = optimizer.ParamDict(typeDict='LT')
   snrThreshRange = np.linspace(0.4, 0.8, 20)
   stdDevThreshRange = np.linspace(0.05, 0.4, 20)
 
-  # maximum rate of false positives
-  #FPthresh = 0.3
   FPthresh = 1.
 
   optimumSNRthresh, optimumGamma, distToPerfect= minDistanceROC(dataSet,paramDict,
@@ -1777,14 +1660,10 @@ def optimizeLT():
                                                   param2="stdDevThresh",
                                                   FPthresh=FPthresh)
 
-  #distToPerfect *= 255
-  #distToPerfect = np.asarray(distToPerfect, dtype=np.uint8)
-
   plt.figure()
   plt.imshow(distToPerfect)
   plt.colorbar()
   plt.gcf().savefig("ROC_Optimization_LT.png")
-  #cv2.imwrite("ROC_Optimization_LT.png",distToPerfect)
 
 def optimizeLoss():
   root = "./myoimages/"
@@ -1792,7 +1671,6 @@ def optimizeLoss():
   dataSet.filter1PositiveChannel= 2
   dataSet.filter1Label = "Loss"
   dataSet.filter1Name = root+'LossFilter.png'
-  #optimizer.SetupTests(dataSet,meanFilter=True)
   optimizer.SetupTests(dataSet)
 
   paramDict = optimizer.ParamDict(typeDict='Loss')
@@ -1804,10 +1682,6 @@ def optimizeLoss():
                                                   param1="snrThresh",
                                                   param2="stdDevThresh",
                                                   FPthresh=1.)
-
-  #distToPerfect *= 255
-  #distToPerfect = np.asarray(distToPerfect, dtype=np.uint8)
-  #cv2.imwrite("ROC_Optimization_Loss.png",distToPerfect)
 
   plt.figure()
   plt.imshow(distToPerfect)
@@ -1948,47 +1822,52 @@ if __name__ == "__main__":
     ### Figure Generation Routines
 
     # this function will generate input data for the current fig #3 in the paper 
-    if(arg=="-fig3"):               
-      fig3()
+    if(arg=="-WT"):               
+      WT_results()
       quit()
 
-    if(arg=="-fig4"):               
-      fig4()
+    if(arg=="-HF"):               
+      HF_results()
       quit()
 
-    if(arg=="-fig5"):               
-      fig5()
+    if(arg=="-MI"):               
+      MI_results()
       quit()
 
-    if(arg=="-fig6"):               
-      fig6()
+    if(arg=="-tissueComparison"):               
+      tissueComparison()
       quit()
 
     if(arg=="-figAngle"):
       figAngleHeterogeneity()
       quit()
 
-    if(arg=="-figS1"):
+    if(arg=="-full_ROC"):
       figS1()
       quit()
 
-    if(arg=="-figS2"):
+    if(arg=="-tissueBloodVessel"):
       figS2()
       quit()
 
-    if(arg=="-figS3"):
+    if(arg=="-algComparison"):
       figS3()
+      quit()
+
+    if(arg=="-yaml"):
+      YAML_example()
       quit()
 
     # generates all figs
     if(arg=="-allFigs"):
-      fig3()     
-      fig4()     
-      fig5()
-      fig6()     
-      figS1()
-      figS2()
-      figS3()
+      WT_results()     
+      HF_results()     
+      MI_results()
+      tissueComparison()     
+      full_ROC()
+      tissueBloodVessel()
+      algComparison()
+      YAML_example()
       quit()
 
     if(arg=="-workflowFig"):

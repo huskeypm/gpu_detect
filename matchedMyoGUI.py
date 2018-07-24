@@ -22,12 +22,23 @@ app.setFont(12)
 app.setResizable(False)
 
 ### specify image path or directory
-rowNumber = app.getRow()
+rowNumber=app.getRow()
 app.addLabel("1.","1. Image Path",rowNumber,0)
+rowNumber = app.getRow()
+app.addHorizontalSeparator(rowNumber,0,4,colour="black")
 app.addFileEntry("fileName")
+rowNumber = app.getRow()
+app.addHorizontalSeparator(rowNumber,0,4,colour="black")
+
+### create space
+app.addLabel("space1","")
+app.addLabel("space2","")
+
 
 ### check which preprocessing routines that are desired
 app.addLabel("2.","2. Preprocessing Routines")
+rowNumber = app.getRow()
+app.addHorizontalSeparator(rowNumber,0,4,colour="black")
 rowNumber = app.getRow()
 app.addCheckBox("Reorientation",rowNumber,0)
 app.setCheckBox("Reorientation",ticked=True)
@@ -38,9 +49,18 @@ app.setCheckBox("CLAHE", ticked=True)
 app.addCheckBox("Striation Normalization",rowNumber,3)
 app.setCheckBox("Striation Normalization", ticked=True)
 #app.addCheckBox("Mask Construction",rowNumber,4) # not implemented yet
+rowNumber = app.getRow()
+app.addHorizontalSeparator(rowNumber,0,4,colour="black")
+
+### create space
+app.addLabel("space3","")
+app.addLabel("space4","")
+
 
 ### Take in Algorithm Inputs
 app.addLabel("3.","3. Algorithm Inputs")
+rowNumber = app.getRow()
+app.addHorizontalSeparator(rowNumber,0,4,colour="black")
 ## get filter two sarcomere size (used to resize the image)
 rowNumber = app.getRow()
 app.addLabel("FTSS","Filter Two Sarcomere Size (pixels)",rowNumber,0)
@@ -97,9 +117,19 @@ app.addNumericLabelEntry("LT Standard Deviation Threshold",rowNumber,1)
 app.setEntryDefault("LT Standard Deviation Threshold",0.2)
 app.addNumericLabelEntry("TA Standard Deviation Threshold",rowNumber,2)
 app.setEntryDefault("TA Standard Deviation Threshold",0.1)
+rowNumber = app.getRow()
+app.addHorizontalSeparator(rowNumber,0,4,colour="black")
+
+### create space
+app.addLabel("space5","")
+app.addLabel("space6","")
 
 ### Set whether to use GPU for acceleration
 app.addCheckBox("Use GPU for Acceleration")
+
+### create space
+app.addLabel("space7","")
+app.addLabel("space8","")
 
 ### add button to run the matchedmyo program
 def runProgram(runnerButton):

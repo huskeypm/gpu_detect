@@ -8,6 +8,8 @@ INCEPTION: July 21, 2018
 '''
 
 from appJar import gui
+import myocyteFigs as mF
+import preprocessing as pp
 
 ### create GUI variable with specified name
 app = gui("MatchedMyo")
@@ -65,7 +67,7 @@ app.addHorizontalSeparator(rowNumber,0,4,colour="black")
 rowNumber = app.getRow()
 app.addLabel("FTSS","Filter Two Sarcomere Size (pixels)",rowNumber,0)
 app.addNumericEntry("FiltSarcSize",rowNumber,1)
-app.setEntryDefault("FiltSarcSize",25)
+app.setEntry("FiltSarcSize",25,callFunction=False)
 ## get filtering modes that you want marked
 rowNumber = app.getRow()
 app.addCheckBox("WT Filtering",rowNumber,0)
@@ -92,31 +94,31 @@ app.addLabel("LT Filter Path","LT Filter Path",rowNumber,1)
 app.addLabel("TA Filter Path","TA Filter Path",rowNumber,2)
 rowNumber = app.getRow()
 app.addFileEntry("WTfilter",rowNumber,0)
-app.setEntryDefault("WTfilter","./myoimages/newSimpleWTFilter.png")
+app.setEntry("WTfilter","./myoimages/newSimpleWTFilter.png",callFunction=False)
 app.addFileEntry("LTfilter",rowNumber,1)
-app.setEntryDefault("LTfilter","./myoimages/LongitudinalFilter.png")
+app.setEntry("LTfilter","./myoimages/LongitudinalFilter.png",callFunction=False)
 app.addFileEntry("TAfilter",rowNumber,2)
-app.setEntryDefault("TAfilter","./myoimages/LossFilter.png")
+app.setEntry("TAfilter","./myoimages/LossFilter.png",callFunction=False)
 rowNumber = app.getRow()
 app.addFileEntry("WTpunishfilter",rowNumber,0)
-app.setEntryDefault("WTpunishfilter","./myoimages/newSimpleWTPunishmentFilter.png")
+app.setEntry("WTpunishfilter","./myoimages/newSimpleWTPunishmentFilter.png",callFunction=False)
 
 ### add in boxes for thresholds and filtering parameters
 rowNumber = app.getRow()
 app.addNumericLabelEntry("WT SNR Threshold",rowNumber,0)
-app.setEntryDefault("WT SNR Threshold",0.35)
+app.setEntry("WT SNR Threshold",0.35,callFunction=False)
 app.addNumericLabelEntry("LT SNR Threshold",rowNumber,1)
-app.setEntryDefault("LT SNR Threshold",0.6)
+app.setEntry("LT SNR Threshold",0.6,callFunction=False)
 app.addNumericLabelEntry("TA SNR Threshold",rowNumber,2)
-app.setEntryDefault("TA SNR Threshold",0.04)
+app.setEntry("TA SNR Threshold",0.04,callFunction=False)
 
 rowNumber = app.getRow()
 app.addNumericLabelEntry("WT Punishment Parameter",rowNumber,0)
-app.setEntryDefault("WT Punishment Parameter",3.0)
+app.setEntry("WT Punishment Parameter",3.0,callFunction=False)
 app.addNumericLabelEntry("LT Standard Deviation Threshold",rowNumber,1)
-app.setEntryDefault("LT Standard Deviation Threshold",0.2)
+app.setEntry("LT Standard Deviation Threshold",0.2,callFunction=False)
 app.addNumericLabelEntry("TA Standard Deviation Threshold",rowNumber,2)
-app.setEntryDefault("TA Standard Deviation Threshold",0.1)
+app.setEntry("TA Standard Deviation Threshold",0.1,callFunction=False)
 rowNumber = app.getRow()
 app.addHorizontalSeparator(rowNumber,0,4,colour="black")
 
@@ -134,7 +136,7 @@ app.addLabel("space8","")
 ### add button to run the matchedmyo program
 def runProgram(runnerButton):
   if runnerButton == "Run Program":
-    print "insert runner function here"
+    runAnalysis()
   elif runnerButton == "Quit":
     app.stop()
   elif runnerButton == "Restore Defaults":
@@ -144,15 +146,34 @@ rowNumber = app.getRow()
 colSpan = 4
 app.addButtons(["Restore Defaults","Run Program","Quit"],runProgram,rowNumber,0,colSpan)
 
-### add buttons to restore defaults or quit the GUI
-#def quitApp(button):
-#  if button == "Quit":
-#    app.stop()
-#  elif button == "Restore Defaults":
-#    print "Function not implemented yet"
-#    # use the app.setEntryDefault(title,text) for all text entries created
+### add function to analyze myocyte
+def runAnalysis():
+  ## get all information from inputs to use in the analysis
+  allEntries = app.getAllEntries()
 
-#app.addButtons(["Restore Defaults","Quit"],quitApp)
+  ## necessary to convert filter two sarcomere size argument to an integer
+  allEntries['FiltSarcSize'] = int(allEntries['FiltSarcSize'])
+
+  #for key,value in allEntries.iteritems():
+  #  print key,value
+
+  ## preprocess image for use in the algorithm
+  preprocessedImage = pp.preprocess(allEntries['fileName'],allEntries['FiltSarcSize'])
+
+  processedFileName = allEntries['fileName'][:-4] + "_processed" + allEntries['fileName'][-4:]
+
+  ## TODO: Need to add in option to return the angle analysis of this too
+  ## TODO: Refactor code s.t. we can use the threshes that have been indicated herein
+  coloredImage = mF.giveMarkedMyocyte(ttFilterName = allEntries['WTfilter'],
+                                      ltFilterName = allEntries['LTfilter'],
+                                      lossFilterName = allEntries['TAfilter'],
+                                      wtPunishFilterName = allEntries['WTpunishfilter'],
+                                      testImage = processedFileName,
+                                      tag = allEntries['fileName'][:-4],
+                                      writeImage = True
+                                      )
+                                      
+
 
 ### run the GUI
 app.go()

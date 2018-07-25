@@ -1,6 +1,29 @@
 #!/usr/bin/env python
-import sys
 import os
+import sys
+import time
+
+import cv2
+import imutils
+import matplotlib.pyplot as plt
+#
+# ROUTINE  
+#
+import numpy as np
+import pandas as pd
+
+import bankDetect as bD
+import detect
+import display_util as du
+import matchedFilter as mF
+import optimizer
+import painter
+import preprocessing as pp
+import tensorflow_mf as tmf
+import threeDtense as tdt
+import tissue
+import util
+
 ##################################
 #
 # Revisions
@@ -8,26 +31,6 @@ import os
 #
 ##################################
 
-#
-# ROUTINE  
-#
-import numpy as np
-import cv2
-import matplotlib.pyplot as plt
-import pandas as pd
-import bankDetect as bD
-import util
-import optimizer
-import painter
-import time
-import matchedFilter as mF
-import tissue
-import preprocessing as pp
-import imutils
-import display_util as du
-import tensorflow_mf as tmf
-import threeDtense as tdt
-import detect
 class empty:pass
 
 ### Change default matplotlib settings to display figures
@@ -1083,7 +1086,7 @@ def WT_Filtering(inputs,iters,ttFilterName,wtPunishFilterName,ttThresh,wtGamma,r
 
   return WTresults
 
-def LT_Filtering(inputs,iters,ltFilterName,ltThresh,returnAngles):
+def LT_Filtering(inputs,iters,ltFilterName,ltThresh,ltStdThresh,returnAngles):
   '''
   Takes inputs class that contains original image and performs LT filtering on the image
   '''
@@ -1093,12 +1096,14 @@ def LT_Filtering(inputs,iters,ltFilterName,ltThresh,returnAngles):
   LTparams = optimizer.ParamDict(typeDict='LT')
   if ltThresh != None:
     LTparams['snrThresh'] = ltThresh
+  if ltStdThresh != None:
+    LTparams['stdDevThresh'] = ltStdThresh
   LTparams['useGPU'] = inputs.useGPU
   LTresults = bD.DetectFilter(inputs,LTparams,iters,returnAngles=returnAngles)
 
   return LTresults
 
-def Loss_Filtering(inputs,lossFilterName,lossThresh,returnAngles):
+def Loss_Filtering(inputs,lossFilterName,lossThresh,lossStdThresh,returnAngles):
   '''
   Takes inputs class that contains original image and performs Loss filtering on the image
   '''
@@ -1109,6 +1114,8 @@ def Loss_Filtering(inputs,lossFilterName,lossThresh,returnAngles):
   Lossiters = [0, 45] # don't need many rotations for loss filtering
   if lossThresh != None:
     Lossparams['snrThresh'] = lossThresh
+  if lossStdThresh != None:
+    Lossparams['stdDevThresh'] = lossStdThresh
   Lossresults = bD.DetectFilter(inputs,Lossparams,Lossiters,returnAngles=returnAngles)
 
   return Lossresults
@@ -1127,11 +1134,13 @@ def giveMarkedMyocyte(
       ltThresh=None,
       lossThresh=None,
       wtGamma=None,
-      ltGamma=None,
+      ltStdThresh=None,
+      lossStdThresh=None,
       iters=[-25,-20,-15,-10,-5,0,5,10,15,20,25],
       returnAngles=False,
       returnPastedFilter=True,
-      useGPU=False
+      useGPU=False,
+      fileExtension=".pdf"
       ):
  
   start = time.time()
@@ -1145,16 +1154,25 @@ def giveMarkedMyocyte(
   inputs.useGPU = useGPU
 
   ### WT filtering
-  WTresults = WT_Filtering(inputs,iters,ttFilterName,wtPunishFilterName,ttThresh,wtGamma,returnAngles)
-  WTstackedHits = WTresults.stackedHits
+  if ttFilterName != None:
+    WTresults = WT_Filtering(inputs,iters,ttFilterName,wtPunishFilterName,ttThresh,wtGamma,returnAngles)
+    WTstackedHits = WTresults.stackedHits
+  else:
+    WTstackedHits = np.zeros_like(inputs.imgOrig)
 
   ### LT filtering
-  LTresults = LT_Filtering(inputs,iters,ltFilterName,ltThresh,returnAngles)
-  LTstackedHits = LTresults.stackedHits
+  if ltFilterName != None:
+    LTresults = LT_Filtering(inputs,iters,ltFilterName,ltThresh,ltStdThresh,returnAngles)
+    LTstackedHits = LTresults.stackedHits
+  else:
+    LTstackedHits = np.zeros_like(inputs.imgOrig)
 
   ### Loss filtering
-  Lossresults = Loss_Filtering(inputs,lossFilterName,lossThresh,returnAngles)
-  LossstackedHits = Lossresults.stackedHits
+  if lossFilterName != None:
+    Lossresults = Loss_Filtering(inputs,lossFilterName,lossThresh,lossStdThresh,returnAngles)
+    LossstackedHits = Lossresults.stackedHits
+  else:
+    LossstackedHits = np.zeros_like(inputs.imgOrig)
  
   ### Read in colored image for marking hits
   cI = util.ReadImg(testImage,cvtColor=False).astype(np.float64)
@@ -1210,7 +1228,7 @@ def giveMarkedMyocyte(
       ### write output image
       plt.figure()
       plt.imshow(switchBRChannels(cI_written))
-      plt.gcf().savefig(tag+"_output.pdf",dpi=300)
+      plt.gcf().savefig(tag+"_output"+fileExtension,dpi=300)
 
   if returnPastedFilter:
     dummy = np.zeros_like(cI)
@@ -1227,7 +1245,7 @@ def giveMarkedMyocyte(
       ### write outputs	  
       plt.figure()
       plt.imshow(switchBRChannels(cI_written))
-      plt.gcf().savefig(tag+"_output.pdf",dpi=300)
+      plt.gcf().savefig(tag+"_output"+fileExtension,dpi=300)
 
   if returnAngles:
     cImg = util.ReadImg(testImage,cvtColor=False)
@@ -1276,7 +1294,7 @@ def giveMarkedMyocyte(
       #cv2.imwrite(tag+"_angles_output.png",coloredAnglesMasked)
       plt.figure()
       plt.imshow(switchBRChannels(coloredAnglesMasked))
-      plt.gcf().savefig(tag+"_angles_output.pdf")
+      plt.gcf().savefig(tag+"_angles_output"+fileExtension)
     
     end = time.time()
     tElapsed = end - start

@@ -1,9 +1,10 @@
 """
 Performs basic matched filter test by FFT-correlating a measured signal with an input signal/filter 
 """
+import numpy as np
 # import modules we'll need 
 import scipy.fftpack as fftp
-import numpy as np
+
 
 ##
 ## Basic steps of matched filtering process
@@ -57,5 +58,3 @@ def matchedFilter(
   if parsevals:
     h *= 1/np.float(np.prod(np.shape(h)))
   return h 
-
-

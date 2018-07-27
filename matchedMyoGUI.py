@@ -192,22 +192,25 @@ def runAnalysis():
 
   ## TODO: Need to add in option to return the angle analysis of this too
   ## TODO: Refactor code s.t. we can use the threshes that have been indicated herein
-  mF.giveMarkedMyocyte(ttFilterName = allEntries['WTfilter'],
-                       ltFilterName = allEntries['LTfilter'],
-                       lossFilterName = allEntries['TAfilter'],
-                       wtPunishFilterName = allEntries['WTpunishfilter'],
-                       testImage = processedFileName,
-                       ttThresh=allEntries['WT SNR Threshold'],
-                       ltThresh=allEntries['LT SNR Threshold'],
-                       lossThresh=allEntries['TA SNR Threshold'],
-                       wtGamma=allEntries['WT Punishment Parameter'],
-                       ltStdThresh=allEntries['LT Standard Deviation Threshold'],
-                       lossStdThresh=allEntries['TA Standard Deviation Threshold'],
-                       useGPU=checkBoxes['Use GPU for Acceleration'],
-                       tag = outputName,
-                       writeImage = True,
-                       fileExtension=".png"
-                       )
+  coloredImage = mF.giveMarkedMyocyte(ttFilterName = allEntries['WTfilter'],
+                                      ltFilterName = allEntries['LTfilter'],
+                                      lossFilterName = allEntries['TAfilter'],
+                                      wtPunishFilterName = allEntries['WTpunishfilter'],
+                                      testImage = processedFileName,
+                                      ttThresh=allEntries['WT SNR Threshold'],
+                                      ltThresh=allEntries['LT SNR Threshold'],
+                                      lossThresh=allEntries['TA SNR Threshold'],
+                                      wtGamma=allEntries['WT Punishment Parameter'],
+                                      ltStdThresh=allEntries['LT Standard Deviation Threshold'],
+                                      lossStdThresh=allEntries['TA Standard Deviation Threshold'],
+                                      useGPU=checkBoxes['Use GPU for Acceleration'],
+                                      tag = outputName,
+                                      writeImage = True,
+                                      fileExtension=".png"
+                                      )
+
+  ## analyze the content
+  wtContent, ltContent, taContent = mF.assessContent(coloredImage,imgName=processedFileName)
                                       
 
 

@@ -1869,7 +1869,7 @@ if __name__ == "__main__":
       quit()
 
     if(arg=="-algComparison"):
-      figS3()
+      algComparison()
       quit()
 
     if(arg=="-yaml"):

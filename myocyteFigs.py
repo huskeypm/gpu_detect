@@ -216,7 +216,7 @@ def tissueComparison():
   cases['WTLike'].extent_um = [300,300]
   
   cases['MILike'] = empty()
-  cases['MILike'].loc_um = [2100,3200]
+  cases['MILike'].loc_um = [2100,3020]
   cases['MILike'].extent_um = [300,300]
 
   tissue.SetupCase(cases['WTLike'])

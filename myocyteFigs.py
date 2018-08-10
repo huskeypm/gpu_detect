@@ -654,7 +654,7 @@ def displayTissueCaseHits(case,tag):
   case.displayImg = case.displayImg[padY:-padY,
                                     padX:-padX]
 
-  du.StackGrayRedAlpha(case.displayImg,case.pasted,alpha=0.5)
+  du.StackGrayRedAlpha(case.displayImg,case.pasted,alpha=0.95)
   plt.axis('off')
   plt.gcf().savefig(tag+"_hits.pdf",dpi=300)
 

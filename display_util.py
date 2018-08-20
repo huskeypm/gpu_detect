@@ -28,6 +28,11 @@ def DefineAlphaCmap(daMap="Reds"):
     return my_cmap
 
 def StackGrayRedAlpha(img1,img2,alpha=1.):
+    my_cmap = DefineAlphaCmap(daMap="Reds")
+    plt.imshow(img1,cmap="gray")
+    plt.imshow(img2,cmap=my_cmap,alpha=alpha)
+
+def StackGrayBlueAlpha(img1,img2,alpha=1.):
     my_cmap = DefineAlphaCmap(daMap="Blues")
     plt.imshow(img1,cmap="gray")
     plt.imshow(img2,cmap=my_cmap,alpha=alpha)

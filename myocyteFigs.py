@@ -502,7 +502,6 @@ def YAML_example():
   '''
   detect.updatedSimpleYaml("ex.yml")
   
-
 def shaveFig(fileName,padY=None,padX=None,whiteSpace=None):
   '''
   Aggravating way of shaving a figure's white space down to an acceptable level
@@ -562,22 +561,10 @@ def preprocessTissueCase(case):
   case.subregion, case.degreesOffCenter = pp.reorient(
           case.subregion
           )
-  # have to resize based on manual measuring due to loss of striations
-  filterTwoSarcomereSize = 25
-  imgTwoSarcomereSize = 22
-  case.scale = float(filterTwoSarcomereSize) / float(imgTwoSarcomereSize)
-  case.subregion = cv2.resize(case.subregion,None,fx=case.scale,fy=case.scale,
-                              interpolation=cv2.INTER_CUBIC)
-  case.subregion = pp.applyCLAHE(case.subregion, filterTwoSarcomereSize)
-  # store CLAHED image for later display of figure
+
+  ### save image for display later
+  ## I'm considering writing a better routine to enhance the image for figure quality but not necessarily for algorithm quality
   case.displayImg = case.subregion.copy()
-  # additionally have to manually define the ceiling and floor values since the striations are not apparent
-  ceilingValue = 7
-  floorValue = 0
-  case.subregion[case.subregion > ceilingValue] = ceilingValue
-  case.subregion[case.subregion < floorValue] = floorValue
-  case.subregion -= np.min(case.subregion)
-  case.subregion = case.subregion.astype(float) / float(np.max(case.subregion))
 
   return case
 
@@ -608,11 +595,26 @@ def analyzeTissueCase(case,preprocess=True,useGPU=True):
   case.inputs.imgOrig = case.subregion
   case.inputs.mfOrig = ttFilter
 
-  ### Perform filtering
+  ### Perform filtering for TT detection
   case.results = bD.DetectFilter(case.inputs,
                                  case.params,
                                  case.iters
                                  )
+
+  ### Modify case to perform TA detection
+  case.TAinputs = empty()
+  case.TAinputs.imgOrig = case.subregion
+  lossFilterName = root+"./myoimages/LossFilter.png"
+  case.TAIters = [-45,0]
+  lossFilter = util.LoadFilter(lossFilterName)
+  case.TAinputs.mfOrig = lossFilter
+  case.TAparams = optimizer.ParamDict(typeDict='Loss')
+
+  ### Perform filtering for TA detection
+  case.TAresults = bD.DetectFilter(case.inputs,
+                                   case.TAparams,
+                                   case.TAIters)
+
   return case
 
 def displayTissueCaseHits(case,tag):
@@ -621,26 +623,38 @@ def displayTissueCaseHits(case,tag):
   '''
   ### Convert subregion back into cv2 readable format
   case.subregion = np.asarray(case.subregion * 255.,dtype=np.uint8)
+
   ### Mark where the filter responded and display on the images
   ## find filter dimensions
   TTy,TTx = util.measureFilterDimensions(case.inputs.mfOrig)
-  ## mark unit cells on the image where the filter responded
+  TAy,TAx = util.measureFilterDimensions(case.TAinputs.mfOrig)
+  ## mark unit cells on the image where the filters responded
   case.pasted = painter.doLabel(case.results,dx=TTx,dy=TTy,
                                 thresh=case.params['snrThresh'])
+  case.TApasted = painter.doLabel(case.TAresults,dx=TAx,dy=TAy,
+                                  thresh=case.TAparams['snrThresh'])
   ## convert pasted filter image to cv2 friendly format and normalize original subregion
   case.pasted = np.asarray(case.pasted 
                            / np.max(case.pasted) 
                            * 255.,
                            dtype=np.uint8)
+  case.TApasted = np.asarray(cased.TApasted
+                             / np.max(case.TApasted)
+                             * 255.,
+                             dtype=np.uint8)
+  ## we're using the same display image for the two filters
   case.displayImg = np.asarray(case.displayImg.astype(float) 
                                / float(np.max(case.displayImg)) 
                                * 255., dtype=np.uint8)
-  ## rotate both images back to the original orientation
+  ## rotate images back to the original orientation
   case.pasted = imutils.rotate(case.pasted,case.degreesOffCenter)
+  case.TApasted = imutils.rotate(case.TApasted,case.degreesOffCenter)
   case.displayImg = imutils.rotate(case.displayImg,case.degreesOffCenter)
   ## rescale images back to original size
   case.pasted = cv2.resize(case.pasted,None,fx=1./case.scale,
                            fy=1./case.scale,interpolation=cv2.INTER_CUBIC)
+  case.TApasted = cv2.resize(case.TApasted,None,fx=1./case.scale,
+                             fy=1./case.scale,interpolation=cv2.INTER_CUBIC)
   case.displayImg = cv2.resize(case.displayImg,None,fx=1./case.scale,
                                fy=1./case.scale,interpolation=cv2.INTER_CUBIC)
   ## cut image back down to original size to get rid of borders
@@ -651,12 +665,27 @@ def displayTissueCaseHits(case,tag):
   padY,padX = int((newY - origY)/2.), int((newX - origX)/2.)
   case.pasted = case.pasted[padY:-padY,
                             padX:-padX]
+  case.TApasted = case.TApasted[padY:-padY,
+                                padX:-padX]
   case.displayImg = case.displayImg[padY:-padY,
                                     padX:-padX]
 
-  du.StackGrayBlueAlpha(case.displayImg,case.pasted,alpha=0.95)
-  plt.axis('off')
-  plt.gcf().savefig(tag+"_hits.pdf",dpi=300)
+  ### Create colored image for display
+  #du.StackGrayBlueAlpha(case.displayImg,case.pasted,alpha=0.95)
+  coloredImage = np.asarray((case.displayImg.copy(),
+                             case.displayImg.copy(),
+                             case.displayImg.copy())
+  TAchannel = 0
+  TTchannel = 2
+
+  ### Mark channel hits on image
+  coloredImage[case.pasted != 0] = 255
+  coloredImage[case.TApasted != 0] = 255
+
+  ### Plot figure and save
+  plt.figure()
+  plt.imshow(coloredImage)
+  plt.gcf().savefig(tag+"_hits.pdf",dpi=600)
 
 def saveWorkflowFig():
   '''

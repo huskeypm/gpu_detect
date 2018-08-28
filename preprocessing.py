@@ -565,6 +565,8 @@ if __name__ == "__main__":
         filterTwoSarcomereSize = 25
       preprocess(fileName,filterTwoSarcomereSize)
       quit()
+    if (arg=="-preprocessTissue"):
+      preprocessTissue()
     if (arg=="-preprocessAll"):
       preprocessAll()
       quit()

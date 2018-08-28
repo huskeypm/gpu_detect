@@ -604,7 +604,7 @@ def analyzeTissueCase(case,preprocess=True,useGPU=True):
   ### Modify case to perform TA detection
   case.TAinputs = empty()
   case.TAinputs.imgOrig = case.subregion
-  lossFilterName = root+"./myoimages/LossFilter.png"
+  lossFilterName = root+"LossFilter.png"
   case.TAIters = [-45,0]
   lossFilter = util.LoadFilter(lossFilterName)
   case.TAinputs.mfOrig = lossFilter
@@ -614,7 +614,7 @@ def analyzeTissueCase(case,preprocess=True,useGPU=True):
   case.TAresults = bD.DetectFilter(case.inputs,
                                    case.TAparams,
                                    case.TAIters)
-
+  print case
   return case
 
 def displayTissueCaseHits(case,tag):
@@ -638,7 +638,7 @@ def displayTissueCaseHits(case,tag):
                            / np.max(case.pasted) 
                            * 255.,
                            dtype=np.uint8)
-  case.TApasted = np.asarray(cased.TApasted
+  case.TApasted = np.asarray(case.TApasted
                              / np.max(case.TApasted)
                              * 255.,
                              dtype=np.uint8)
@@ -674,7 +674,7 @@ def displayTissueCaseHits(case,tag):
   #du.StackGrayBlueAlpha(case.displayImg,case.pasted,alpha=0.95)
   coloredImage = np.asarray((case.displayImg.copy(),
                              case.displayImg.copy(),
-                             case.displayImg.copy())
+                             case.displayImg.copy()))
   TAchannel = 0
   TTchannel = 2
 
@@ -1894,7 +1894,7 @@ if __name__ == "__main__":
       quit()
 
     if(arg=="-tissueBloodVessel"):
-      figS2()
+      tissueBloodVessel()
       quit()
 
     if(arg=="-algComparison"):

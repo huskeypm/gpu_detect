@@ -45,7 +45,11 @@ def SetupTest():
   SetupCase(case)
   return case
   
-def SetupCase(case):
+def SetupCase(case,
+              usePreprocessedImage=True):
+  if usePreprocessedImage:
+    params.imgName = "./myoimages/preprocessedTissue.png"
+
   case.orig = Setup()
   case.subregion = get_fiji(case.orig,case.loc_um,case.extent_um)
 

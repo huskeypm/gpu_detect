@@ -470,15 +470,23 @@ def preprocessTissue():
   scale = float(filterTwoSarcSize) / float(imgTwoSarcSize)
   resizedTissueImg = cv2.resize(tissueImg,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
 
+  ### smooth the large image
+  ## This caused a weird ringing effect so I'm opting to do this after the CLAHE
+  #smoothedTissueImg = cv2.blur(resizedTissueImg,(3,3))
+
   ### applying a much more global CLAHE routine to kill dye imbalance
   tissueDims = np.shape(resizedTissueImg)
   claheTileSize = int(1./8. * tissueDims[0])
   CLAHEDtissueImg = applyCLAHE(resizedTissueImg,claheTileSize)
 
+  ### smooth the CLAHED image
+  kernelSize = (3,3)
+  smoothedTissueImg = cv2.blur(CLAHEDtissueImg,kernelSize)
+
   ### apply an intensity ceiling and floor to apply contrast stretching
   floorValue = 6
-  ceilingValue = 10
-  clippedTissueImg = CLAHEDtissueImg
+  ceilingValue = 11
+  clippedTissueImg = smoothedTissueImg
   clippedTissueImg[clippedTissueImg < floorValue] = floorValue
   clippedTissueImg[clippedTissueImg > ceilingValue] = ceilingValue
   clippedTissueImg -= floorValue

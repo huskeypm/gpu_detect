@@ -450,12 +450,13 @@ def processMask(fileName,degreesOffCenter,resizeScale):
   resized = cv2.resize(reoriented,None,fx=resizeScale,fy=resizeScale,interpolation=cv2.INTER_CUBIC)
   cv2.imwrite(fileName[:-4]+"_processed_mask"+fileName[-4:],resized)
 
-def preprocessTissue():
+def preprocessTissue(filterTwoSarcomereSize=25):
   '''
   Function to preprocess the original tissue level image
   '''
 
-  root = "/net/share/pmke226/DataLocker/cardiac/Sachse/171127_tissue/"
+  #root = "/net/share/pmke226/DataLocker/cardiac/Sachse/171127_tissue/"
+  root = "./myoimages/"
   fileName = "tissue.tif"
 
 
@@ -567,6 +568,7 @@ if __name__ == "__main__":
       quit()
     if (arg=="-preprocessTissue"):
       preprocessTissue()
+      quit
     if (arg=="-preprocessAll"):
       preprocessAll()
       quit()

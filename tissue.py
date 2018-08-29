@@ -24,8 +24,9 @@ class empty:pass
 
 class Params:pass
 params = Params()
-params.imgName = "/home/AD/pmke226/DataLocker/cardiac/Sachse/171127_tissue/tissue.tif"
-#params.imgName = "tissue.tif"
+#params.imgName = "/home/AD/pmke226/DataLocker/cardiac/Sachse/171127_tissue/tissue.tif"
+### preprocessed tissue name
+params.imgName = "./myoimages/preprocessedTissue.png"
 params.fov = np.array([3916.62,4093.31]) # um (from image caption in imagej. NOTE: need to reverse spatial dimensions to correspond to the way cv2 loads image)
 
 

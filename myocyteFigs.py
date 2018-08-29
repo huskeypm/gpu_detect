@@ -650,13 +650,20 @@ def displayTissueCaseHits(case,tag):
   case.pasted = imutils.rotate(case.pasted,case.degreesOffCenter)
   case.TApasted = imutils.rotate(case.TApasted,case.degreesOffCenter)
   case.displayImg = imutils.rotate(case.displayImg,case.degreesOffCenter)
-  ## rescale images back to original size
-  case.pasted = cv2.resize(case.pasted,None,fx=1./case.scale,
-                           fy=1./case.scale,interpolation=cv2.INTER_CUBIC)
-  case.TApasted = cv2.resize(case.TApasted,None,fx=1./case.scale,
-                             fy=1./case.scale,interpolation=cv2.INTER_CUBIC)
-  case.displayImg = cv2.resize(case.displayImg,None,fx=1./case.scale,
-                               fy=1./case.scale,interpolation=cv2.INTER_CUBIC)
+
+  debug = False
+  if debug:
+    plt.figure()
+    plt.imshow(case.displayImg,cmap='gray')
+    plt.show()
+
+  ## rescale images back to original size - NOT NEEDED. DELETED RESIZING FROM PREPROCESSING
+  #case.pasted = cv2.resize(case.pasted,None,fx=1./case.scale,
+  #                         fy=1./case.scale,interpolation=cv2.INTER_CUBIC)
+  #case.TApasted = cv2.resize(case.TApasted,None,fx=1./case.scale,
+  #                           fy=1./case.scale,interpolation=cv2.INTER_CUBIC)
+  #case.displayImg = cv2.resize(case.displayImg,None,fx=1./case.scale,
+  #                             fy=1./case.scale,interpolation=cv2.INTER_CUBIC)
   ## cut image back down to original size to get rid of borders
   imgDims = np.shape(case.subregionOrig)
   origY,origX = float(imgDims[0]), float(imgDims[1])
@@ -675,12 +682,13 @@ def displayTissueCaseHits(case,tag):
   coloredImage = np.asarray((case.displayImg.copy(),
                              case.displayImg.copy(),
                              case.displayImg.copy()))
+  coloredImage = np.rollaxis(coloredImage,0,start=3).astype(np.uint8)
   TAchannel = 0
   TTchannel = 2
 
   ### Mark channel hits on image
-  coloredImage[case.pasted != 0] = 255
-  coloredImage[case.TApasted != 0] = 255
+  coloredImage[case.pasted != 0,TTchannel] = 255
+  coloredImage[case.TApasted != 0,TAchannel] = 255
 
   ### Plot figure and save
   plt.figure()

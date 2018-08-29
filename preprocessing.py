@@ -450,7 +450,7 @@ def processMask(fileName,degreesOffCenter,resizeScale):
   resized = cv2.resize(reoriented,None,fx=resizeScale,fy=resizeScale,interpolation=cv2.INTER_CUBIC)
   cv2.imwrite(fileName[:-4]+"_processed_mask"+fileName[-4:],resized)
 
-def preprocessTissue(filterTwoSarcomereSize=25):
+def preprocessTissue():
   '''
   Function to preprocess the original tissue level image
   '''
@@ -467,7 +467,7 @@ def preprocessTissue(filterTwoSarcomereSize=25):
   ### rescale to filter size
   imgTwoSarcSize = 22
   filterTwoSarcSize = 25
-  scale = float(imgTwoSarcSize) / float(filterTwoSarcomereSize)
+  scale = float(filterTwoSarcSize) / float(imgTwoSarcSize)
   resizedTissueImg = cv2.resize(tissueImg,None,fx=scale,fy=scale,interpolation=cv2.INTER_CUBIC)
 
   ### applying a much more global CLAHE routine to kill dye imbalance
@@ -568,7 +568,7 @@ if __name__ == "__main__":
       quit()
     if (arg=="-preprocessTissue"):
       preprocessTissue()
-      quit
+      quit()
     if (arg=="-preprocessAll"):
       preprocessAll()
       quit()

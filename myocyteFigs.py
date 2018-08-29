@@ -207,6 +207,8 @@ def tissueComparison():
   '''
   Tissue level images for comparison between "Distal" region and "Proximal" region
   '''
+  fileTag = "tissueComparison"
+
   ### Setup cases for use
   filterTwoSarcomereSize = 25
   cases = dict()
@@ -231,8 +233,8 @@ def tissueComparison():
   cases['MILike'] = analyzeTissueCase(cases['MILike'])
 
   ### Save hits from the analysis
-  displayTissueCaseHits(cases['WTLike'],tag='fig6_WTLike')
-  displayTissueCaseHits(cases['MILike'],tag='fig6_MILike')
+  displayTissueCaseHits(cases['WTLike'],tag=fileTag+'_Distal')
+  displayTissueCaseHits(cases['MILike'],tag=fileTag+'_Proximal')
 
   ### Quantify TT content per square micron
   cases['WTLike'].area = float(cases['WTLike'].extent_um[0] * cases['WTLike'].extent_um[1])
@@ -247,41 +249,41 @@ def tissueComparison():
   print "MI TT Content:", cases['MILike'].TTcontent
 
   ### Make Bar Chart of TT content
-  width = 0.75
-  N = 2
-  indices = np.arange(N) + width
-  fig,ax = plt.subplots()
-  rects1 = ax.bar(indices[0], cases['WTLike'].TTcontent, width, color='blue',align='center')
-  rects2 = ax.bar(indices[1], cases['MILike'].TTcontent, width, color='red',align='center')
-  ax.set_ylabel('Normalized TT Content to WT',fontsize=24)
-  plt.sca(ax)
-  plt.xticks(indices,['Conserved','Perturbed'],fontsize=24)
-  ax.set_ylim([0,1.2])
-  plt.gcf().savefig('fig6_TTcontent.pdf',dpi=300)
+  #width = 0.75
+  #N = 2
+  #indices = np.arange(N) + width
+  #fig,ax = plt.subplots()
+  #rects1 = ax.bar(indices[0], cases['WTLike'].TTcontent, width, color='blue',align='center')
+  #rects2 = ax.bar(indices[1], cases['MILike'].TTcontent, width, color='red',align='center')
+  #ax.set_ylabel('Normalized TT Content to WT',fontsize=24)
+  #plt.sca(ax)
+  #plt.xticks(indices,['Conserved','Perturbed'],fontsize=24)
+  #ax.set_ylim([0,1.2])
+  #plt.gcf().savefig(fileTag+'_TTcontent.pdf',dpi=300)
 
   ### Save enhanced original images for figure 
   plt.figure()
   plt.imshow(cases['WTLike'].displayImg,cmap='gray')
   plt.axis('off')
-  plt.gcf().savefig('fig6_WTLike_enhancedImg.pdf',dpi=300)
+  plt.gcf().savefig(fileTag+'_Distal_enhancedImg.pdf',dpi=600)
 
   plt.figure()
   plt.imshow(cases['MILike'].displayImg,cmap='gray')
   plt.axis('off')
-  plt.gcf().savefig('fig6_MILike_enhancedImg.pdf',dpi=300)
+  plt.gcf().savefig(fileTag+'_Proximal_enhancedImg.pdf',dpi=600)
 
   ### Find angle counts for each rotation
-  cases['WTLike'].results.stackedAngles = cases['WTLike'].results.stackedAngles[np.where(
-                                          cases['WTLike'].results.stackedAngles != -1
-                                          )]
-  cases['MILike'].results.stackedAngles = cases['MILike'].results.stackedAngles[np.where(
-                                          cases['MILike'].results.stackedAngles != -1
-                                          )]
+  #cases['WTLike'].results.stackedAngles = cases['WTLike'].results.stackedAngles[np.where(
+  #                                        cases['WTLike'].results.stackedAngles != -1
+  #                                        )]
+  #cases['MILike'].results.stackedAngles = cases['MILike'].results.stackedAngles[np.where(
+  #                                        cases['MILike'].results.stackedAngles != -1
+  #                                        )]
 
 
   ### Write stacked angles histogram
-  giveAngleHistogram(cases['WTLike'].results.stackedAngles,cases['WTLike'].iters,"fig6_WTLike")
-  giveAngleHistogram(cases['MILike'].results.stackedAngles,cases['MILike'].iters,"fig6_MILike")
+  #giveAngleHistogram(cases['WTLike'].results.stackedAngles,cases['WTLike'].iters,fileTag+"_Distal")
+  #giveAngleHistogram(cases['MILike'].results.stackedAngles,cases['MILike'].iters,fileTag+"_Proximal")
 
 def figAngleHeterogeneity():
   '''
@@ -414,6 +416,8 @@ def tissueBloodVessel():
   Routine to generate the figure showcasing heterogeneity of striation angle
     in the tissue sample
   '''
+  fileTag = 'tissueBloodVessel'
+
   ### setup case
   case = empty()
   case.loc_um = [2477,179]
@@ -429,17 +433,19 @@ def tissueBloodVessel():
   case = analyzeTissueCase(case)
 
   ### display the hits of the case
-  displayTissueCaseHits(case,'figS2')
+  displayTissueCaseHits(case,fileTag)
 
   ### Save enhanced original images for figure
   plt.figure()
   plt.imshow(case.displayImg,cmap='gray')
-  plt.gcf().savefig('figS2_enhancedImg.pdf',dpi=300)
+  plt.gcf().savefig(fileTag+'_enhancedImg.pdf',dpi=300)
 
 def algComparison():
   '''
   Routine to compare the GPU and CPU implementation of code
   '''
+
+  fileTag = "algComparison"
 
   ### setup case
   caseGPU = empty()
@@ -460,7 +466,6 @@ def algComparison():
   caseCPU.extent_um = [350,350]
   caseCPU.orig = caseGPU.orig.copy()
   caseCPU.degreesOffCenter = caseGPU.degreesOffCenter
-  caseCPU.scale = caseGPU.scale
   caseCPU.subregionOrig = caseGPU.subregionOrig.copy()
   caseCPU.subregion = caseGPU.subregion.copy()
   caseCPU.displayImg = caseGPU.displayImg.copy()
@@ -469,7 +474,7 @@ def algComparison():
   caseGPU = analyzeTissueCase(caseGPU,preprocess=False)
 
   ### display the hits of the case
-  displayTissueCaseHits(caseGPU,"figS3_GPU")
+  displayTissueCaseHits(caseGPU,fileTag+"_GPU")
 
   ### store results
   GPUpastedHits = caseGPU.pasted
@@ -478,7 +483,7 @@ def algComparison():
   caseCPU = analyzeTissueCase(caseCPU,preprocess=False,useGPU=False)
 
   ### display the hits of the case
-  displayTissueCaseHits(caseCPU,"figS3_CPU")
+  displayTissueCaseHits(caseCPU,fileTag+"_CPU")
 
   ### store results
   CPUpastedHits = caseCPU.pasted
@@ -486,7 +491,7 @@ def algComparison():
   ### save original enhanced image for comparison
   plt.figure()
   plt.imshow(caseGPU.displayImg,cmap='gray')
-  plt.gcf().savefig('figS3_enhancedImg.pdf',dpi=300)
+  plt.gcf().savefig(fileTag+'_enhancedImg.pdf',dpi=600)
   
   ### do comparison between GPU and CPU results
   comparison = np.abs(GPUpastedHits - CPUpastedHits).astype(np.float32)
@@ -494,7 +499,7 @@ def algComparison():
   plt.figure()
   plt.imshow(comparison,cmap='gray')
   plt.colorbar()
-  plt.gcf().savefig('figS3_comparison.pdf',dpi=300)
+  plt.gcf().savefig(fileTag+'_comparison.pdf',dpi=600)
 
 def YAML_example():
   '''
@@ -564,7 +569,10 @@ def preprocessTissueCase(case):
 
   ### save image for display later
   ## I'm considering writing a better routine to enhance the image for figure quality but not necessarily for algorithm quality
-  case.displayImg = case.subregion.copy()
+  brightnessDamper = 0.7
+  case.displayImg = case.subregion.copy().astype(np.float32) / float(np.max(case.subregion))
+  case.displayImg *= brightnessDamper * 255.
+  case.displayImg = case.displayImg.astype(np.uint8)
 
   return case
 
@@ -592,7 +600,7 @@ def analyzeTissueCase(case,preprocess=True,useGPU=True):
 
   ### Setup input classes
   case.inputs = empty()
-  case.inputs.imgOrig = case.subregion
+  case.inputs.imgOrig = case.subregion.astype(np.float32) / float(np.max(case.subregion))
   case.inputs.mfOrig = ttFilter
 
   ### Perform filtering for TT detection
@@ -602,19 +610,19 @@ def analyzeTissueCase(case,preprocess=True,useGPU=True):
                                  )
 
   ### Modify case to perform TA detection
-  case.TAinputs = empty()
-  case.TAinputs.imgOrig = case.subregion
-  lossFilterName = root+"LossFilter.png"
-  case.TAIters = [-45,0]
-  lossFilter = util.LoadFilter(lossFilterName)
-  case.TAinputs.mfOrig = lossFilter
-  case.TAparams = optimizer.ParamDict(typeDict='Loss')
+  #case.TAinputs = empty()
+  #case.TAinputs.imgOrig = case.subregion
+  #lossFilterName = root+"LossFilter.png"
+  #case.TAIters = [-45,0]
+  #lossFilter = util.LoadFilter(lossFilterName)
+  #case.TAinputs.mfOrig = lossFilter
+  #case.TAparams = optimizer.ParamDict(typeDict='Loss')
 
   ### Perform filtering for TA detection
-  case.TAresults = bD.DetectFilter(case.inputs,
-                                   case.TAparams,
-                                   case.TAIters)
-  print case
+  #case.TAresults = bD.DetectFilter(case.inputs,
+  #                                 case.TAparams,
+  #                                 case.TAIters)
+
   return case
 
 def displayTissueCaseHits(case,tag):
@@ -627,28 +635,28 @@ def displayTissueCaseHits(case,tag):
   ### Mark where the filter responded and display on the images
   ## find filter dimensions
   TTy,TTx = util.measureFilterDimensions(case.inputs.mfOrig)
-  TAy,TAx = util.measureFilterDimensions(case.TAinputs.mfOrig)
+  #TAy,TAx = util.measureFilterDimensions(case.TAinputs.mfOrig)
   ## mark unit cells on the image where the filters responded
   case.pasted = painter.doLabel(case.results,dx=TTx,dy=TTy,
                                 thresh=case.params['snrThresh'])
-  case.TApasted = painter.doLabel(case.TAresults,dx=TAx,dy=TAy,
-                                  thresh=case.TAparams['snrThresh'])
+  #case.TApasted = painter.doLabel(case.TAresults,dx=TAx,dy=TAy,
+  #                                thresh=case.TAparams['snrThresh'])
   ## convert pasted filter image to cv2 friendly format and normalize original subregion
   case.pasted = np.asarray(case.pasted 
                            / np.max(case.pasted) 
                            * 255.,
                            dtype=np.uint8)
-  case.TApasted = np.asarray(case.TApasted
-                             / np.max(case.TApasted)
-                             * 255.,
-                             dtype=np.uint8)
+  #case.TApasted = np.asarray(case.TApasted
+  #                           / np.max(case.TApasted)
+  #                           * 255.,
+  #                           dtype=np.uint8)
   ## we're using the same display image for the two filters
   case.displayImg = np.asarray(case.displayImg.astype(float) 
                                / float(np.max(case.displayImg)) 
                                * 255., dtype=np.uint8)
   ## rotate images back to the original orientation
   case.pasted = imutils.rotate(case.pasted,case.degreesOffCenter)
-  case.TApasted = imutils.rotate(case.TApasted,case.degreesOffCenter)
+  #case.TApasted = imutils.rotate(case.TApasted,case.degreesOffCenter)
   case.displayImg = imutils.rotate(case.displayImg,case.degreesOffCenter)
 
   debug = False
@@ -672,8 +680,8 @@ def displayTissueCaseHits(case,tag):
   padY,padX = int((newY - origY)/2.), int((newX - origX)/2.)
   case.pasted = case.pasted[padY:-padY,
                             padX:-padX]
-  case.TApasted = case.TApasted[padY:-padY,
-                                padX:-padX]
+  #case.TApasted = case.TApasted[padY:-padY,
+  #                              padX:-padX]
   case.displayImg = case.displayImg[padY:-padY,
                                     padX:-padX]
 
@@ -682,13 +690,13 @@ def displayTissueCaseHits(case,tag):
   coloredImage = np.asarray((case.displayImg.copy(),
                              case.displayImg.copy(),
                              case.displayImg.copy()))
-  coloredImage = np.rollaxis(coloredImage,0,start=3).astype(np.uint8)
-  TAchannel = 0
+  coloredImage = np.rollaxis(coloredImage,0,start=3)
+  #TAchannel = 0
   TTchannel = 2
 
   ### Mark channel hits on image
   coloredImage[case.pasted != 0,TTchannel] = 255
-  coloredImage[case.TApasted != 0,TAchannel] = 255
+  #coloredImage[case.TApasted != 0,TAchannel] = 255
 
   ### Plot figure and save
   plt.figure()

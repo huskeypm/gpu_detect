@@ -248,7 +248,7 @@ def reorient(img):
   if dVect[0] >= 0:
     xAx = [1,0]
   else:
-    xAx[-1,0]
+    xAx = [-1,0]
 
   ### compute degrees off center from the direction vector
   dOffCenter = (180./np.pi) * np.arccos(np.dot(xAx,dVect)/np.linalg.norm(dVect))
@@ -485,7 +485,7 @@ def preprocessTissue():
 
   ### apply an intensity ceiling and floor to apply contrast stretching
   floorValue = 6
-  ceilingValue = 11
+  ceilingValue = 10
   clippedTissueImg = smoothedTissueImg
   clippedTissueImg[clippedTissueImg < floorValue] = floorValue
   clippedTissueImg[clippedTissueImg > ceilingValue] = ceilingValue

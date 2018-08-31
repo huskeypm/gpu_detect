@@ -263,12 +263,12 @@ def tissueComparison():
 
   ### Save enhanced original images for figure 
   plt.figure()
-  plt.imshow(cases['WTLike'].displayImg,cmap='gray')
+  plt.imshow(cases['WTLike'].displayImg,cmap='gray',vmin=0,vmax=255)
   plt.axis('off')
   plt.gcf().savefig(fileTag+'_Distal_enhancedImg.pdf',dpi=600)
 
   plt.figure()
-  plt.imshow(cases['MILike'].displayImg,cmap='gray')
+  plt.imshow(cases['MILike'].displayImg,cmap='gray',vmin=0,vmax=255)
   plt.axis('off')
   plt.gcf().savefig(fileTag+'_Proximal_enhancedImg.pdf',dpi=600)
 
@@ -437,7 +437,7 @@ def tissueBloodVessel():
 
   ### Save enhanced original images for figure
   plt.figure()
-  plt.imshow(case.displayImg,cmap='gray')
+  plt.imshow(case.displayImg,cmap='gray',vmin=0,vmax=255)
   plt.gcf().savefig(fileTag+'_enhancedImg.pdf',dpi=300)
 
 def algComparison():
@@ -490,7 +490,7 @@ def algComparison():
 
   ### save original enhanced image for comparison
   plt.figure()
-  plt.imshow(caseGPU.displayImg,cmap='gray')
+  plt.imshow(caseGPU.displayImg,cmap='gray',vmin=0,vmax=255)
   plt.gcf().savefig(fileTag+'_enhancedImg.pdf',dpi=600)
   
   ### do comparison between GPU and CPU results
@@ -569,7 +569,7 @@ def preprocessTissueCase(case):
 
   ### save image for display later
   ## I'm considering writing a better routine to enhance the image for figure quality but not necessarily for algorithm quality
-  brightnessDamper = 0.7
+  brightnessDamper = 0.6
   case.displayImg = case.subregion.copy().astype(np.float32) / float(np.max(case.subregion))
   case.displayImg *= brightnessDamper * 255.
   case.displayImg = case.displayImg.astype(np.uint8)
@@ -651,9 +651,9 @@ def displayTissueCaseHits(case,tag):
   #                           * 255.,
   #                           dtype=np.uint8)
   ## we're using the same display image for the two filters
-  case.displayImg = np.asarray(case.displayImg.astype(float) 
-                               / float(np.max(case.displayImg)) 
-                               * 255., dtype=np.uint8)
+  #case.displayImg = np.asarray(case.displayImg.astype(float) 
+  #                             / float(np.max(case.displayImg)) 
+  #                             * 255., dtype=np.uint8)
   ## rotate images back to the original orientation
   case.pasted = imutils.rotate(case.pasted,case.degreesOffCenter)
   #case.TApasted = imutils.rotate(case.TApasted,case.degreesOffCenter)
@@ -700,7 +700,7 @@ def displayTissueCaseHits(case,tag):
 
   ### Plot figure and save
   plt.figure()
-  plt.imshow(coloredImage)
+  plt.imshow(coloredImage,vmin=0,vmax=255)
   plt.gcf().savefig(tag+"_hits.pdf",dpi=600)
 
 def saveWorkflowFig():

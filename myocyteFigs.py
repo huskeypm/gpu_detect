@@ -576,7 +576,10 @@ def preprocessTissueCase(case):
 
   return case
 
-def analyzeTissueCase(case,preprocess=True,useGPU=True):
+def analyzeTissueCase(case,
+                      preprocess=True,
+                      useGPU=True,
+                      analyzeTA=True):
   '''
   Refactored method to analyze tissue cases 
   '''
@@ -610,22 +613,26 @@ def analyzeTissueCase(case,preprocess=True,useGPU=True):
                                  )
 
   ### Modify case to perform TA detection
-  #case.TAinputs = empty()
-  #case.TAinputs.imgOrig = case.subregion
-  #lossFilterName = root+"LossFilter.png"
-  #case.TAIters = [-45,0]
-  #lossFilter = util.LoadFilter(lossFilterName)
-  #case.TAinputs.mfOrig = lossFilter
-  #case.TAparams = optimizer.ParamDict(typeDict='Loss')
+  if analyzeTA:
+    case.TAinputs = empty()
+    case.TAinputs.imgOrig = case.subregion
+    case.TAinputs.displayImg = case.inputs.displayImg
+    lossFilterName = root+"LossFilter.png"
+    case.TAIters = [-45,0]
+    lossFilter = util.LoadFilter(lossFilterName)
+    case.TAinputs.mfOrig = lossFilter
+    case.TAparams = optimizer.ParamDict(typeDict='Loss')
 
-  ### Perform filtering for TA detection
-  #case.TAresults = bD.DetectFilter(case.inputs,
-  #                                 case.TAparams,
-  #                                 case.TAIters)
+    ### Perform filtering for TA detection
+    case.TAresults = bD.DetectFilter(case.TAinputs,
+                                     case.TAparams,
+                                     case.TAIters)
 
   return case
 
-def displayTissueCaseHits(case,tag):
+def displayTissueCaseHits(case,
+                          tag,
+                          displayTA=True):
   '''
   Displays the 'hits' returned from analyzeTissueCase() function
   '''
@@ -635,28 +642,19 @@ def displayTissueCaseHits(case,tag):
   ### Mark where the filter responded and display on the images
   ## find filter dimensions
   TTy,TTx = util.measureFilterDimensions(case.inputs.mfOrig)
-  #TAy,TAx = util.measureFilterDimensions(case.TAinputs.mfOrig)
+
   ## mark unit cells on the image where the filters responded
   case.pasted = painter.doLabel(case.results,dx=TTx,dy=TTy,
                                 thresh=case.params['snrThresh'])
-  #case.TApasted = painter.doLabel(case.TAresults,dx=TAx,dy=TAy,
-  #                                thresh=case.TAparams['snrThresh'])
+
   ## convert pasted filter image to cv2 friendly format and normalize original subregion
   case.pasted = np.asarray(case.pasted 
                            / np.max(case.pasted) 
                            * 255.,
                            dtype=np.uint8)
-  #case.TApasted = np.asarray(case.TApasted
-  #                           / np.max(case.TApasted)
-  #                           * 255.,
-  #                           dtype=np.uint8)
-  ## we're using the same display image for the two filters
-  #case.displayImg = np.asarray(case.displayImg.astype(float) 
-  #                             / float(np.max(case.displayImg)) 
-  #                             * 255., dtype=np.uint8)
+
   ## rotate images back to the original orientation
   case.pasted = imutils.rotate(case.pasted,case.degreesOffCenter)
-  #case.TApasted = imutils.rotate(case.TApasted,case.degreesOffCenter)
   case.displayImg = imutils.rotate(case.displayImg,case.degreesOffCenter)
 
   debug = False
@@ -665,13 +663,6 @@ def displayTissueCaseHits(case,tag):
     plt.imshow(case.displayImg,cmap='gray')
     plt.show()
 
-  ## rescale images back to original size - NOT NEEDED. DELETED RESIZING FROM PREPROCESSING
-  #case.pasted = cv2.resize(case.pasted,None,fx=1./case.scale,
-  #                         fy=1./case.scale,interpolation=cv2.INTER_CUBIC)
-  #case.TApasted = cv2.resize(case.TApasted,None,fx=1./case.scale,
-  #                           fy=1./case.scale,interpolation=cv2.INTER_CUBIC)
-  #case.displayImg = cv2.resize(case.displayImg,None,fx=1./case.scale,
-  #                             fy=1./case.scale,interpolation=cv2.INTER_CUBIC)
   ## cut image back down to original size to get rid of borders
   imgDims = np.shape(case.subregionOrig)
   origY,origX = float(imgDims[0]), float(imgDims[1])
@@ -680,23 +671,33 @@ def displayTissueCaseHits(case,tag):
   padY,padX = int((newY - origY)/2.), int((newX - origX)/2.)
   case.pasted = case.pasted[padY:-padY,
                             padX:-padX]
-  #case.TApasted = case.TApasted[padY:-padY,
-  #                              padX:-padX]
   case.displayImg = case.displayImg[padY:-padY,
                                     padX:-padX]
 
   ### Create colored image for display
-  #du.StackGrayBlueAlpha(case.displayImg,case.pasted,alpha=0.95)
   coloredImage = np.asarray((case.displayImg.copy(),
                              case.displayImg.copy(),
                              case.displayImg.copy()))
   coloredImage = np.rollaxis(coloredImage,0,start=3)
-  #TAchannel = 0
   TTchannel = 2
 
   ### Mark channel hits on image
   coloredImage[case.pasted != 0,TTchannel] = 255
-  #coloredImage[case.TApasted != 0,TAchannel] = 255
+
+  ### Do the same thing for the TA case
+  if displayTA:
+    TAy,TAx = util.measureFilterDimensions(case.TAinputs.mfOrig)
+    case.TApasted = painter.doLabel(case.TAresults,dx=TAx,dy=TAy,
+                                    thresh=case.TAparams['snrThresh'])
+    case.TApasted = np.asarray(case.TApasted
+                               / np.max(case.TApasted)
+                               * 255.,
+                               dtype=np.uint8)
+    case.TApasted = imutils.rotate(case.TApasted,case.degreesOffCenter)
+    case.TApasted = case.TApasted[padY:-padY,
+                                  padX:-padX]
+    TAchannel = 0
+    coloredImage[case.TApasted != 0,TAchannel] = 255
 
   ### Plot figure and save
   plt.figure()

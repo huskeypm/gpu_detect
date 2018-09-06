@@ -203,11 +203,14 @@ def MI_results():
   plt.imshow(switchBRChannels(util.markMaskOnMyocyte(PImage,PImageName)))
   plt.gcf().savefig("fig5_Raw_P.pdf",dpi=300)
 
-def tissueComparison():
+def tissueComparison(fullAnalysis=True):
   '''
   Tissue level images for comparison between "Distal" region and "Proximal" region
   '''
-  fileTag = "tissueComparison"
+  if fullAnalysis:
+    fileTag = "tissueComparison_fullAnalysis"
+  else:
+    fileTag = "tissueComparison"
 
   ### Setup cases for use
   filterTwoSarcomereSize = 25
@@ -236,17 +239,29 @@ def tissueComparison():
   displayTissueCaseHits(cases['WTLike'],tag=fileTag+'_Distal')
   displayTissueCaseHits(cases['MILike'],tag=fileTag+'_Proximal')
 
-  ### Quantify TT content per square micron
-  cases['WTLike'].area = float(cases['WTLike'].extent_um[0] * cases['WTLike'].extent_um[1])
-  cases['MILike'].area = float(cases['MILike'].extent_um[0] * cases['MILike'].extent_um[1])
-  cases['WTLike'].TTcontent = float(np.sum(cases['WTLike'].pasted)) / cases['WTLike'].area
-  cases['MILike'].TTcontent = float(np.sum(cases['MILike'].pasted)) / cases['MILike'].area
-  ## Normalize TT content since it's fairly arbitrary
-  cases['MILike'].TTcontent /= cases['WTLike'].TTcontent
-  cases['WTLike'].TTcontent /= cases['WTLike'].TTcontent
+  if fullAnalysis:
+    ### Quantify TT content per square micron
+    cases['WTLike'].area = float(cases['WTLike'].extent_um[0] * cases['WTLike'].extent_um[1])
+    cases['MILike'].area = float(cases['MILike'].extent_um[0] * cases['MILike'].extent_um[1])
+    cases['WTLike'].TTcontent = float(np.sum(cases['WTLike'].pasted)) / cases['WTLike'].area
+    cases['MILike'].TTcontent = float(np.sum(cases['MILike'].pasted)) / cases['MILike'].area
+    ## Normalize TT content since it's fairly arbitrary
+    cases['MILike'].TTcontent /= cases['WTLike'].TTcontent
+    cases['WTLike'].TTcontent /= cases['WTLike'].TTcontent
 
-  print "WT TT Content:", cases['WTLike'].TTcontent
-  print "MI TT Content:", cases['MILike'].TTcontent
+    print "WT TT Content:", cases['WTLike'].TTcontent
+    print "MI TT Content:", cases['MILike'].TTcontent
+
+    ### Quantify TA 
+    cases['WTLike'].TAcontent = float(np.sum(cases['WTLike'].TApasted))
+    cases['MILike'].TAcontent = float(np.sum(cases['MILike'].TApasted))
+    ### Normalize
+    cases['MILike'].TAcontent /= cases['WTLike'].TAcontent
+    cases['WTLike'].TAcontent /= cases['WTLike'].TAcontent
+
+    print "WT TA Content:", cases['WTLike'].TAcontent
+    print "MI TA Content:", cases['MILike'].TAcontent
+
 
   ### Make Bar Chart of TT content
   #width = 0.75
@@ -616,7 +631,7 @@ def analyzeTissueCase(case,
   if analyzeTA:
     case.TAinputs = empty()
     case.TAinputs.imgOrig = case.subregion
-    case.TAinputs.displayImg = case.inputs.displayImg
+    case.TAinputs.displayImg = case.displayImg
     lossFilterName = root+"LossFilter.png"
     case.TAIters = [-45,0]
     lossFilter = util.LoadFilter(lossFilterName)
@@ -632,6 +647,7 @@ def analyzeTissueCase(case,
 
 def displayTissueCaseHits(case,
                           tag,
+                          displayTT=True,
                           displayTA=True):
   '''
   Displays the 'hits' returned from analyzeTissueCase() function
@@ -682,7 +698,8 @@ def displayTissueCaseHits(case,
   TTchannel = 2
 
   ### Mark channel hits on image
-  coloredImage[case.pasted != 0,TTchannel] = 255
+  if displayTT:
+    coloredImage[case.pasted != 0,TTchannel] = 255
 
   ### Do the same thing for the TA case
   if displayTA:
@@ -1899,7 +1916,7 @@ if __name__ == "__main__":
       quit()
 
     if(arg=="-tissueComparison"):               
-      tissueComparison()
+      tissueComparison(fullAnalysis=True)
       quit()
 
     if(arg=="-figAngle"):

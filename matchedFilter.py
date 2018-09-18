@@ -5,6 +5,7 @@ import numpy as np
 # import modules we'll need 
 import scipy.fftpack as fftp
 import cv2
+from scipy import ndimage
 
 
 ##
@@ -16,10 +17,11 @@ def matchedFilter(
   parsevals=False,
   demean=True
   ):
-  useCV2 = True
-  if useCV2:
+  useQuickFilter = True
+  if useQuickFilter:
     ### TRYING OUT NEW CV2 CONVOLUTION CODE
     h = cv2.filter2D(dimg,-1,daFilter)
+    #h = ndimage.filters.convolve(dimg,daFilter)
     return h
   else:
     # placeholder for 'noise' component (will refine later)

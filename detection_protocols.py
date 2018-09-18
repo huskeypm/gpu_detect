@@ -149,10 +149,8 @@ def punishmentFilter(
     results.corrPunishment = mF.matchedFilter(img,mfPunishment,parsevals=False,demean=False)
 
     ######
-    snr = results.corr / (cM + gamma * results.corrPunishment)
-
-    results.snr = snr
-    #results.corr = corr
+    #results.snr = np.divide(results.corr,(np.add(cM,np.multiply(gamma,results.corrPunishment))))
+    results.snr = results.corr / (cM + gamma * results.corrPunishment)
 
     return results 
 

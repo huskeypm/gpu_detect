@@ -31,8 +31,8 @@ params.fov = np.array([3916.62,4093.31]) # um (from image caption in imagej. NOT
 
 
 def Setup():
-  img = cv2.imread(params.imgName)
-  gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+  gray = cv2.imread(params.imgName)
+  gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY)
   params.dim = np.shape(gray)
   params.px_per_um = params.dim/params.fov
 

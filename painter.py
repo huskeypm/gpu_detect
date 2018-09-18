@@ -49,7 +49,7 @@ def correlateThresher(
     # Store all 'hits' at each angle 
     correlated = []
 
-    inputs.demeanedImg = np.abs(np.subtract(inputs.imgOrig, np.mean(inputs.imgOrig)))
+    #inputs.demeanedImg = np.abs(np.subtract(inputs.imgOrig, np.mean(inputs.imgOrig)))
     for i, angle in enumerate(iters):
       result = empty()
 
@@ -57,6 +57,7 @@ def correlateThresher(
       params['angle'] = angle
       rFN = util.PadRotate(filterRef,angle)  
       inputs.mf = rFN  
+      print np.shape(inputs.mf)
 
       # check for other matched filters
       if params['filterMode'] == 'punishmentFilter':

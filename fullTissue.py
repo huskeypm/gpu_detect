@@ -100,6 +100,10 @@ def displayTissueResults():
   ### sort rotations
   rotations.sort()
 
+  ### impose rotation cutoff
+  cutoff = -5 
+  rotations = rotations[:np.argmax([rot == cutoff for rot in rotations])+1]
+  
   ### create initial storage list based on first detection
   detections = np.load("tissueDetections_"+str(rotations[0])+'.'+fileType)
   storage = detections.copy()
@@ -125,16 +129,50 @@ def displayTissueResults():
   ### convert to float32 so we can use convolution function to smooth the results
   storage = storage.astype(np.float32)
 
+  displaySample = False 
+  if displaySample:
+    plt.figure()
+    plt.imshow(grayTissue,cmap='gray',vmin=tisMin,vmax=tisMax)
+    plt.imshow(storage,cmap='Blues',alpha=0.75)
+    plt.axis('off')
+    plt.show()
+    return
+
   ### smooth the resulting image
   kernelSize = (2000,2000)
   storage = cv2.blur(storage,kernelSize)
 
-  plt.rcParams['figure.figsize'] = [16,16]
+  clipImage = True
+  if clipImage:
+    clipLimit = 0.2
+    storage[storage<clipLimit*np.max(storage)] = clipLimit*np.max(storage)
+  #plt.figure()
+  #plt.imshow(storage)
+  #plt.show()
+  #quit()
+  writeImage = False
+  downsample = False
+  if downsample:
+    plt.rcParams['figure.figsize'] = [5,5]
+    plt.figure()
+    plt.imshow(grayTissue,cmap='gray',vmin=tisMin,vmax=tisMax)
+    plt.imshow(storage,cmap='RdYlGn',alpha=0.75)
+    plt.axis('off')
+    if writeImage:
+      plt.gcf().savefig('FullTissueAnalysis.png',dpi=300)
+    else:
+      plt.show()
+  else:
+    plt.rcParams['figure.figsize'] = [16,16]
+    plt.figure()
+    plt.imshow(grayTissue,cmap='gray',vmin=tisMin,vmax=tisMax)
+    plt.imshow(storage,cmap='RdYlGn',alpha=0.75)
+    plt.axis('off')
+    if writeImage:
+      plt.gcf().savefig('FullTissueAnalysis.png',dpi=1000)
+    else:
+      plt.show()
 
-  plt.figure()
-  plt.imshow(grayTissue,cmap='gray',vmin=tisMin,vmax=tisMax)
-  plt.imshow(storage,cmap='RdYlGn',alpha=0.75)
-  plt.show()
 
 
 
